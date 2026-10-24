@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import {
+  actionsPerWeek,
   basketCapacity,
   canPlantOn,
   content,
@@ -8,6 +9,8 @@ import {
   inSeason,
   inStream,
   isShaded,
+  lookalikeOn,
+  masteryOf,
   orderPayment,
   plantableSquares,
   seasonOf,
@@ -21,7 +24,7 @@ import { Market } from './Market';
 import { Night } from './Night';
 import { YearEnd } from './YearEnd';
 import type { Store } from './store';
-import { growthName, name, seasonsText, squareName, stageName, substrateName, weekLabel } from './text';
+import { growthName, masteryName, name, seasonsText, squareName, stageName, substrateName, weekLabel } from './text';
 
 export type Mode =
   | { kind: 'none' }
@@ -145,7 +148,7 @@ export function Farm({
   const choosing = mode && mode.kind !== 'none';
 
   return (
-    <div class={`farm ${small ? 'small' : ''}`}>
+    <div class={`farm ${small ? 'small' : ''} size-${g.size}`} style={{ '--cols': g.size } as any}>
       <div class="stream" aria-hidden="true">
         <svg viewBox="0 0 20 100" preserveAspectRatio="none">
           <path d="M10 0 Q4 12 10 25 T10 50 T10 75 T10 100" stroke="#FFFFFF" strokeOpacity="0.7" strokeWidth="1.4" fill="none" />
@@ -158,7 +161,7 @@ export function Farm({
           const cls = [
             'sq',
             sq.tree ? 'tree' : '',
-            inStream(i) ? 'damp' : '',
+            inStream(i, g.size) ? 'damp' : '',
             sq.blight ? 'blighted' : '',
             sq.stage === 'F' && !sq.blight ? 'ready' : '',
             choosing ? (isTarget ? 'target' : 'dim') : '',
@@ -168,10 +171,10 @@ export function Farm({
           const label = sq.tree
             ? 'Tree'
             : sq.species
-              ? `${name(sq.species)}, ${stageName[sq.stage!]}${sq.blight ? ', blighted' : ''}, ${squareName(i)}`
+              ? `${name(sq.species)}, ${stageName[sq.stage!]}${sq.blight ? ', blighted' : ''}, ${squareName(i, g.size)}`
               : sq.substrate
-                ? `Empty ${substrateName[sq.substrate]}, ${squareName(i)}`
-                : `Empty ground, ${squareName(i)}`;
+                ? `Empty ${substrateName[sq.substrate]}, ${squareName(i, g.size)}`
+                : `Empty ground, ${squareName(i, g.size)}`;
           return (
             <button
               key={i}
@@ -226,7 +229,7 @@ function Tray({ g, mode, onSpecimen, onShed }: { g: GameState; mode: Mode; onSpe
         <div class="tray-label">
           <Icon name="basket" size={16} /> Basket {g.basket.length}/{cap}
         </div>
-        <div class="slots">
+        <div class={`slots basket-slots ${cap > 4 ? 'many' : ''}`}>
           {Array.from({ length: cap }, (_, i) => {
             const spec = g.basket[i];
             if (!spec) return <span class="slot empty" />;
@@ -276,7 +279,7 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
     return (
       <SheetFrame title="Empty ground" onClose={onClose}>
         <p>Lay substrate here from your shed. Foraging trips turn up straw, logs and woodchip; a lookalike you identify turns into compost.</p>
-        {inStream(i) && <p class="note">Beside the stream: beds here never dry out.</p>}
+        {inStream(i, g.size) && <p class="note">Beside the stream: beds here never dry out.</p>}
       </SheetFrame>
     );
   if (!sq.species) {
@@ -284,8 +287,8 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
     return (
       <SheetFrame title={`Empty ${substrateName[sq.substrate!]}`} onClose={onClose}>
         <p>Ready to inoculate. Grows here: {fits.map(name).join(', ') || 'nothing yet'}.</p>
-        {inStream(i) && <p class="note">Beside the stream: beds here never dry out.</p>}
-        {isShaded(g.grid, i) && <p class="note">In the shade of a tree.</p>}
+        {inStream(i, g.size) && <p class="note">Beside the stream: beds here never dry out.</p>}
+        {isShaded(g.grid, i, g.size) && <p class="note">In the shade of a tree.</p>}
         {sq.tent && <p class="note">Under the grow tent: ignores season and cold snaps.</p>}
       </SheetFrame>
     );
@@ -294,7 +297,7 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
   const season = seasonOf(g.round);
   const needs: string[] = [];
   if (!sq.tent && !inSeason(sp.id, season)) needs.push(`Out of season: it grows in ${seasonsText(sp.id).toLowerCase()}.`);
-  if (sp.traits.needsShade && !isShaded(g.grid, i)) needs.push('Needs a tree beside it to grow.');
+  if (sp.traits.needsShade && !isShaded(g.grid, i, g.size)) needs.push('Needs a tree beside it to grow.');
   const dryLimit = sp.traits.thirsty ? 1 : content.rules.dryMarksToBlight;
   return (
     <SheetFrame title={sp.name} onClose={onClose}>
@@ -324,7 +327,7 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
             </dd>
             <dt>Dry marks</dt>
             <dd>
-              {inStream(i) ? 'Never (stream)' : `${sq.dry} of ${dryLimit}`}
+              {inStream(i, g.size) ? 'Never (stream)' : `${sq.dry} of ${dryLimit}`}
             </dd>
           </dl>
         </div>
@@ -373,7 +376,7 @@ function SpecimenSheet({
   if (!spec) return null;
   const sp = content.species[spec.species];
   const guide = g.gear.includes('fieldguide');
-  const bad = sp.lookalike?.on ?? 1;
+  const bad = lookalikeOn(g, sp.id);
   const risk = guide ? (bad / 6) ** 2 : bad / 6;
   const spots = plantableSquares(g, spec.species);
   if (!spec.identified)
@@ -386,7 +389,9 @@ function SpecimenSheet({
           <div>
             <p>An unidentified specimen from the {sp.group?.toLowerCase()} group. It might be the real thing, or a lookalike.</p>
             <p class="small muted">
-              Lookalike chance: {Math.round(risk * 100)}%{guide ? ' with your Field Guide' : ''}. A lookalike becomes compost.
+              Lookalike chance: {Math.round(risk * 100)}%{guide ? ' with your Field Guide' : ''}
+              {masteryOf(g, sp.id) >= 1 ? `, and you're ${masteryName(masteryOf(g, sp.id)).toLowerCase()} with ${sp.name}` : ''}. A lookalike becomes
+              compost.
             </p>
           </div>
         </div>
@@ -488,7 +493,7 @@ function Reveal({ r, g, onDone, onPlant }: { r: ActionResult & { kind: 'identify
 
 function TendSheet({ g, store, onClose, onBed }: { g: GameState; store: Store; onClose: () => void; onBed: (i: number) => void }) {
   const blighted = g.grid.map((_, i) => i).filter((i) => g.grid[i].blight);
-  const dry = g.grid.filter((sq, i) => sq.species && !inStream(i)).length;
+  const dry = g.grid.filter((sq, i) => sq.species && !inStream(i, g.size)).length;
   return (
     <SheetFrame title="Tend the farm" onClose={onClose}>
       <button class="btn primary wide" disabled={g.watered || g.actionsLeft < 1} onClick={() => store.act({ type: 'water' }) && onClose()}>
@@ -509,7 +514,7 @@ function TendSheet({ g, store, onClose, onBed }: { g: GameState; store: Store; o
           {blighted.map((i) => (
             <li>
               <button class="list-btn" onClick={() => onBed(i)}>
-                <Icon name="blight" /> {name(g.grid[i].species!)} · {squareName(i)}
+                <Icon name="blight" /> {name(g.grid[i].species!)} · {squareName(i, g.size)}
               </button>
             </li>
           ))}
@@ -519,7 +524,19 @@ function TendSheet({ g, store, onClose, onBed }: { g: GameState; store: Store; o
   );
 }
 
-function Menu({ g, onClose, onHelp, onTitle }: { g: GameState; onClose: () => void; onHelp: () => void; onTitle: () => void }) {
+function Menu({
+  g,
+  onClose,
+  onHelp,
+  onTitle,
+  onAlmanac,
+}: {
+  g: GameState;
+  onClose: () => void;
+  onHelp: () => void;
+  onTitle: () => void;
+  onAlmanac: () => void;
+}) {
   return (
     <SheetFrame title="Underbrush" onClose={onClose}>
       <p class="small muted">
@@ -528,6 +545,9 @@ function Menu({ g, onClose, onHelp, onTitle }: { g: GameState; onClose: () => vo
       <div class="col">
         <button class="btn" onClick={onHelp}>
           How to play
+        </button>
+        <button class="btn" onClick={onAlmanac}>
+          Almanac: homestead and mastery
         </button>
         <button class="btn" onClick={onTitle}>
           Save and return to title
@@ -538,7 +558,19 @@ function Menu({ g, onClose, onHelp, onTitle }: { g: GameState; onClose: () => vo
   );
 }
 
-export function Game({ store, onHelp, onTitle }: { store: Store; onHelp: () => void; onTitle: () => void }) {
+export function Game({
+  store,
+  onHelp,
+  onTitle,
+  onNewYear,
+  onAlmanac,
+}: {
+  store: Store;
+  onHelp: () => void;
+  onTitle: () => void;
+  onNewYear: () => void;
+  onAlmanac: () => void;
+}) {
   const g = store.game!;
   const [mode, setMode] = useState<Mode>({ kind: 'none' });
   const [sheet, setSheet] = useState<Sheet>(null);
@@ -597,7 +629,7 @@ export function Game({ store, onHelp, onTitle }: { store: Store; onHelp: () => v
     store.act({ type: 'endWeek' });
   };
 
-  if (g.over && !g.night) return <YearEnd store={store} onTitle={onTitle} />;
+  if (g.over && !g.night) return <YearEnd store={store} onTitle={onTitle} onNewYear={onNewYear} />;
 
   const plantSpec = mode.kind === 'plant' ? g.basket.find((b) => b.uid === mode.uid) : null;
   const banner =
@@ -633,7 +665,7 @@ export function Game({ store, onHelp, onTitle }: { store: Store; onHelp: () => v
           </div>
         ) : (
           <div class="banner quiet">
-            <ActionsPips left={g.actionsLeft} total={content.rules.actionsPerRound} />
+            <ActionsPips left={g.actionsLeft} total={actionsPerWeek(g)} />
             <span class="small">
               {g.actionsLeft > 0 ? `${g.actionsLeft} action${g.actionsLeft === 1 ? '' : 's'} left this week` : 'No actions left. Time to rest.'}
             </span>
@@ -695,7 +727,7 @@ export function Game({ store, onHelp, onTitle }: { store: Store; onHelp: () => v
           <p class="small muted">A new weather card turns over every week.</p>
         </SheetFrame>
       )}
-      {sheet?.kind === 'menu' && <Menu g={g} onClose={() => setSheet(null)} onHelp={onHelp} onTitle={onTitle} />}
+      {sheet?.kind === 'menu' && <Menu g={g} onClose={() => setSheet(null)} onHelp={onHelp} onTitle={onTitle} onAlmanac={onAlmanac} />}
       {sheet?.kind === 'market' && <Market g={g} store={store} onClose={() => setSheet(null)} />}
       {(sheet?.kind === 'forage' || g.forage) && <Forage g={g} store={store} onClose={() => setSheet(null)} />}
       {reveal && <Reveal r={reveal} g={g} onDone={() => setReveal(null)} onPlant={startPlant} />}

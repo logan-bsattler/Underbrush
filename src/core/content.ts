@@ -5,7 +5,8 @@ import gearJson from '../data/gear.json';
 import weatherJson from '../data/weather.json';
 import ordersJson from '../data/orders.json';
 import rulesJson from '../data/rules.json';
-import type { Content, GearDef, OrderDef, RulesDef, SpeciesDef, WeatherDef, ZoneDef } from './types';
+import progressionJson from '../data/progression.json';
+import type { Content, GearDef, OrderDef, ProgressionDef, RulesDef, SpeciesDef, WeatherDef, ZoneDef } from './types';
 
 /** Builds the content bundle. Everything balance-related lives in src/data so tabletop and app share it. */
 export function loadContent(): Content {
@@ -14,6 +15,7 @@ export function loadContent(): Content {
   for (const s of all) species[s.id] = s;
   return {
     rules: rulesJson as RulesDef,
+    progression: progressionJson as ProgressionDef,
     species,
     speciesOrder: all.map((s) => s.id),
     zones: zonesJson as ZoneDef[],

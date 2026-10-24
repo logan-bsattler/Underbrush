@@ -1,20 +1,51 @@
 {
   "rounds": 12,
   "roundsPerSeason": 3,
-  "seasons": ["spring", "summer", "fall", "winter"],
+  "seasons": [
+    "spring",
+    "summer",
+    "fall",
+    "winter"
+  ],
   "actionsPerRound": 4,
   "basketSize": 4,
   "biggerBasketSize": 6,
   "startCoins": 3,
   "gridSize": 4,
-  "trees": [2, 9],
+  "trees": [
+    2,
+    9
+  ],
   "streamColumn": 0,
+  "largeFarm": {
+    "size": 5,
+    "extraTrees": [
+      [
+        4,
+        3
+      ]
+    ]
+  },
   "start": {
     "squares": [
-      { "index": 4, "substrate": "straw", "species": "oyster", "stage": "C" },
-      { "index": 8, "substrate": "straw" },
-      { "index": 5, "substrate": "log" },
-      { "index": 6, "substrate": "log" }
+      {
+        "index": 4,
+        "substrate": "straw",
+        "species": "oyster",
+        "stage": "C"
+      },
+      {
+        "index": 8,
+        "substrate": "straw"
+      },
+      {
+        "index": 5,
+        "substrate": "log"
+      },
+      {
+        "index": 6,
+        "substrate": "log"
+      }
     ]
   },
   "ordersVisible": 3,
@@ -27,9 +58,25 @@
   "hybridPoints": 3,
   "plantedPoints": 1,
   "tiers": [
-    { "id": "bronze", "name": "Bronze", "min": 15 },
-    { "id": "silver", "name": "Silver", "min": 25 },
-    { "id": "gold", "name": "Gold", "min": 35 },
-    { "id": "golden", "name": "Golden Chanterelle", "min": 45 }
+    {
+      "id": "bronze",
+      "name": "Bronze",
+      "min": 15
+    },
+    {
+      "id": "silver",
+      "name": "Silver",
+      "min": 25
+    },
+    {
+      "id": "gold",
+      "name": "Gold",
+      "min": 35
+    },
+    {
+      "id": "golden",
+      "name": "Golden Chanterelle",
+      "min": 45
+    }
   ]
 }

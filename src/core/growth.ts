@@ -51,7 +51,7 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
   // 1. Dry
   if (!watered) {
     for (const i of beds()) {
-      if (inStream(i, c)) continue;
+      if (inStream(i, s.size, c)) continue;
       const sq = grid[i];
       sq.dry += 1;
       events.push({ type: 'dry', square: i });
@@ -66,7 +66,7 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
   // 2. Crowding
   for (const i of beds()) {
     const sq = grid[i];
-    const same = neighbors(i, c).filter((n) => grid[n].species === sq.species).length;
+    const same = neighbors(i, s.size).filter((n) => grid[n].species === sq.species).length;
     if (same >= c.rules.crowdingAt && !sq.blight) {
       sq.blight = true;
       events.push({ type: 'blight', square: i, cause: 'crowding' });
@@ -76,7 +76,7 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
   // 3. Blight spreads one step to same-species neighbors
   const blighted = beds().filter((i) => grid[i].blight);
   for (const i of blighted) {
-    for (const n of neighbors(i, c)) {
+    for (const n of neighbors(i, s.size)) {
       const nb = grid[n];
       if (nb.species === grid[i].species && !nb.blight) {
         nb.blight = true;
@@ -95,7 +95,7 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
     if (sq.blight) reason = 'blight';
     else if (stalled) reason = 'dryspell';
     else if (!sq.tent && !inSeason(sp.id, season, c)) reason = 'season';
-    else if (sp.traits.needsShade && !isShaded(grid, i, c)) reason = 'shade';
+    else if (sp.traits.needsShade && !isShaded(grid, i, s.size)) reason = 'shade';
     else if (cold && !sp.traits.coldHardy && !sq.tent) reason = 'cold';
     if (reason) {
       events.push({ type: 'wait', square: i, reason });
@@ -125,7 +125,7 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
   for (const i of fruiting) {
     const sp = def(i);
     if (sp.traits.spreader) {
-      const open = neighbors(i, c).filter((n) => {
+      const open = neighbors(i, s.size).filter((n) => {
         const nb = grid[n];
         return !nb.tree && !nb.species && nb.substrate !== null && sp.substrates.includes(nb.substrate);
       });
@@ -134,7 +134,7 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
         Object.assign(grid[n], { species: sp.id, stage: 'C', hold: 0, dry: 0, blight: false });
         events.push({ type: 'spread', from: i, to: n, species: sp.id });
       } else if (sp.traits.spreader === 'aggressive') {
-        const prey = neighbors(i, c).filter((n) => grid[n].species === 'puffball');
+        const prey = neighbors(i, s.size).filter((n) => grid[n].species === 'puffball');
         if (prey.length) {
           const n = rng.pick(prey);
           Object.assign(grid[n], { species: sp.id, stage: 'C', hold: 0, dry: 0, blight: false });
@@ -143,7 +143,7 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
       }
     }
     if (sp.traits.hungry) {
-      const food = neighbors(i, c).filter((n) => {
+      const food = neighbors(i, s.size).filter((n) => {
         const nb = grid[n];
         return !nb.species && (nb.substrate === 'compost' || nb.substrate === 'woodchip');
       });
@@ -159,7 +159,7 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
   s.pendingCrosses = [];
   const mature = (sq: Square) => sq.species && !sq.blight && (sq.stage === 'C' || sq.stage === 'P' || sq.stage === 'F');
   for (const i of beds()) {
-    for (const n of neighbors(i, c)) {
+    for (const n of neighbors(i, s.size)) {
       if (n <= i) continue;
       const a = grid[i];
       const b = grid[n];

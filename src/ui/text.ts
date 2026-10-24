@@ -17,8 +17,11 @@ export function seasonsText(id: string) {
   return s.map((x) => seasonName[x]).join(', ');
 }
 
-export function squareName(i: number) {
-  const n = content.rules.gridSize;
+export function masteryName(level: number) {
+  return content.progression.mastery.find((m) => m.level === level)?.name ?? 'New';
+}
+
+export function squareName(i: number, n: number) {
   return `row ${Math.floor(i / n) + 1}, col ${(i % n) + 1}`;
 }
 
@@ -39,6 +42,8 @@ export function outcomeText(o: DrawOutcome, card: Card) {
   switch (o) {
     case 'basket':
       return 'Into the basket. What is it really? Identify it at home.';
+    case 'known':
+      return `You'd know ${card.type === 'specimen' ? name(card.species) : 'it'} anywhere. It comes home already identified.`;
     case 'basketFull':
       return 'Your basket is full, so you leave it be.';
     case 'emptyPatch':

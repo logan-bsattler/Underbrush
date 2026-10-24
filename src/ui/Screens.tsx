@@ -1,20 +1,23 @@
-import { content, score } from '../core';
+import { content, masteryLevel, score } from '../core';
 import { Icon, Mushroom, Unknown } from './art';
+import { HomesteadCard } from './Progress';
 import type { Store } from './store';
 import { dailySeed } from './store';
-import { growthName, seasonsText, substrateName } from './text';
+import { growthName, masteryName, seasonsText, substrateName } from './text';
 
 export function Title({
   store,
   onStart,
   onContinue,
   onJournal,
+  onAlmanac,
   onHelp,
 }: {
   store: Store;
   onStart: (mode: 'story' | 'daily') => void;
   onContinue: () => void;
   onJournal: () => void;
+  onAlmanac: () => void;
   onHelp: () => void;
 }) {
   const save = store.game;
@@ -35,17 +38,19 @@ export function Title({
       <h1 class="logo">Underbrush</h1>
       <p class="tagline">Forage the woods. Cultivate a homestead. Fill the festival orders by year's end.</p>
       <div class="col menu">
+        <HomesteadCard journal={store.journal} onAlmanac={onAlmanac} />
         {save && !save.over && (
           <button class="btn primary big" onClick={onContinue}>
             Continue · week {save.round}
           </button>
         )}
         <button class={`btn big ${save && !save.over ? '' : 'primary'}`} onClick={() => onStart('story')}>
-          New year
+          {save && !save.over ? 'Start over with a new year' : 'New year'}
+          <small>Your homestead's unlocks and heirlooms come with you</small>
         </button>
         <button class="btn big" onClick={() => onStart('daily')}>
           Daily year {dailyPlayed ? '· played' : ''}
-          <small>Same weather and decks for everyone today</small>
+          <small>Everyone gets today's weather and decks, with the standard kit</small>
         </button>
         <div class="row">
           <button class="btn grow" onClick={onJournal}>
@@ -87,7 +92,12 @@ export function Journal({ store, onBack }: { store: Store; onBack: () => void })
           return (
             <article class={`plate-card ${known ? '' : 'unknown'} ${sp.kind}`}>
               <div class="plate-art">{known ? <Mushroom species={id} size={84} /> : sp.kind === 'hybrid' ? <span class="q">?</span> : <Unknown species={id} size={84} />}</div>
-              <div class="plate-kind">{sp.kind === 'wild' ? 'Wild only' : sp.kind === 'hybrid' ? 'Hybrid' : 'Cultivated'}</div>
+              <div class="plate-kind">
+                {sp.kind === 'wild' ? 'Wild only' : sp.kind === 'hybrid' ? 'Hybrid' : 'Cultivated'}
+                {masteryLevel(j.idCounts[id] ?? 0) > 0 && (
+                  <span class={`mastery-tag m${masteryLevel(j.idCounts[id] ?? 0)}`}>{masteryName(masteryLevel(j.idCounts[id] ?? 0))}</span>
+                )}
+              </div>
               <h3>{known ? sp.name : sp.kind === 'hybrid' ? 'Unknown hybrid' : sp.group}</h3>
               {known ? (
                 <>
@@ -203,6 +213,18 @@ export function HowTo({ onBack }: { onBack: () => void }) {
         <p>
           If {r.moldBloomAt}+ beds are blighted, a mold bloom costs you an action next week. Stored mushrooms spoil when the season turns unless you
           own a Dehydrator.
+        </p>
+      </section>
+      <section>
+        <h2>Your homestead</h2>
+        <p>
+          Every festival score becomes renown, and renown raises your homestead's level. Levels stock new gear (the Lantern and Trail Map
+          open new zones), give you heirloom slots for carrying gear into the next year, grow the farm to 5×5 and, eventually, bring in a
+          farmhand for a fifth weekly action.
+        </p>
+        <p>
+          Identifying the same species again and again builds mastery: Familiar species fool you less often, you recognize Expert species on
+          sight, and Master species sell for more. Daily years use the standard kit, so everyone plays the same game, but still earn renown.
         </p>
       </section>
       <section>

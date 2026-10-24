@@ -16,8 +16,7 @@ export function inSeason(speciesId: string, season: Season, c: Content = default
   return s.seasons === 'any' || s.seasons.includes(season);
 }
 
-export function neighbors(index: number, c: Content = defaultContent): number[] {
-  const n = c.rules.gridSize;
+export function neighbors(index: number, n: number): number[] {
   const row = Math.floor(index / n);
   const col = index % n;
   const out: number[] = [];
@@ -28,12 +27,22 @@ export function neighbors(index: number, c: Content = defaultContent): number[] 
   return out;
 }
 
-export function isShaded(grid: Square[], index: number, c: Content = defaultContent): boolean {
-  return neighbors(index, c).some((i) => grid[i].tree);
+export function isShaded(grid: Square[], index: number, size: number): boolean {
+  return neighbors(index, size).some((i) => grid[i].tree);
 }
 
-export function inStream(index: number, c: Content = defaultContent): boolean {
-  return index % c.rules.gridSize === c.rules.streamColumn;
+export function inStream(index: number, size: number, c: Content = defaultContent): boolean {
+  return index % size === c.rules.streamColumn;
+}
+
+/** Tree squares and starting beds for a farm of this size; larger farms extend the 4×4 layout right and down. */
+export function farmLayout(size: number, c: Content = defaultContent) {
+  const base = c.rules.gridSize;
+  const at = (i: number) => Math.floor(i / base) * size + (i % base);
+  const trees = c.rules.trees.map(at);
+  if (size === c.rules.largeFarm.size) for (const [r, col] of c.rules.largeFarm.extraTrees) trees.push(r * size + col);
+  const start = c.rules.start.squares.map((sq) => ({ ...sq, index: at(sq.index) }));
+  return { trees, start };
 }
 
 export function hybridFor(a: string, b: string, c: Content = defaultContent): string | null {

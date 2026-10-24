@@ -1,7 +1,7 @@
 import { content as defaultContent } from './content';
 import { Rng, hashSeed } from './rng';
 import { runGrowth } from './growth';
-import { crossKey, hybridFor, inSeason, seasonOf } from './board';
+import { crossKey, farmLayout, hybridFor, inSeason, seasonOf } from './board';
 
 export * from './board';
 import type {
@@ -11,6 +11,7 @@ import type {
   Content,
   GameState,
   OrderDef,
+  Perks,
   Square,
   Substrate,
   ZoneDef,
@@ -29,11 +30,30 @@ export function basketCapacity(s: GameState, c: Content = defaultContent): numbe
   return base + (s.weather === 'goodseason' ? 1 : 0);
 }
 
-export type ZoneStatus = { open: true } | { open: false; reason: string };
+export function masteryOf(s: GameState, speciesId: string): number {
+  return s.perks.mastery[speciesId] ?? 0;
+}
+
+/** The highest identification roll that still turns out to be a lookalike; Familiar species fool you on one fewer. */
+export function lookalikeOn(s: GameState, speciesId: string, c: Content = defaultContent): number {
+  const on = c.species[speciesId].lookalike?.on ?? 1;
+  return Math.max(0, on - (masteryOf(s, speciesId) >= 1 ? 1 : 0));
+}
+
+export function saleValue(s: GameState, speciesId: string, c: Content = defaultContent): number {
+  return c.species[speciesId].value + (s.weather === 'marketday' ? 1 : 0) + (masteryOf(s, speciesId) >= 3 ? 1 : 0);
+}
+
+export function actionsPerWeek(s: GameState, c: Content = defaultContent): number {
+  return c.rules.actionsPerRound + s.perks.bonusActions;
+}
+
+export type ZoneStatus = { open: true } | { open: false; reason: string; notStocked?: boolean };
 
 export function zoneStatus(s: GameState, zone: ZoneDef, c: Content = defaultContent): ZoneStatus {
   if (zone.unlock && !s.gear.includes(zone.unlock)) {
     const gear = c.gear.find((g) => g.id === zone.unlock);
+    if (!s.perks.shop.includes(zone.unlock)) return { open: false, reason: 'Not on your map yet', notStocked: true };
     return { open: false, reason: `Needs the ${gear?.name ?? zone.unlock}` };
   }
   const season = seasonOf(s.round, c);
@@ -100,6 +120,21 @@ export function score(s: GameState, c: Content = defaultContent) {
 export interface NewGameOptions {
   seed?: string;
   mode?: GameState['mode'];
+  perks?: Perks;
+}
+
+/** The kit as printed: every gear in the shop, a 4×4 farm, no mastery. Daily years always use this. */
+export function standardPerks(c: Content = defaultContent): Perks {
+  return { shop: c.gear.map((g) => g.id), heirlooms: [], mastery: {}, bonusCoins: 0, bonusActions: 0, size: c.rules.gridSize };
+}
+
+/** Brings a save from an older build up to the current shape. */
+export function migrateState(s: GameState, c: Content = defaultContent): GameState {
+  if (!s.size) s.size = c.rules.gridSize;
+  if (!s.perks) s.perks = standardPerks(c);
+  s.perks.bonusActions ??= 0;
+  if (!s.stats.identified) s.stats.identified = {};
+  return s;
 }
 
 function buildDeck(zone: ZoneDef): Card[] {
@@ -119,8 +154,11 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
   const seed = opts.seed ?? `${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
   const rng = new Rng(hashSeed(seed));
   const r = c.rules;
-  const grid: Square[] = Array.from({ length: r.gridSize * r.gridSize }, (_, i) => ({
-    tree: r.trees.includes(i),
+  const perks = opts.perks ?? standardPerks(c);
+  const size = perks.size;
+  const layout = farmLayout(size, c);
+  const grid: Square[] = Array.from({ length: size * size }, (_, i) => ({
+    tree: layout.trees.includes(i),
     substrate: null,
     species: null,
     stage: null,
@@ -129,7 +167,7 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     blight: false,
     tent: false,
   }));
-  for (const sq of r.start.squares) {
+  for (const sq of layout.start) {
     grid[sq.index].substrate = sq.substrate;
     if (sq.species) {
       grid[sq.index].species = sq.species;
@@ -144,16 +182,18 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     version: 1,
     mode: opts.mode ?? 'story',
     seed,
+    size,
+    perks,
     rng: 0,
     round: 1,
-    actionsLeft: r.actionsPerRound,
+    actionsLeft: r.actionsPerRound + perks.bonusActions,
     weather: 'clear',
-    coins: r.startCoins,
+    coins: r.startCoins + perks.bonusCoins,
     grid,
     basket: [],
     shed: [],
     storage: {},
-    gear: [],
+    gear: perks.heirlooms.slice(),
     tentPlaced: false,
     decks,
     orders: { visible: orderDeck.slice(0, r.ordersVisible), deck: orderDeck.slice(r.ordersVisible), filled: [] },
@@ -171,7 +211,7 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     moldPenalty: 0,
     nextUid: 1,
     tripCount: 0,
-    stats: { tendActions: [0], idleActions: [], busts: 0, trips: 0, lookalikes: 0, coinsEarned: 0 },
+    stats: { identified: {}, tendActions: [0], idleActions: [], busts: 0, trips: 0, lookalikes: 0, coinsEarned: 0 },
     over: false,
   };
   rollWeather(s, rng, c);
@@ -270,10 +310,20 @@ export function dispatch(
           outcome.outcome = 'emptyPatch';
         } else if (s.basket.length >= basketCapacity(s, c)) {
           outcome.outcome = 'basketFull';
+        } else if (masteryOf(s, sp.id) >= 2 && sp.kind === 'wild') {
+          // An Expert recognizes it on sight; wild finds go straight to storage.
+          addStorage(s, sp.id);
+          s.stats.identified[sp.id] = (s.stats.identified[sp.id] ?? 0) + 1;
+          outcome.outcome = 'known';
         } else {
           const uid = s.nextUid++;
-          s.basket.push({ uid, species: card.species, identified: false, trip: trip.id });
+          const known = masteryOf(s, sp.id) >= 2;
+          s.basket.push({ uid, species: card.species, identified: known, trip: trip.id });
           trip.picked.push(uid);
+          if (known) {
+            s.stats.identified[sp.id] = (s.stats.identified[sp.id] ?? 0) + 1;
+            outcome.outcome = 'known';
+          }
         }
       } else if (card.type === 'coins') {
         s.coins += card.amount;
@@ -324,9 +374,10 @@ export function dispatch(
       const sp = c.species[spec.species];
       const rolls = s.gear.includes('fieldguide') ? [rng.die(6), rng.die(6)] : [rng.die(6)];
       const kept = Math.max(...rolls);
-      const real = kept > (sp.lookalike?.on ?? 1);
+      const real = kept > lookalikeOn(s, sp.id, c);
       if (real) {
         spec.identified = true;
+        s.stats.identified[sp.id] = (s.stats.identified[sp.id] ?? 0) + 1;
         if (!s.discovered.includes(sp.id)) s.discovered.push(sp.id);
         if (sp.kind === 'wild') {
           s.basket = s.basket.filter((b) => b.uid !== spec.uid);
@@ -424,7 +475,7 @@ export function dispatch(
       const n = Math.min(action.count, have);
       if (n <= 0) fail('Nothing of that kind to sell.');
       openMarketVisit(s);
-      const each = c.species[action.species].value + (s.weather === 'marketday' ? 1 : 0);
+      const each = saleValue(s, action.species, c);
       takeStorage(s, action.species, n);
       s.coins += each * n;
       s.stats.coinsEarned += each * n;
@@ -455,6 +506,7 @@ export function dispatch(
       guardIdle(s);
       const gear = c.gear.find((g) => g.id === action.gear) ?? fail('Unknown gear.');
       if (s.gear.includes(gear.id)) fail('You already own that.');
+      if (!s.perks.shop.includes(gear.id)) fail("The market doesn't stock that yet.");
       if (s.coins < gear.cost) fail(`${gear.name} costs ${gear.cost} coins.`);
       openMarketVisit(s);
       s.coins -= gear.cost;
@@ -521,7 +573,7 @@ export function dispatch(
           report.events.push({ type: 'season', season: seasonOf(s.round + 1, c) });
         }
         s.round += 1;
-        s.actionsLeft = c.rules.actionsPerRound - s.moldPenalty;
+        s.actionsLeft = actionsPerWeek(s, c) - s.moldPenalty;
         s.watered = false;
         s.stats.tendActions[s.round - 1] = 0;
         rollWeather(s, rng, c);

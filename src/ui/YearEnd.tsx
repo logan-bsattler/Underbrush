@@ -1,15 +1,17 @@
 import { content, score } from '../core';
 import { Mushroom } from './art';
+import { RenownPanel } from './Progress';
 import type { Store } from './store';
 import { name } from './text';
 
-export function YearEnd({ store, onTitle }: { store: Store; onTitle: () => void }) {
+export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: () => void; onNewYear: () => void }) {
   const g = store.game!;
   const sc = score(g);
   const next = content.rules.tiers.find((t) => t.min > sc.total);
   const tend = g.stats.tendActions.reduce((a, b) => a + b, 0);
   const idle = g.stats.idleActions.reduce((a, b) => a + b, 0);
   const fresh = store.freshThisYear;
+  const record = store.journal.years.find((y) => y.seed === g.seed);
 
   return (
     <div class="screen festival paper">
@@ -22,6 +24,8 @@ export function YearEnd({ store, onTitle }: { store: Store; onTitle: () => void 
       <p class="center">
         {next ? `${next.min - sc.total} more points would have earned ${next.name}.` : 'The village will talk about this festival for years.'}
       </p>
+
+      {record && <RenownPanel record={record} journal={store.journal} />}
 
       <table class="score-table">
         <tbody>
@@ -88,7 +92,7 @@ export function YearEnd({ store, onTitle }: { store: Store; onTitle: () => void 
       </details>
 
       <div class="col">
-        <button class="btn primary big" onClick={() => store.start('story')}>
+        <button class="btn primary big" onClick={onNewYear}>
           Start a new year
         </button>
         <button class="btn" onClick={onTitle}>

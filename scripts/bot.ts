@@ -2,11 +2,19 @@ import {
   content,
   dispatch,
   emptyGround,
+  heirloomChoices,
+  heirloomSlots,
+  inStream,
+  levelFor,
+  newGame,
   orderPayment,
+  perksFor,
+  recordYear,
   plantableSquares,
   zoneStatus,
   type Action,
   type GameState,
+  type Journal,
 } from '../src/core';
 
 /**
@@ -45,7 +53,7 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
         act({ type: 'harvest' });
         continue;
       }
-      const thirsty = s.grid.filter((sq, i) => sq.species && i % 4 !== 0).length;
+      const thirsty = s.grid.filter((sq, i) => sq.species && !inStream(i, s.size)).length;
       if (!s.watered && s.weather !== 'rain' && (s.weather === 'dryspell' ? s.grid.some((q) => q.species) : thirsty >= 2)) {
         act({ type: 'water' });
         continue;
@@ -62,7 +70,9 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
       }
       const fillable = s.orders.visible.find((o) => orderPayment(s.storage, content.orders.find((x) => x.id === o)!));
       const wanted = ['biggerbasket', 'knife', 'lantern', 'dehydrator', 'fieldguide', 'growtent', 'trailmap'];
-      const affordable = wanted.find((g) => !s.gear.includes(g) && s.coins >= content.gear.find((x) => x.id === g)!.cost);
+      const affordable = wanted.find(
+        (g) => !s.gear.includes(g) && s.perks.shop.includes(g) && s.coins >= content.gear.find((x) => x.id === g)!.cost,
+      );
       const lastWeekOfSeason = s.round % 3 === 0;
       if (fillable || affordable || (lastWeekOfSeason && Object.keys(s.storage).length && !s.gear.includes('dehydrator'))) {
         if (fillable) act({ type: 'fillOrder', order: fillable });
@@ -77,7 +87,7 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
         }
         for (const g of wanted) {
           const def = content.gear.find((x) => x.id === g)!;
-          if (!s.gear.includes(g) && s.coins >= def.cost) act({ type: 'buyGear', gear: g });
+          if (!s.gear.includes(g) && s.perks.shop.includes(g) && s.coins >= def.cost) act({ type: 'buyGear', gear: g });
         }
         if (s.market) {
           act({ type: 'leaveMarket' });
@@ -99,4 +109,20 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
     act({ type: 'endWeek' });
   }
   return s;
+}
+
+const HEIRLOOM_PREFERENCE = ['biggerbasket', 'knife', 'lantern', 'fieldguide', 'dehydrator', 'growtent', 'trailmap'];
+
+/** Plays a story campaign of several years, carrying the journal (and so the progression) forward. */
+export function playCampaign(years: number, seed: string, journal: Journal): { journal: Journal; games: GameState[] } {
+  const games: GameState[] = [];
+  for (let y = 0; y < years; y++) {
+    const slots = heirloomSlots(levelFor(journal.renown).level);
+    const choices = heirloomChoices(journal);
+    const heirlooms = HEIRLOOM_PREFERENCE.filter((g) => choices.includes(g)).slice(0, slots);
+    const end = playYear(newGame({ seed: `${seed}-y${y}`, perks: perksFor(journal, heirlooms) }));
+    journal = recordYear(journal, end);
+    games.push(end);
+  }
+  return { journal, games };
 }

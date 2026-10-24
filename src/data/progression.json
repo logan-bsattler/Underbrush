@@ -1,0 +1,129 @@
+{
+  "levels": [
+    {
+      "level": 1,
+      "title": "Newcomer",
+      "renown": 0,
+      "blurb": "A borrowed basket, two zones and the basic kit.",
+      "unlocks": [
+        {
+          "type": "gear",
+          "id": "biggerbasket"
+        },
+        {
+          "type": "gear",
+          "id": "fieldguide"
+        },
+        {
+          "type": "gear",
+          "id": "knife"
+        },
+        {
+          "type": "gear",
+          "id": "dehydrator"
+        }
+      ]
+    },
+    {
+      "level": 2,
+      "title": "Gatherer",
+      "renown": 15,
+      "blurb": "The village knows your name. Carry a favorite tool into the new year.",
+      "unlocks": [
+        {
+          "type": "heirloomSlot"
+        },
+        {
+          "type": "gear",
+          "id": "growtent"
+        }
+      ]
+    },
+    {
+      "level": 3,
+      "title": "Forager",
+      "renown": 40,
+      "blurb": "The chandler starts stocking lanterns for you.",
+      "unlocks": [
+        {
+          "type": "gear",
+          "id": "lantern"
+        }
+      ]
+    },
+    {
+      "level": 4,
+      "title": "Grower",
+      "renown": 70,
+      "blurb": "You clear the brambles behind the shed, and the first year's profits come back to you.",
+      "unlocks": [
+        {
+          "type": "farmSize",
+          "size": 5
+        },
+        {
+          "type": "startCoins",
+          "amount": 2
+        }
+      ]
+    },
+    {
+      "level": 5,
+      "title": "Mycophile",
+      "renown": 105,
+      "blurb": "An old forester sketches you a map of last summer's fire.",
+      "unlocks": [
+        {
+          "type": "heirloomSlot"
+        },
+        {
+          "type": "gear",
+          "id": "trailmap"
+        }
+      ]
+    },
+    {
+      "level": 6,
+      "title": "Steward",
+      "renown": 150,
+      "blurb": "A neighbor's kid starts helping out on the farm.",
+      "unlocks": [
+        {
+          "type": "actions",
+          "amount": 1
+        }
+      ]
+    },
+    {
+      "level": 7,
+      "title": "Elder of the Wood",
+      "renown": 210,
+      "blurb": "People bring you mushrooms to identify now.",
+      "unlocks": [
+        {
+          "type": "heirloomSlot"
+        }
+      ]
+    }
+  ],
+  "mastery": [
+    {
+      "level": 1,
+      "name": "Familiar",
+      "ids": 3,
+      "rule": "Lookalikes fool you on one fewer number."
+    },
+    {
+      "level": 2,
+      "name": "Expert",
+      "ids": 8,
+      "rule": "You know it on sight: it comes home already identified."
+    },
+    {
+      "level": 3,
+      "name": "Master",
+      "ids": 16,
+      "rule": "Sells for 1 coin more."
+    }
+  ]
+}

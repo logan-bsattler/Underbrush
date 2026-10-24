@@ -1,11 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import {
   dispatch as apply,
-  emptyJournal,
   GameError,
   mergeDiscoveries,
+  migrateState,
   newGame,
+  normalizeJournal,
+  perksFor,
   recordYear,
+  standardPerks,
   type Action,
   type ActionResult,
   type GameState,
@@ -35,7 +38,7 @@ function write(key: string, value: unknown) {
 
 export function loadSave(): GameState | null {
   const s = read<GameState>(SAVE_KEY);
-  return s && s.version === 1 ? s : null;
+  return s && s.version === 1 ? migrateState(s) : null;
 }
 
 export function dailySeed(d = new Date()) {
@@ -50,13 +53,14 @@ export interface Store {
   error: string | null;
   last: ActionResult | null;
   act: (a: Action) => ActionResult | null;
-  start: (mode: GameState['mode']) => void;
+  /** Starts a year. Story years bring the homestead's progression and the packed heirlooms; daily years use the standard kit. */
+  start: (mode: GameState['mode'], heirlooms?: string[]) => void;
   clearError: () => void;
 }
 
 export function useStore(): Store {
   const [game, setGame] = useState<GameState | null>(() => loadSave());
-  const [journal, setJournal] = useState<Journal>(() => read<Journal>(JOURNAL_KEY) ?? emptyJournal());
+  const [journal, setJournal] = useState<Journal>(() => normalizeJournal(read<Journal>(JOURNAL_KEY)));
   const [freshThisYear, setFresh] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [last, setLast] = useState<ActionResult | null>(null);
@@ -102,8 +106,11 @@ export function useStore(): Store {
   );
 
   const start = useCallback(
-    (mode: GameState['mode']) => {
-      const g = newGame(mode === 'daily' ? { mode, seed: dailySeed() } : { mode });
+    (mode: GameState['mode'], heirlooms: string[] = []) => {
+      const g =
+        mode === 'daily'
+          ? newGame({ mode, seed: dailySeed(), perks: standardPerks() })
+          : newGame({ mode, perks: perksFor(journalRef.current, heirlooms) });
       setFresh([]);
       setLast(null);
       commit(g);

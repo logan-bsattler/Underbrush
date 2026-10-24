@@ -24,6 +24,7 @@ npm run build      # static site in dist/, deployable anywhere
 npm test           # rules-core tests, including 60 bot-played years as a fuzz test
 npm run typecheck
 npm run sim -- 500 # pacing report: score spread, tiers, tend actions per week, bust rate
+npm run sim -- 100 campaign  # ten-year campaigns with progression: level and score by year
 ```
 
 ## Layout
@@ -31,7 +32,8 @@ npm run sim -- 500 # pacing report: score spread, tiers, tend actions per week, 
 | Path | What lives there |
 | --- | --- |
 | `src/data/*.json` | All content and balance: species, hybrids, zones and their decks, gear, weather, orders, rules and tiers |
-| `src/core/` | The rules engine. Pure, deterministic (seeded RNG stored in the save), no DOM |
+| `src/data/progression.json` | Homestead levels, their unlocks, and species mastery thresholds |
+| `src/core/` | The rules engine. Pure, deterministic (seeded RNG stored in the save), no DOM. `progression.ts` turns the journal into a year's perks |
 | `src/ui/` | Preact UI: farm, forage trip, identify reveal, market, overnight report, journal |
 | `scripts/` | Baseline bot and the pacing simulator |
 | `tests/` | Vitest suite for the engine |

@@ -114,7 +114,7 @@ function CrossPrompt({ g, store }: { g: GameState; store: Store }) {
           {([x.a, x.b] as const).map((sq) => (
             <button class={`choice ${pick === sq ? 'on' : ''}`} aria-pressed={pick === sq} onClick={() => setPick(sq)}>
               <b>{name(g.grid[sq].species!)} bed</b>
-              <small>{squareName(sq)}</small>
+              <small>{squareName(sq, g.size)}</small>
             </button>
           ))}
         </div>

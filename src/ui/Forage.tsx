@@ -1,9 +1,9 @@
 import { useRef } from 'preact/hooks';
-import { basketCapacity, content, zoneStatus, type Card, type DrawOutcome, type GameState } from '../core';
-import { Icon, SubstrateArt, Unknown } from './art';
+import { basketCapacity, content, gearUnlockLevel, zoneStatus, type Card, type DrawOutcome, type GameState } from '../core';
+import { Icon, Mushroom, SubstrateArt, Unknown } from './art';
 import { SheetFrame } from './Game';
 import type { Store } from './store';
-import { cardTitle, outcomeText } from './text';
+import { cardTitle, name, outcomeText } from './text';
 
 function buzz(ms: number | number[]) {
   try {
@@ -19,7 +19,8 @@ export function CardFace({ card, outcome, small }: { card: Card; outcome?: DrawO
   return (
     <div class={cls}>
       <div class="fcard-art">
-        {card.type === 'specimen' && <Unknown species={card.species} size={size} />}
+        {card.type === 'specimen' &&
+          (outcome === 'known' ? <Mushroom species={card.species} size={size} /> : <Unknown species={card.species} size={size} />)}
         {card.type === 'substrate' && <SubstrateArt substrate={card.substrate} size={size} />}
         {card.type === 'coins' && <Icon name="coin" size={small ? 26 : 84} />}
         {card.type === 'hazard' && <Icon name="hazard" size={small ? 26 : 84} />}
@@ -27,11 +28,18 @@ export function CardFace({ card, outcome, small }: { card: Card; outcome?: DrawO
       {!small && (
         <>
           <div class="fcard-kind">{card.type === 'specimen' ? 'Specimen' : card.type === 'hazard' ? 'Hazard' : 'Find'}</div>
-          <div class="fcard-title">{cardTitle(card)}</div>
+          <div class="fcard-title">{outcome === 'known' && card.type === 'specimen' ? name(card.species) : cardTitle(card)}</div>
         </>
       )}
     </div>
   );
+}
+
+function lockedText(unlock: string | null, st: { reason: string; notStocked?: boolean }) {
+  const at = unlock && st.notStocked ? gearUnlockLevel(unlock) : null;
+  if (!at) return st.reason;
+  const gear = content.gear.find((g) => g.id === unlock)!;
+  return `The ${gear.name} that opens it is stocked once your homestead reaches ${at.title} (level ${at.level}).`;
 }
 
 function ZonePicker({ g, store, onClose }: { g: GameState; store: Store; onClose: () => void }) {
@@ -51,7 +59,7 @@ function ZonePicker({ g, store, onClose }: { g: GameState; store: Store; onClose
             >
               <span class="zone-wash" aria-hidden="true" />
               <span class="zone-name">{z.name}</span>
-              <span class="zone-blurb">{st.open ? z.blurb : st.reason}</span>
+              <span class="zone-blurb">{st.open ? z.blurb : lockedText(z.unlock, st)}</span>
               <span class="zone-meta">
                 <span>Hazard: {z.hazard}</span>
                 <span>{finds.map((id) => content.species[id].group).join(' · ')}</span>

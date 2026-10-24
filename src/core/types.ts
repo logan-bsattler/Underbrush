@@ -104,6 +104,8 @@ export interface RulesDef {
   gridSize: number;
   trees: number[];
   streamColumn: number;
+  /** The farm after the "Grower" unlock: the 4×4 layout plus a row and column, and these extra trees as [row, col]. */
+  largeFarm: { size: number; extraTrees: [number, number][] };
   start: { squares: { index: number; substrate: Substrate; species?: string; stage?: Stage }[] };
   ordersVisible: number;
   bustAt: number;
@@ -117,8 +119,37 @@ export interface RulesDef {
   tiers: TierDef[];
 }
 
+export type Unlock =
+  | { type: 'gear'; id: string }
+  | { type: 'heirloomSlot' }
+  | { type: 'farmSize'; size: number }
+  | { type: 'startCoins'; amount: number }
+  | { type: 'actions'; amount: number };
+
+export interface LevelDef {
+  level: number;
+  title: string;
+  renown: number;
+  blurb: string;
+  unlocks: Unlock[];
+}
+
+export interface MasteryDef {
+  level: number;
+  name: string;
+  /** Real identifications of a species, across all years, to reach this level. */
+  ids: number;
+  rule: string;
+}
+
+export interface ProgressionDef {
+  levels: LevelDef[];
+  mastery: MasteryDef[];
+}
+
 export interface Content {
   rules: RulesDef;
+  progression: ProgressionDef;
   species: Record<string, SpeciesDef>;
   speciesOrder: string[];
   zones: ZoneDef[];
@@ -163,6 +194,7 @@ export interface ForageTrip {
 
 export type DrawOutcome =
   | 'basket'
+  | 'known'
   | 'basketFull'
   | 'emptyPatch'
   | 'coins'
@@ -198,6 +230,8 @@ export interface NightReport {
 }
 
 export interface Stats {
+  /** Real identifications per species this year; feeds species mastery. */
+  identified: Record<string, number>;
   tendActions: number[];
   idleActions: number[];
   busts: number;
@@ -206,10 +240,26 @@ export interface Stats {
   coinsEarned: number;
 }
 
+/** What the homestead's progression brings into a year. Daily years use the standard kit. */
+export interface Perks {
+  /** Gear the market stocks this year. */
+  shop: string[];
+  /** Gear you own from the first week. */
+  heirlooms: string[];
+  /** Species mastery level by species id (0 when absent). */
+  mastery: Record<string, number>;
+  bonusCoins: number;
+  bonusActions: number;
+  size: number;
+}
+
 export interface GameState {
   version: 1;
   mode: 'story' | 'daily';
   seed: string;
+  /** Farm width and height in squares. */
+  size: number;
+  perks: Perks;
   rng: number;
   round: number;
   actionsLeft: number;

@@ -1,4 +1,4 @@
-import { content, orderPayment, type GameState } from '../core';
+import { content, gearUnlockLevel, orderPayment, saleValue, type GameState } from '../core';
 import { Icon, Mushroom } from './art';
 import { SheetFrame } from './Game';
 import type { Store } from './store';
@@ -9,7 +9,6 @@ export function Market({ g, store, onClose }: { g: GameState; store: Store; onCl
     if (g.market) store.act({ type: 'leaveMarket' });
     onClose();
   };
-  const bonus = g.weather === 'marketday' ? 1 : 0;
   const stored = content.speciesOrder.filter((id) => (g.storage[id] ?? 0) > 0);
   const canTrade = !!g.market || g.actionsLeft > 0;
   const lastWeek = g.round % content.rules.roundsPerSeason === 0 && g.round < content.rules.rounds;
@@ -57,7 +56,7 @@ export function Market({ g, store, onClose }: { g: GameState; store: Store; onCl
       ) : (
         <ul class="storage">
           {stored.map((id) => {
-            const each = content.species[id].value + bonus;
+            const each = saleValue(g, id);
             return (
               <li>
                 <Mushroom species={id} size={40} />
@@ -85,12 +84,24 @@ export function Market({ g, store, onClose }: { g: GameState; store: Store; onCl
       <div class="gear">
         {content.gear.map((gear) => {
           const owned = g.gear.includes(gear.id);
+          const stocked = g.perks.shop.includes(gear.id);
+          if (!stocked) {
+            const at = gearUnlockLevel(gear.id);
+            return (
+              <div class="gear-card locked">
+                <div class="gear-top">
+                  <b>{gear.name}</b>
+                </div>
+                <div class="small muted">{at ? `Stocked once your homestead reaches ${at.title} (level ${at.level}).` : 'Not stocked.'}</div>
+              </div>
+            );
+          }
           return (
             <div class={`gear-card ${owned ? 'owned' : ''}`}>
               <div class="gear-top">
                 <b>{gear.name}</b>
                 <span class="cost">
-                  {owned ? 'Owned' : (
+                  {owned ? (g.perks.heirlooms.includes(gear.id) ? 'Heirloom' : 'Owned') : (
                     <>
                       <Icon name="coin" size={14} /> {gear.cost}
                     </>
