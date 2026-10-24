@@ -41,7 +41,7 @@ export function Title({
         <HomesteadCard journal={store.journal} onAlmanac={onAlmanac} />
         {save && !save.over && (
           <button class="btn primary big" onClick={onContinue}>
-            Continue · week {save.round}
+            Continue · {save.finale ? 'festival morning' : `week ${save.round}`}
           </button>
         )}
         <button class={`btn big ${save && !save.over ? '' : 'primary'}`} onClick={() => onStart('story')}>
@@ -155,7 +155,8 @@ export function HowTo({ onBack }: { onBack: () => void }) {
         <h2>The year</h2>
         <p>
           {r.rounds} weeks, {r.roundsPerSeason} per season. Each week a weather card turns, you take{' '}
-          {r.actionsPerRound} actions, then you sleep and the farm grows on its own. At year's end the village Harvest Festival scores your
+          {r.actionsPerRound} actions, then you sleep and the farm grows on its own. After the last night you get a festival morning: one last harvest and one
+          market visit, free of actions. Then the village Harvest Festival scores your
           delivered orders, +{r.hybridPoints} for every kind of hybrid you made and +{r.plantedPoints} for every species you planted.
         </p>
       </section>

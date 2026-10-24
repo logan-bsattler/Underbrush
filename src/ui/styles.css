@@ -2268,3 +2268,13 @@ button.chip {
   border-color: #6e5236;
   color: #3e2c1c;
 }
+
+.banner.festival {
+  background: linear-gradient(90deg, var(--gold), #e2b64b);
+  color: #3e2c08;
+}
+.act.end.festival {
+  background: var(--gold);
+  border-color: var(--rust-dark);
+  color: #3e2c08;
+}

@@ -136,6 +136,7 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   s.perks.bonusActions ??= 0;
   if (!s.stats.identified) s.stats.identified = {};
   s.compostPile ??= [];
+  s.finale ??= null;
   s.stats.scraps ??= s.compostPile.length;
   s.stats.compostTiles ??= 0;
   // A trip saved by the older draw-one-card build ends where it stood; its finds are already in the basket.
@@ -220,6 +221,7 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     declinedCrosses: [],
     night: null,
     moldPenalty: 0,
+    finale: null,
     nextUid: 1,
     tripCount: 0,
     stats: {
@@ -262,10 +264,19 @@ function noteTend(s: GameState) {
 }
 
 function openMarketVisit(s: GameState) {
-  if (!s.market) {
+  if (s.market) return;
+  if (s.finale) {
+    if (s.finale.marketed) fail("You've had your last market visit. Time for the festival.");
+    s.finale.marketed = true;
+  } else {
     spendAction(s);
-    s.market = { orderFilled: false };
   }
+  s.market = { orderFilled: false };
+}
+
+/** On festival morning only the last harvest and market visit are open. */
+function guardFinale(s: GameState) {
+  if (s.finale) fail('It is festival morning: there is time for one last harvest and a market visit, nothing more.');
 }
 
 /** Takes the top card of a zone deck, reshuffling the discards when it runs out. Null if every card is out. */
@@ -326,6 +337,7 @@ export function dispatch(
   switch (action.type) {
     case 'forage': {
       guardIdle(s);
+      guardFinale(s);
       if (s.forage) s.forage = null;
       const zone = c.zones.find((z) => z.id === action.zone) ?? fail('Unknown zone.');
       const status = zoneStatus(s, zone, c);
@@ -434,6 +446,7 @@ export function dispatch(
 
     case 'identify': {
       guardIdle(s);
+      guardFinale(s);
       const spec = specimenFor(s, action.uid);
       if (spec.identified) fail('Already identified.');
       spendAction(s);
@@ -462,6 +475,7 @@ export function dispatch(
 
     case 'plant': {
       guardIdle(s);
+      guardFinale(s);
       const spec = specimenFor(s, action.uid);
       if (!spec.identified) fail('Identify it before you plant it.');
       if (c.species[spec.species].kind !== 'cultivated') fail("That one can't be planted.");
@@ -501,6 +515,7 @@ export function dispatch(
 
     case 'water': {
       guardIdle(s);
+      guardFinale(s);
       if (s.watered) fail('Already watered this week.');
       spendAction(s);
       s.market = null;
@@ -511,6 +526,7 @@ export function dispatch(
 
     case 'clearBlight': {
       guardIdle(s);
+      guardFinale(s);
       const sq = s.grid[action.square];
       if (!sq?.blight) fail('That bed has no blight.');
       spendAction(s);
@@ -523,9 +539,11 @@ export function dispatch(
 
     case 'harvest': {
       guardIdle(s);
+      if (s.finale?.harvested) fail("You've brought in the last harvest. Time for the festival.");
       const ready = s.grid.filter((sq) => sq.stage === 'F' && !sq.blight && sq.species);
       if (!ready.length) fail('Nothing is fruiting yet.');
-      spendAction(s);
+      if (s.finale) s.finale.harvested = true;
+      else spendAction(s);
       s.market = null;
       const gained: Record<string, number> = {};
       for (const sq of ready) {
@@ -574,6 +592,7 @@ export function dispatch(
     case 'buyGear': {
       guardIdle(s);
       const gear = c.gear.find((g) => g.id === action.gear) ?? fail('Unknown gear.');
+      if (s.finale) fail("The shop isn't selling gear on festival day.");
       if (s.gear.includes(gear.id)) fail('You already own that.');
       if (!s.perks.shop.includes(gear.id)) fail("The market doesn't stock that yet.");
       if (s.coins < gear.cost) fail(`${gear.name} costs ${gear.cost} coins.`);
@@ -626,6 +645,7 @@ export function dispatch(
 
     case 'endWeek': {
       guardIdle(s);
+      guardFinale(s);
       s.forage = null;
       s.market = null;
       s.stats.idleActions[s.round - 1] = s.actionsLeft;
@@ -647,8 +667,11 @@ export function dispatch(
         report.events.push({ type: 'compost', tiles });
       }
       if (final) {
-        s.over = true;
-        s.pendingCrosses = [];
+        // No week 13: the morning after is the festival, with time for one last harvest and market visit.
+        s.finale = { harvested: false, marketed: false };
+        s.actionsLeft = 0;
+        s.watered = false;
+        s.weather = 'clear';
       } else {
         if (seasonTurns) report.events.push({ type: 'season', season: seasonOf(s.round + 1, c) });
         s.round += 1;
@@ -660,6 +683,15 @@ export function dispatch(
       }
       s.night = report;
       result = { kind: 'night', report };
+      break;
+    }
+
+    case 'festival': {
+      if (!s.finale) fail('The festival is at the end of the year.');
+      if (s.pendingCrosses.length) fail('Decide on the hybrids first.');
+      s.market = null;
+      s.finale = null;
+      s.over = true;
       break;
     }
 

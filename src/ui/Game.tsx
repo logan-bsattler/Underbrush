@@ -81,19 +81,21 @@ function Hud({ g, onWeather, onMenu }: { g: GameState; onWeather: () => void; on
     <header class="hud">
       <div class="hud-week">
         <div class="hud-title">
-          Week {g.round}
-          <span class="hud-season">{weekLabel(g.round)}</span>
+          {g.finale ? 'Festival morning' : `Week ${g.round}`}
+          {!g.finale && <span class="hud-season">{weekLabel(g.round)}</span>}
         </div>
         <div class="year-track" aria-hidden="true">
           {Array.from({ length: content.rules.rounds }, (_, i) => (
-            <span class={`yt yt-${seasonOf(i + 1)} ${i + 1 < g.round ? 'done' : i + 1 === g.round ? 'now' : ''}`} />
+            <span class={`yt yt-${seasonOf(i + 1)} ${i + 1 < g.round || g.finale ? 'done' : i + 1 === g.round ? 'now' : ''}`} />
           ))}
         </div>
       </div>
-      <button class="chip weather" onClick={onWeather} aria-label={`Weather: ${weather.name}`}>
-        <Icon name={weather.id} size={18} />
-        <span class="weather-name">{weather.name}</span>
-      </button>
+      {!g.finale && (
+        <button class="chip weather" onClick={onWeather} aria-label={`Weather: ${weather.name}`}>
+          <Icon name={weather.id} size={18} />
+          <span class="weather-name">{weather.name}</span>
+        </button>
+      )}
       <span class="chip coins" aria-label={`${g.coins} coins`}>
         <Icon name="coin" size={18} />
         {g.coins}
@@ -359,15 +361,19 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
           <p class="note warn">Blighted: it won't grow or fruit, and blight spreads to neighbors of the same species.</p>
           <button
             class="btn primary wide"
-            disabled={g.actionsLeft < 1}
+            disabled={g.actionsLeft < 1 || !!g.finale}
             onClick={() => store.act({ type: 'clearBlight', square: i }) && onClose()}
           >
             Clear blight · 1 action
           </button>
         </>
       ) : sq.stage === 'F' ? (
-        <button class="btn primary wide" disabled={g.actionsLeft < 1} onClick={() => store.act({ type: 'harvest' }) && onClose()}>
-          Harvest every fruiting bed · 1 action
+        <button
+          class="btn primary wide"
+          disabled={g.finale ? g.finale.harvested : g.actionsLeft < 1}
+          onClick={() => store.act({ type: 'harvest' }) && onClose()}
+        >
+          {g.finale ? 'Bring in the last harvest' : 'Harvest every fruiting bed · 1 action'}
         </button>
       ) : null}
     </SheetFrame>
@@ -646,14 +652,17 @@ export function Game({
     setMode({ kind: 'plant', uid });
   };
 
+  const finale = g.finale;
+  // On festival morning, skipping the last harvest or market visit asks for a second tap, like resting with actions left.
+  const finaleUnused = !!finale && (!finale.marketed || (ready > 0 && !finale.harvested));
   const endWeek = () => {
-    if (g.actionsLeft > 0 && !confirmEnd) {
+    if ((finale ? finaleUnused : g.actionsLeft > 0) && !confirmEnd) {
       setConfirmEnd(true);
       return;
     }
     setConfirmEnd(false);
     setMode({ kind: 'none' });
-    store.act({ type: 'endWeek' });
+    store.act(finale ? { type: 'festival' } : { type: 'endWeek' });
   };
 
   if (g.over && !g.night) return <YearEnd store={store} onTitle={onTitle} onNewYear={onNewYear} />;
@@ -690,6 +699,14 @@ export function Game({
               Pitch it
             </button>
           </div>
+        ) : finale ? (
+          <div class="banner festival">
+            <span>
+              {finale.harvested && finale.marketed
+                ? 'All done. The village is waiting at the festival.'
+                : `Before the festival: ${[!finale.harvested && 'one last harvest', !finale.marketed && 'one market visit'].filter(Boolean).join(' and ')}, no actions needed.`}
+            </span>
+          </div>
         ) : (
           <div class="banner quiet">
             <ActionsPips left={g.actionsLeft} total={actionsPerWeek(g)} />
@@ -709,16 +726,16 @@ export function Game({
       />
 
       <nav class="actions" aria-label="Actions">
-        <button class="act" disabled={g.actionsLeft < 1} onClick={() => setSheet({ kind: 'forage' })}>
+        <button class="act" disabled={g.actionsLeft < 1 || !!finale} onClick={() => setSheet({ kind: 'forage' })}>
           <Icon name="forage" size={26} />
           <span>Forage</span>
         </button>
-        <button class="act" onClick={() => setSheet({ kind: 'tend' })}>
+        <button class="act" disabled={!!finale} onClick={() => setSheet({ kind: 'tend' })}>
           <Icon name="tend" size={26} />
           <span>Tend</span>
           {blighted > 0 && <span class="badge warn">{blighted}</span>}
         </button>
-        <button class="act" disabled={!ready || g.actionsLeft < 1} onClick={() => store.act({ type: 'harvest' })}>
+        <button class="act" disabled={!ready || (finale ? finale.harvested : g.actionsLeft < 1)} onClick={() => store.act({ type: 'harvest' })}>
           <Icon name="harvest" size={26} />
           <span>Harvest</span>
           {ready > 0 && <span class="badge">{ready}</span>}
@@ -727,9 +744,12 @@ export function Game({
           <Icon name="market" size={26} />
           <span>Market</span>
         </button>
-        <button class={`act end ${g.actionsLeft === 0 ? 'glow' : ''} ${confirmEnd ? 'confirm' : ''}`} onClick={endWeek}>
-          <Icon name="moon" size={26} />
-          <span>{confirmEnd ? 'Tap to rest' : 'End week'}</span>
+        <button
+          class={`act end ${finale ? 'festival' : ''} ${(finale ? !finaleUnused : g.actionsLeft === 0) ? 'glow' : ''} ${confirmEnd ? 'confirm' : ''}`}
+          onClick={endWeek}
+        >
+          <Icon name={finale ? 'spark' : 'moon'} size={26} />
+          <span>{confirmEnd ? (finale ? 'Tap to go' : 'Tap to rest') : finale ? 'Festival' : 'End week'}</span>
         </button>
       </nav>
 

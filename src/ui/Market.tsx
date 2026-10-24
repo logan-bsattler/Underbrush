@@ -10,7 +10,7 @@ export function Market({ g, store, onClose }: { g: GameState; store: Store; onCl
     onClose();
   };
   const stored = content.speciesOrder.filter((id) => (g.storage[id] ?? 0) > 0);
-  const canTrade = !!g.market || g.actionsLeft > 0;
+  const canTrade = !!g.market || (g.finale ? !g.finale.marketed : g.actionsLeft > 0);
   const lastWeek = g.round % content.rules.roundsPerSeason === 0 && g.round < content.rules.rounds;
 
   return (
@@ -18,7 +18,11 @@ export function Market({ g, store, onClose }: { g: GameState; store: Store; onCl
       <p class={`market-visit ${g.market ? 'on' : ''}`}>
         {g.market
           ? `You're at the market. Trade as much as you like${g.market.orderFilled ? '' : ', and fill one order'}.`
-          : g.actionsLeft > 0
+          : g.finale
+            ? g.finale.marketed
+              ? "You've had your last market visit. The festival is next."
+              : 'Festival morning: one last market visit, no action needed. Deliver one order and sell what you like.'
+            : g.actionsLeft > 0
             ? 'A market visit takes 1 action, spent on your first trade. Fill one order per visit.'
             : 'No actions left to visit the market this week.'}
       </p>
@@ -78,46 +82,50 @@ export function Market({ g, store, onClose }: { g: GameState; store: Store; onCl
         </ul>
       )}
 
-      <h3>
-        Gear <span class="chip coins inline"><Icon name="coin" size={16} /> {g.coins}</span>
-      </h3>
-      <div class="gear">
-        {content.gear.map((gear) => {
-          const owned = g.gear.includes(gear.id);
-          const stocked = g.perks.shop.includes(gear.id);
-          if (!stocked) {
-            const at = gearUnlockLevel(gear.id);
+      {!g.finale && (
+        <>
+        <h3>
+          Gear <span class="chip coins inline"><Icon name="coin" size={16} /> {g.coins}</span>
+        </h3>
+        <div class="gear">
+          {content.gear.map((gear) => {
+            const owned = g.gear.includes(gear.id);
+            const stocked = g.perks.shop.includes(gear.id);
+            if (!stocked) {
+              const at = gearUnlockLevel(gear.id);
+              return (
+                <div class="gear-card locked">
+                  <div class="gear-top">
+                    <b>{gear.name}</b>
+                  </div>
+                  <div class="small muted">{at ? `Stocked once your homestead reaches ${at.title} (level ${at.level}).` : 'Not stocked.'}</div>
+                </div>
+              );
+            }
             return (
-              <div class="gear-card locked">
+              <div class={`gear-card ${owned ? 'owned' : ''}`}>
                 <div class="gear-top">
                   <b>{gear.name}</b>
+                  <span class="cost">
+                    {owned ? (g.perks.heirlooms.includes(gear.id) ? 'Heirloom' : 'Owned') : (
+                      <>
+                        <Icon name="coin" size={14} /> {gear.cost}
+                      </>
+                    )}
+                  </span>
                 </div>
-                <div class="small muted">{at ? `Stocked once your homestead reaches ${at.title} (level ${at.level}).` : 'Not stocked.'}</div>
+                <div class="small">{gear.rule}</div>
+                {!owned && (
+                  <button class="btn small" disabled={g.coins < gear.cost || !canTrade} onClick={() => store.act({ type: 'buyGear', gear: gear.id })}>
+                    Buy
+                  </button>
+                )}
               </div>
             );
-          }
-          return (
-            <div class={`gear-card ${owned ? 'owned' : ''}`}>
-              <div class="gear-top">
-                <b>{gear.name}</b>
-                <span class="cost">
-                  {owned ? (g.perks.heirlooms.includes(gear.id) ? 'Heirloom' : 'Owned') : (
-                    <>
-                      <Icon name="coin" size={14} /> {gear.cost}
-                    </>
-                  )}
-                </span>
-              </div>
-              <div class="small">{gear.rule}</div>
-              {!owned && (
-                <button class="btn small" disabled={g.coins < gear.cost || !canTrade} onClick={() => store.act({ type: 'buyGear', gear: gear.id })}>
-                  Buy
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div>
+          })}
+        </div>
+        </>
+      )}
       <button class="btn wide" onClick={close}>
         {g.market ? 'Head home' : 'Close'}
       </button>

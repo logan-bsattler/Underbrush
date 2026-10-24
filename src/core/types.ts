@@ -306,6 +306,11 @@ export interface GameState {
   pendingCrosses: Cross[];
   declinedCrosses: string[];
   night: NightReport | null;
+  /**
+   * The morning after week 12: one last harvest and one market visit, free of actions, before the
+   * festival. Null during the year and after the festival.
+   */
+  finale: { harvested: boolean; marketed: boolean } | null;
   moldPenalty: number;
   nextUid: number;
   tripCount: number;
@@ -333,6 +338,7 @@ export type Action =
   | { type: 'placeTent'; square: number }
   | { type: 'resolveCross'; index: number; replace: 'a' | 'b' | null }
   | { type: 'endWeek' }
+  | { type: 'festival' }
   | { type: 'dismissNight' };
 
 /** What the UI may want to animate after an action. */

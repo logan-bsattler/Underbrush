@@ -63,6 +63,18 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
       const x = s.pendingCrosses[0];
       act({ type: 'resolveCross', index: 0, replace: value(s.grid[x.a].species) <= value(s.grid[x.b].species) ? 'a' : 'b' });
     }
+    if (s.finale) {
+      // Festival morning: bring in the last harvest, deliver what an order takes, sell the rest.
+      if (s.grid.some((sq) => sq.stage === 'F' && !sq.blight && sq.species)) act({ type: 'harvest' });
+      const best = s.orders.visible
+        .map((o) => content.orders.find((x) => x.id === o)!)
+        .filter((o) => orderPayment(s.storage, o))
+        .sort((a, b) => b.points - a.points)[0];
+      if (best) act({ type: 'fillOrder', order: best.id });
+      for (const id of Object.keys(s.storage)) act({ type: 'sell', species: id, count: s.storage[id] });
+      act({ type: 'festival' });
+      continue;
+    }
     while (s.shed.length && emptyGround(s).length) act({ type: 'placeSubstrate', index: 0, square: emptyGround(s)[0] });
     if (s.gear.includes('growtent') && !s.tentPlaced) {
       const bed = s.grid.findIndex((sq) => sq.species && !sq.tree);

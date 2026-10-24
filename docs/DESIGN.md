@@ -25,6 +25,11 @@ Saves happen after every action. The farm only grows when you end the week, neve
 The solo kit's rules, in its order: 12 weeks, 4 actions, weather d12, then dry → crowding →
 blight spread → grow → overripe → spreaders → hybrids, then the Mold Bloom check.
 
+After week 12's growth there is no week 13. Instead a **festival morning** gives one last harvest
+and one market visit (sell, deliver one order), neither costing an action, so fruit that ripens on
+the last night still counts. Nothing else is possible that morning, the shop sells no gear, and a
+hybrid offered on the last night can still be made before the festival scores the year.
+
 Interpretations where the kit left room:
 
 - **Dry marks** are erased when a bed grows (kit wording), so they mainly build up on beds that

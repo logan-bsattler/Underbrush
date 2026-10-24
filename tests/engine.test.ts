@@ -551,16 +551,79 @@ describe('the year', () => {
     expect(s.actionsLeft).toBe(3);
   });
 
-  it('ends after round 12 and scores a tier', () => {
+  it('ends after round 12 with the festival, and scores a tier', () => {
     let s = blank('end');
     s.round = 12;
     s.orderPoints = 20;
     s.hybridsMade = ['shaggyoyster'];
     s.planted = ['shiitake', 'reishi'];
     s = run(s, { type: 'endWeek' });
-    expect(s.over).toBe(true);
+    expect(s.over).toBe(false);
+    expect(s.finale).toEqual({ harvested: false, marketed: false });
+    s = run(s, { type: 'dismissNight' }, { type: 'festival' });
+    expect(s).toMatchObject({ over: true, finale: null });
     expect(score(s)).toMatchObject({ total: 25, tier: { id: 'silver' } });
     expect(() => dispatch(s, { type: 'water' })).toThrow(/over/);
+  });
+
+  describe('festival morning', () => {
+    /** The morning after week 12, with a fruiting bed and an order the harvest can fill. */
+    function morning() {
+      let s = blank('morning');
+      s.round = 12;
+      s.watered = true;
+      bed(s, 4, 'oyster', 'C', 'straw');
+      bed(s, 8, 'oyster', 'C', 'straw');
+      s.storage = { oyster: 1 };
+      s.orders = { visible: ['o-oyster3'], deck: [], filled: [] };
+      s = run(s, { type: 'endWeek' }, { type: 'dismissNight' });
+      expect(s.grid[4].stage).toBe('F');
+      return s;
+    }
+
+    it('allows one free harvest and one free market visit', () => {
+      let s = morning();
+      s = run(s, { type: 'harvest' });
+      expect(s.storage.oyster).toBe(3);
+      expect(s.finale!.harvested).toBe(true);
+      s = run(s, { type: 'fillOrder', order: 'o-oyster3' });
+      expect(s.orderPoints).toBe(4);
+      s.storage = { oyster: 1 };
+      s = run(s, { type: 'sell', species: 'oyster', count: 1 }, { type: 'leaveMarket' });
+      expect(s.coins).toBe(3 + 1);
+      s.storage = { oyster: 1 };
+      expect(() => dispatch(s, { type: 'sell', species: 'oyster', count: 1 })).toThrow(/last market visit/);
+      Object.assign(s.grid[4], { stage: 'F' });
+      expect(() => dispatch(s, { type: 'harvest' })).toThrow(/last harvest/);
+    });
+
+    it('allows nothing else, and sells no gear', () => {
+      const s = morning();
+      s.coins = 20;
+      s.basket = [{ uid: 1, species: 'oyster', identified: false, trip: 1 }];
+      for (const a of [
+        { type: 'forage', zone: 'meadow' },
+        { type: 'identify', uid: 1 },
+        { type: 'water' },
+        { type: 'endWeek' },
+      ] as Action[])
+        expect(() => dispatch(s, a)).toThrow(/festival morning/);
+      expect(() => dispatch(s, { type: 'buyGear', gear: 'knife' })).toThrow(/gear on festival day/);
+    });
+
+    it('lets you make a hybrid offered on the last night before the festival', () => {
+      let s = blank('lastcross');
+      s.round = 12;
+      s.watered = true;
+      bed(s, 4, 'oyster', 'C', 'straw');
+      bed(s, 5, 'enoki', 'C', 'log');
+      s = run(s, { type: 'endWeek' }, { type: 'dismissNight' });
+      expect(s.pendingCrosses).toHaveLength(1);
+      expect(() => dispatch(s, { type: 'festival' })).toThrow(/hybrids/);
+      s = run(s, { type: 'resolveCross', index: 0, replace: 'b' }, { type: 'festival' });
+      expect(s.hybridsMade).toEqual(['frostoyster']);
+      expect(score(s).hybrids).toBe(3);
+    });
   });
 
   it('a whole year plays out without illegal moves across many seeds', () => {

@@ -61,11 +61,17 @@ export function Night({ g, store }: { g: GameState; store: Store }) {
           <li style={{ '--i': i + 2 } as any}>{l}</li>
         ))}
       </ul>
-      {g.over ? (
+      {g.finale ? (
         <footer class="morning">
-          <p>The year is done. Tomorrow is the Harvest Festival.</p>
+          <div class="weather-card">
+            <Icon name="spark" size={40} />
+            <div>
+              <div class="eyebrow">The year is done</div>
+              <b>Festival morning.</b> Time for one last harvest and a market visit before the festival.
+            </div>
+          </div>
           <button class="btn primary big wide" onClick={() => store.act({ type: 'dismissNight' })}>
-            Go to the festival
+            {g.pendingCrosses.length ? 'See what crossed' : 'Wake up for the festival'}
           </button>
         </footer>
       ) : (
