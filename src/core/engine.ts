@@ -9,6 +9,7 @@ import type {
   ActionResult,
   Card,
   ForageTrip,
+  IdentifyResult,
   Content,
   GameState,
   OrderDef,
@@ -447,29 +448,33 @@ export function dispatch(
     case 'identify': {
       guardIdle(s);
       guardFinale(s);
-      const spec = specimenFor(s, action.uid);
-      if (spec.identified) fail('Already identified.');
+      const unknown = s.basket.filter((b) => !b.identified);
+      if (!unknown.length) fail('Nothing in your basket needs identifying.');
       spendAction(s);
       s.market = null;
-      const sp = c.species[spec.species];
-      const rolls = s.gear.includes('fieldguide') ? [rng.die(6), rng.die(6)] : [rng.die(6)];
-      const kept = Math.max(...rolls);
-      const real = kept > lookalikeOn(s, sp.id, c);
-      if (real) {
-        spec.identified = true;
-        s.stats.identified[sp.id] = (s.stats.identified[sp.id] ?? 0) + 1;
-        if (!s.discovered.includes(sp.id)) s.discovered.push(sp.id);
-        if (sp.kind === 'wild') {
+      const results: IdentifyResult[] = [];
+      for (const spec of unknown) {
+        const sp = c.species[spec.species];
+        const rolls = s.gear.includes('fieldguide') ? [rng.die(6), rng.die(6)] : [rng.die(6)];
+        const kept = Math.max(...rolls);
+        const real = kept > lookalikeOn(s, sp.id, c);
+        if (real) {
+          spec.identified = true;
+          s.stats.identified[sp.id] = (s.stats.identified[sp.id] ?? 0) + 1;
+          if (!s.discovered.includes(sp.id)) s.discovered.push(sp.id);
+          if (sp.kind === 'wild') {
+            s.basket = s.basket.filter((b) => b.uid !== spec.uid);
+            addStorage(s, sp.id);
+          }
+        } else {
           s.basket = s.basket.filter((b) => b.uid !== spec.uid);
-          addStorage(s, sp.id);
+          s.shed.push('compost');
+          s.stats.lookalikes += 1;
+          if (!s.lookalikesFound.includes(sp.id)) s.lookalikesFound.push(sp.id);
         }
-      } else {
-        s.basket = s.basket.filter((b) => b.uid !== spec.uid);
-        s.shed.push('compost');
-        s.stats.lookalikes += 1;
-        if (!s.lookalikesFound.includes(sp.id)) s.lookalikesFound.push(sp.id);
+        results.push({ uid: spec.uid, species: sp.id, real, rolls, kept });
       }
-      result = { kind: 'identify', uid: spec.uid, species: sp.id, real, rolls, kept };
+      result = { kind: 'identify', results };
       break;
     }
 

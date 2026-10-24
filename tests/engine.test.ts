@@ -186,26 +186,42 @@ describe('foraging', () => {
 });
 
 describe('identify and plant', () => {
-  it('turns a lookalike into compost and a real find into a plantable specimen', () => {
-    let s = blank('id');
+  it('identifies the whole basket for one action', () => {
+    let s = blank('all');
     s.basket = [
       { uid: 1, species: 'puffball', identified: false, trip: 1 },
-      { uid: 2, species: 'chanterelle', identified: false, trip: 1 },
+      { uid: 2, species: 'oyster', identified: true, trip: 1 },
+      { uid: 3, species: 'shiitake', identified: false, trip: 1 },
+      { uid: 4, species: 'winecap', identified: false, trip: 1 },
     ];
-    s.nextUid = 3;
+    const r = dispatch(s, { type: 'identify' });
+    if (r.result.kind !== 'identify') throw new Error();
+    expect(r.result.results.map((x) => x.uid)).toEqual([1, 3, 4]);
+    expect(r.state.actionsLeft).toBe(3);
+    expect(r.state.basket.every((b) => b.identified)).toBe(true);
+    const fakes = r.result.results.filter((x) => !x.real).length;
+    expect(r.state.basket).toHaveLength(4 - fakes);
+    expect(r.state.shed.filter((x) => x === 'compost')).toHaveLength(fakes);
+    expect(() => dispatch(r.state, { type: 'identify' })).toThrow(/Nothing in your basket/);
+  });
+
+  it('turns a lookalike into compost and a real find into a plantable specimen', () => {
+    let s = blank('id');
+    s.basket = [{ uid: 1, species: 'puffball', identified: false, trip: 1 }];
+    s.nextUid = 2;
     // Try seeds until we see both outcomes for the puffball.
     const outcomes = new Set<boolean>();
     for (let seed = 0; seed < 50 && outcomes.size < 2; seed++) {
-      const t = { ...s, rng: seed };
-      const r = dispatch(t, { type: 'identify', uid: 1 });
+      const r = dispatch({ ...s, rng: seed }, { type: 'identify' });
       if (r.result.kind !== 'identify') throw new Error();
-      outcomes.add(r.result.real);
-      if (!r.result.real) {
-        expect(r.result.kept).toBe(1);
+      const [one] = r.result.results;
+      outcomes.add(one.real);
+      if (!one.real) {
+        expect(one.kept).toBe(1);
         expect(r.state.shed).toEqual(['compost']);
-        expect(r.state.basket.map((b) => b.uid)).toEqual([2]);
+        expect(r.state.basket).toHaveLength(0);
       } else {
-        expect(r.state.basket.find((b) => b.uid === 1)!.identified).toBe(true);
+        expect(r.state.basket[0].identified).toBe(true);
         expect(r.state.discovered).toContain('puffball');
       }
     }
@@ -216,8 +232,8 @@ describe('identify and plant', () => {
     const s = blank('w');
     s.basket = [{ uid: 1, species: 'chanterelle', identified: false, trip: 1 }];
     for (let seed = 0; seed < 50; seed++) {
-      const r = dispatch({ ...s, rng: seed }, { type: 'identify', uid: 1 });
-      if (r.result.kind === 'identify' && r.result.real) {
+      const r = dispatch({ ...s, rng: seed }, { type: 'identify' });
+      if (r.result.kind === 'identify' && r.result.results[0].real) {
         expect(r.state.storage.chanterelle).toBe(1);
         expect(r.state.basket).toHaveLength(0);
         return;
@@ -603,7 +619,7 @@ describe('the year', () => {
       s.basket = [{ uid: 1, species: 'oyster', identified: false, trip: 1 }];
       for (const a of [
         { type: 'forage', zone: 'meadow' },
-        { type: 'identify', uid: 1 },
+        { type: 'identify' },
         { type: 'water' },
         { type: 'endWeek' },
       ] as Action[])

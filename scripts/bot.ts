@@ -98,7 +98,7 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
       }
       const unknown = s.basket.find((b) => !b.identified);
       if (unknown) {
-        act({ type: 'identify', uid: unknown.uid });
+        act({ type: 'identify' });
         continue;
       }
       const plantable = s.basket.find((b) => b.identified && plantableSquares(s, b.species).length);

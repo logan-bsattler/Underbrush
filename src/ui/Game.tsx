@@ -16,6 +16,7 @@ import {
   seasonOf,
   type ActionResult,
   type GameState,
+  type IdentifyResult,
   type Specimen,
 } from '../core';
 import { BedArt, Icon, Mushroom, SubstrateArt, TreeArt, Unknown } from './art';
@@ -239,13 +240,31 @@ function CompostPile({ g }: { g: GameState }) {
   );
 }
 
-function Tray({ g, mode, onSpecimen, onShed }: { g: GameState; mode: Mode; onSpecimen: (s: Specimen) => void; onShed: (i: number) => void }) {
+function Tray({
+  g,
+  mode,
+  onSpecimen,
+  onShed,
+  onIdentify,
+}: {
+  g: GameState;
+  mode: Mode;
+  onSpecimen: (s: Specimen) => void;
+  onShed: (i: number) => void;
+  onIdentify: () => void;
+}) {
   const cap = basketCapacity(g);
+  const unknown = g.basket.filter((b) => !b.identified).length;
   return (
     <div class="tray">
       <div class="tray-group">
         <div class="tray-label">
           <Icon name="basket" size={16} /> Basket {g.basket.length}/{cap}
+          {unknown > 0 && (
+            <button class="id-all" disabled={g.actionsLeft < 1 || !!g.finale} onClick={onIdentify} aria-label={`Identify ${unknown} specimen${unknown === 1 ? '' : 's'}, 1 action`}>
+              Identify {unknown}
+            </button>
+          )}
         </div>
         <div class={`slots basket-slots ${cap > 4 ? 'many' : ''}`}>
           {Array.from({ length: cap }, (_, i) => {
@@ -410,6 +429,7 @@ function SpecimenSheet({
   const bad = lookalikeOn(g, sp.id);
   const risk = guide ? (bad / 6) ** 2 : bad / 6;
   const spots = plantableSquares(g, spec.species);
+  const unknownCount = g.basket.filter((b) => !b.identified).length;
   if (!spec.identified)
     return (
       <SheetFrame title={`${sp.group}?`} onClose={onClose}>
@@ -418,7 +438,10 @@ function SpecimenSheet({
             <Unknown species={sp.id} size={96} />
           </div>
           <div>
-            <p>An unidentified specimen from the {sp.group?.toLowerCase()} group. It might be the real thing, or a lookalike.</p>
+            <p>
+              An unidentified specimen from the {sp.group?.toLowerCase()} group. It might be the real thing, or a lookalike.
+              {unknownCount > 1 ? ` Identifying checks all ${unknownCount} unknown specimens in your basket at once.` : ''}
+            </p>
             <p class="small muted">
               Lookalike chance: {Math.round(risk * 100)}%{guide ? ' with your Field Guide' : ''}
               {masteryOf(g, sp.id) >= 1 ? `, and you're ${masteryName(masteryOf(g, sp.id)).toLowerCase()} with ${sp.name}` : ''}. A lookalike becomes
@@ -429,13 +452,13 @@ function SpecimenSheet({
         <div class="row">
           <button
             class="btn primary grow"
-            disabled={g.actionsLeft < 1}
+            disabled={g.actionsLeft < 1 || !!g.finale}
             onClick={() => {
-              const r = store.act({ type: 'identify', uid });
+              const r = store.act({ type: 'identify' });
               if (r) onReveal(r);
             }}
           >
-            Identify · 1 action
+            {unknownCount > 1 ? `Identify all ${unknownCount} · 1 action` : 'Identify · 1 action'}
           </button>
           <button class="btn ghost" onClick={() => store.act({ type: 'discard', uid }) && onClose()}>
             Compost it
@@ -474,49 +497,83 @@ function SpecimenSheet({
 }
 
 function Reveal({ r, g, onDone, onPlant }: { r: ActionResult & { kind: 'identify' }; g: GameState; onDone: () => void; onPlant: (uid: number) => void }) {
-  const sp = content.species[r.species];
-  const [flipped, setFlipped] = useState(false);
+  const many = r.results.length > 1;
+  const [flipped, setFlipped] = useState(0);
+  // Cards turn one after another, so each find gets its own small moment.
   useEffect(() => {
-    const t = setTimeout(() => setFlipped(true), 650);
+    if (flipped >= r.results.length) return;
+    const t = setTimeout(() => setFlipped((n) => n + 1), flipped === 0 ? 650 : 380);
     return () => clearTimeout(t);
-  }, []);
-  const canPlant = r.real && sp.kind === 'cultivated' && plantableSquares(g, r.species).length > 0 && g.actionsLeft > 0;
+  }, [flipped, r.results.length]);
+  const done = flipped >= r.results.length;
+  const canPlant = (x: IdentifyResult) =>
+    x.real && content.species[x.species].kind === 'cultivated' && g.basket.some((b) => b.uid === x.uid) && plantableSquares(g, x.species).length > 0 && g.actionsLeft > 0;
+  const real = r.results.filter((x) => x.real);
+  const fakes = r.results.length - real.length;
+  const wild = real.filter((x) => content.species[x.species].kind === 'wild').length;
+  const plantable = r.results.filter(canPlant);
+  const art = many ? 84 : 170;
+
   return (
-    <div class="overlay reveal">
-      <div class={`flip ${flipped ? 'flipped' : ''}`}>
-        <div class="face back paper">
-          <Unknown species={r.species} size={150} />
-          <div class="plate-name">{sp.group}</div>
-        </div>
-        <div class={`face front paper ${r.real ? 'real' : 'fake'}`}>
-          {r.real ? <Mushroom species={r.species} size={170} /> : <Unknown species={r.species} size={150} lookalike />}
-          {!r.real && <span class="stamp">Lookalike</span>}
-          <div class="plate-name">{r.real ? sp.name : sp.lookalike?.name}</div>
-          <div class="plate-latin">{r.real ? sp.latin : `a ${sp.name} lookalike`}</div>
-        </div>
+    <div class={`overlay reveal ${many ? 'many' : ''}`}>
+      <div class="reveal-grid" style={{ '--count': r.results.length === 4 ? 2 : Math.min(r.results.length, 3) } as any}>
+        {r.results.map((x, i) => {
+          const sp = content.species[x.species];
+          const up = i < flipped;
+          const tappable = up && done && canPlant(x);
+          return (
+            <div class="reveal-card">
+              <button
+                class={`flip ${up ? 'flipped' : ''} ${tappable ? 'plantable' : ''}`}
+                disabled={!tappable}
+                onClick={() => onPlant(x.uid)}
+                aria-label={up ? `${x.real ? sp.name : `${sp.lookalike?.name}, a lookalike`}${tappable ? '. Tap to plant it' : ''}` : `${sp.group}, not yet revealed`}
+              >
+                <div class="face back paper">
+                  <Unknown species={x.species} size={many ? 76 : 150} />
+                  <div class="plate-name">{sp.group}</div>
+                </div>
+                <div class={`face front paper ${x.real ? 'real' : 'fake'}`}>
+                  {x.real ? <Mushroom species={x.species} size={art} /> : <Unknown species={x.species} size={many ? 76 : 150} lookalike />}
+                  {!x.real && <span class="stamp">Lookalike</span>}
+                  <div class="plate-name">{x.real ? sp.name : sp.lookalike?.name}</div>
+                  {!many && <div class="plate-latin">{x.real ? sp.latin : `a ${sp.name} lookalike`}</div>}
+                </div>
+              </button>
+              <div class={`dice ${up ? 'show' : ''}`}>
+                {x.rolls.map((d) => (
+                  <span class={`die ${d === x.kept ? 'kept' : ''}`}>{d}</span>
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
-      <div class={`reveal-text ${flipped ? 'show' : ''}`}>
-        <div class="dice">
-          {r.rolls.map((d) => (
-            <span class={`die ${d === r.kept ? 'kept' : ''}`}>{d}</span>
-          ))}
-        </div>
-        {r.real ? (
+      <div class={`reveal-text ${done ? 'show' : ''}`}>
+        {many ? (
+          <p>
+            {real.length} real{fakes ? `, ${fakes} lookalike${fakes === 1 ? '' : 's'}` : ''}.{wild ? ` Wild finds went straight to storage.` : ''}
+            {fakes ? ` Lookalikes rot down into Compost tiles in your shed.` : ''}
+            {plantable.length ? ' Tap a mushroom to plant it now.' : ''}
+          </p>
+        ) : real.length ? (
           <p>
             The real thing.{' '}
-            {sp.kind === 'wild' ? 'It goes straight into storage to sell or deliver.' : 'Plant it on ' + sp.substrates.map((x) => substrateName[x]).join(' or ') + '.'}
+            {wild
+              ? 'It goes straight into storage to sell or deliver.'
+              : 'Plant it on ' + content.species[real[0].species].substrates.map((x) => substrateName[x]).join(' or ') + '.'}
           </p>
         ) : (
           <p>A lookalike. Not a loss: it rots down into a Compost tile in your shed.</p>
         )}
         <div class="row center">
-          {canPlant && (
-            <button class="btn primary" onClick={() => onPlant(r.uid)}>
+          {!many && plantable.length > 0 && (
+            <button class="btn primary" onClick={() => onPlant(plantable[0].uid)}>
               Plant it
             </button>
           )}
-          <button class={`btn ${canPlant ? 'ghost' : 'primary'}`} onClick={onDone}>
-            {canPlant ? 'Later' : 'Done'}
+          <button class={`btn ${!many && plantable.length ? 'ghost' : 'primary'}`} onClick={onDone}>
+            {!many && plantable.length ? 'Later' : 'Done'}
           </button>
         </div>
       </div>
@@ -723,6 +780,10 @@ export function Game({
         mode={mode}
         onSpecimen={(s) => (mode.kind === 'plant' && mode.uid === s.uid ? setMode({ kind: 'none' }) : setSheet({ kind: 'specimen', uid: s.uid }))}
         onShed={(i) => setMode(mode.kind === 'substrate' && mode.index === i ? { kind: 'none' } : { kind: 'substrate', index: i })}
+        onIdentify={() => {
+          const r = store.act({ type: 'identify' });
+          if (r?.kind === 'identify') setReveal(r);
+        }}
       />
 
       <nav class="actions" aria-label="Actions">

@@ -106,8 +106,8 @@ describe('species mastery', () => {
     const s = newGame({ seed: 'fam', perks: { ...standardPerks(), mastery: { puffball: 1 } } });
     s.basket = [{ uid: 1, species: 'puffball', identified: false, trip: 1 }];
     for (let seed = 0; seed < 40; seed++) {
-      const r = dispatch({ ...s, rng: seed }, { type: 'identify', uid: 1 });
-      expect(r.result.kind === 'identify' && r.result.real).toBe(true);
+      const r = dispatch({ ...s, rng: seed }, { type: 'identify' });
+      expect(r.result.kind === 'identify' && r.result.results[0].real).toBe(true);
     }
   });
 

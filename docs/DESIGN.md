@@ -11,7 +11,7 @@ Following the spec's "let the app do the bookkeeping, hidden information and gro
 | Tabletop | Mobile |
 | --- | --- |
 | Draw from a zone deck, count hazards | Turn cards on a dealt patch of forest floor that tells you where hazards are (see below); hazard meter, knife shield and basket count are always visible |
-| Roll a d6 to identify | Card-flip reveal; the true species is hidden until you identify (specimens show only their lookalike group, e.g. "Golden funnel") |
+| Roll a d6 to identify | One Identify action checks the whole basket, each specimen with its own roll, revealed card by card; the true species is hidden until then (specimens show only their lookalike group, e.g. "Golden funnel") |
 | Pencil growth phase | Automatic overnight: animated farm, highlighted squares, and a short report |
 | "May combine" hybrids | A prompt each morning: pick which bed becomes the hybrid, or keep them; declined pairs aren't re-offered |
 | Season track, spoilage, Mold Bloom | Tracked and announced in the overnight report |
@@ -119,15 +119,17 @@ so the first weeks of each year still differ.
 
 **Species mastery.** Real identifications of a species accumulate across years. Familiar (3):
 lookalikes fool you on one fewer number, so a cultivated species can no longer fail. Expert (8):
-you know it on sight, and it comes home already identified, saving an action. Master (16): it
+you know it on sight: it comes home already identified, with no lookalike risk, and wild finds go
+straight to storage. Master (16): it
 sells for a coin more. Mastery is the reward for the discovery pillar: the more you forage a
 species, the more the forest gives you.
 
 **Daily years** use the standard kit (every gear stocked, 4×4 farm, no heirlooms or mastery) so
 everyone plays the same game, but they still earn renown and count toward mastery.
 
-Two rewards target the action economy on purpose (Expert's free identification and the farmhand),
-because actions are the tightest constraint in the kit's numbers.
+The farmhand targets the action economy on purpose, because actions are the tightest constraint
+in the kit's numbers. (Expert used to save an Identify action too; since Identify now covers the
+whole basket, its value is the certainty, not the action.)
 
 `npm run sim -- 100 campaign` plays ten-year campaigns. The baseline bot climbs about one level
 every 2–3 years, but its score stays flat (median 8–10) because it barely uses orders: it delivers
@@ -142,17 +144,21 @@ the renown pacing for a weak player. Whether the perks feel like a lift needs hu
 
 ## Pacing: first numbers
 
-`npm run sim` plays seeded years with a deliberately simple greedy bot. With the kit's values:
+`npm run sim` plays seeded years with a deliberately simple greedy bot. With the kit's values
+(first build, one specimen per Identify, blind draws):
 
 - Mean score about 9; roughly 1 in 10 years reaches Bronze (15+), none reach Silver.
 - Tending takes about 0.7 of 4 actions a week, under the kit's "more than 1 of 3" warning line.
-- Bust rate about 8% of trips.
+- Bust rate about 8% of trips (5% once the forest floor's numbers arrived).
 
 The bot is a floor, not a skill estimate: it never plans for orders or hybrids. Even so, the
-gap suggests the economy is tight. Each specimen costs three actions (forage share, identify,
-plant) and stored mushrooms spoil every season. Levers to try, all in `src/data/rules.json`
-and `species.json`: identify the whole basket per action, lower the tier thresholds, or let
-Market not cost an action. Treat the human paper-prototype log as the real signal.
+gap suggested the economy was tight: each specimen cost three actions (forage share, identify,
+plant). **Identify now covers the whole basket for one action** (a departure from the kit's one
+specimen per action). With that change the same bot averages 13.1 (from 9.1), reaches Bronze in
+35% of years (from 11%) and Silver in 3%, and takes 10.7 forage trips a year (from 7.9). Further
+levers, all in `src/data`: lower the tier thresholds, or let Market not cost an action. Treat the
+human paper-prototype log as the real signal; the tabletop rules would need the same change to
+stay in step with the app.
 
 ## Not in this build
 

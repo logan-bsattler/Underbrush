@@ -324,7 +324,8 @@ export type Action =
   | { type: 'deeper' }
   | { type: 'stopForage' }
   | { type: 'closeTrip' }
-  | { type: 'identify'; uid: number }
+  /** Identifies every unidentified specimen in the basket, for one action. */
+  | { type: 'identify' }
   | { type: 'plant'; uid: number; square: number }
   | { type: 'discard'; uid: number }
   | { type: 'placeSubstrate'; index: number; square: number }
@@ -341,10 +342,18 @@ export type Action =
   | { type: 'festival' }
   | { type: 'dismissNight' };
 
+export interface IdentifyResult {
+  uid: number;
+  species: string;
+  real: boolean;
+  rolls: number[];
+  kept: number;
+}
+
 /** What the UI may want to animate after an action. */
 export type ActionResult =
   | { kind: 'none' }
-  | { kind: 'identify'; uid: number; species: string; real: boolean; rolls: number[]; kept: number }
+  | { kind: 'identify'; results: IdentifyResult[] }
   | { kind: 'draw'; index: number; card: Card; outcome: DrawOutcome }
   | { kind: 'harvest'; gained: Record<string, number> }
   | { kind: 'sell'; coins: number }

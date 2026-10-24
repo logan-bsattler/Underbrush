@@ -1016,6 +1016,12 @@ button.chip {
 }
 .flip {
   position: relative;
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
   width: 230px;
   height: 300px;
   transform-style: preserve-3d;
@@ -2277,4 +2283,93 @@ button.chip {
   background: var(--gold);
   border-color: var(--rust-dark);
   color: #3e2c08;
+}
+
+.crash {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+}
+.crash h1 {
+  font-size: 30px;
+}
+.crash-detail {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--paper-2);
+  color: var(--ink-soft);
+}
+
+/* Identifying the whole basket: a small grid of cards turning one by one. */
+.reveal-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--count, 1), auto);
+  justify-content: center;
+  gap: 12px;
+  perspective: 1000px;
+}
+.reveal-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.reveal.many .flip {
+  width: min(28vw, 118px);
+  height: min(37vw, 156px);
+}
+.reveal.many .face {
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
+}
+.reveal.many .plate-name {
+  font-size: 14px;
+  line-height: 1.1;
+  padding: 0 4px;
+}
+.reveal.many .stamp {
+  top: 6px;
+  right: -6px;
+  font-size: 9.5px;
+  padding: 1px 5px;
+}
+.reveal.many .die {
+  width: 24px;
+  height: 24px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+.reveal .dice {
+  opacity: 0;
+  transition: opacity 0.3s 0.4s;
+  margin: 0;
+}
+.reveal .dice.show {
+  opacity: 1;
+}
+.flip.plantable {
+  cursor: pointer;
+}
+.flip.plantable .face.front {
+  box-shadow: 0 0 0 3px #7fae5b, 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+.id-all {
+  margin-left: auto;
+  padding: 1px 9px;
+  border-radius: 999px;
+  border: 1.5px solid var(--moss);
+  background: var(--moss);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.id-all:disabled {
+  opacity: 0.45;
+  cursor: default;
 }

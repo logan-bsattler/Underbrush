@@ -170,7 +170,7 @@ export function HowTo({ onBack }: { onBack: () => void }) {
             only your first {r.bustKeep} specimens.
           </li>
           <li>
-            <b>Identify</b> a specimen from your basket. A lookalike becomes a Compost tile; wild finds go straight to storage.
+            <b>Identify</b> everything unknown in your basket at once. A lookalike becomes a Compost tile; wild finds go straight to storage.
           </li>
           <li>
             <b>Plant</b> an identified specimen on an empty square of its substrate. It starts at Spawn.

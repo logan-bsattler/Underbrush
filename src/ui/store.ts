@@ -41,6 +41,11 @@ export function loadSave(): GameState | null {
   return s && s.version === 1 ? migrateState(s) : null;
 }
 
+/** Drops the current year's save (the journal is kept). */
+export function clearSave() {
+  write(SAVE_KEY, null);
+}
+
 export function dailySeed(d = new Date()) {
   return `daily-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }

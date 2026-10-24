@@ -1,14 +1,50 @@
-import { useState } from 'preact/hooks';
+import { useErrorBoundary, useState } from 'preact/hooks';
 import { heirloomChoices, heirloomSlots, levelFor } from '../core';
 import { ArtDefs } from './art';
 import { Game } from './Game';
 import { Almanac, Pack } from './Progress';
 import { HowTo, Journal, Title } from './Screens';
-import { useStore } from './store';
+import { clearSave, useStore } from './store';
 
 type View = 'title' | 'game' | 'journal' | 'help' | 'almanac' | 'pack';
 
+/** If anything throws while rendering, show a way out instead of a blank page. */
 export function App() {
+  const [error, reset] = useErrorBoundary((e) => console.error(e));
+  if (error) return <Crash error={error} onRetry={reset} />;
+  return <Main />;
+}
+
+function Crash({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  return (
+    <div class="app">
+      <div class="screen crash paper">
+        <h1>Something went wrong</h1>
+        <p>The game hit an error it couldn't recover from. Your field journal and homestead progress are safe.</p>
+        <pre class="crash-detail">{String((error as Error)?.message ?? error)}</pre>
+        <div class="col">
+          <button class="btn primary big" onClick={() => location.reload()}>
+            Reload
+          </button>
+          <button class="btn" onClick={onRetry}>
+            Try again
+          </button>
+          <button
+            class="btn ghost"
+            onClick={() => {
+              clearSave();
+              location.reload();
+            }}
+          >
+            Abandon this year's save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Main() {
   const store = useStore();
   const [view, setView] = useState<View>('title');
   const [back, setBack] = useState<View>('title');
