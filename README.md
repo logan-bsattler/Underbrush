@@ -12,6 +12,11 @@ the rules in a separate, data-driven core that a native build or the tabletop ve
 
 ## Play it
 
+On your phone: **https://logan-bsattler.github.io/Underbrush/** (add it to your home screen to install it).
+Every push to the default branch rebuilds and redeploys it through `.github/workflows/pages.yml`.
+
+To run it locally:
+
 ```sh
 npm install
 npm run dev        # http://localhost:5173, also on your LAN for testing on a phone
