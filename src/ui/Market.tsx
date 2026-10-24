@@ -11,7 +11,7 @@ export function Market({ g, store, onClose }: { g: GameState; store: Store; onCl
   };
   const stored = content.speciesOrder.filter((id) => (g.storage[id] ?? 0) > 0);
   const canTrade = !!g.market || (g.finale ? !g.finale.marketed : g.actionsLeft > 0);
-  const lastWeek = g.round % content.rules.roundsPerSeason === 0 && g.round < content.rules.rounds;
+  const lastMonth = g.round % content.rules.roundsPerSeason === 0 && g.round < content.rules.rounds;
 
   return (
     <SheetFrame title="Village market" onClose={close} tall>
@@ -24,7 +24,7 @@ export function Market({ g, store, onClose }: { g: GameState; store: Store; onCl
               : 'Festival morning: one last market visit, no action needed. Deliver one order and sell what you like.'
             : g.actionsLeft > 0
             ? 'A market visit takes 1 action, spent on your first trade. Fill one order per visit.'
-            : 'No actions left to visit the market this week.'}
+            : 'No actions left to visit the market this month.'}
       </p>
 
       <h3>Festival orders</h3>
@@ -52,8 +52,8 @@ export function Market({ g, store, onClose }: { g: GameState; store: Store; onCl
       </p>
 
       <h3>Your storage</h3>
-      {lastWeek && !g.gear.includes('dehydrator') && stored.length > 0 && (
-        <p class="note warn">Last week of the season: anything still in storage spoils tonight.</p>
+      {lastMonth && !g.gear.includes('dehydrator') && stored.length > 0 && (
+        <p class="note warn">Last month of the season: anything still in storage spoils tonight.</p>
       )}
       {stored.length === 0 ? (
         <p class="muted">Nothing stored. Harvest fruiting beds, or identify wild finds.</p>

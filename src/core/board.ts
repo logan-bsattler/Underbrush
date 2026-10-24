@@ -7,7 +7,7 @@ export function seasonOf(round: number, c: Content = defaultContent): Season {
 }
 
 /** 0, 1 or 2: early, mid or late in the season. */
-export function weekOfSeason(round: number, c: Content = defaultContent): number {
+export function monthOfSeason(round: number, c: Content = defaultContent): number {
   return (round - 1) % c.rules.roundsPerSeason;
 }
 

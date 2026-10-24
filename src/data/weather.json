@@ -1,10 +1,10 @@
 [
   { "id": "clear", "name": "Clear", "from": 1, "to": 3, "rule": "No effect." },
-  { "id": "rain", "name": "Rain", "from": 4, "to": 5, "rule": "No dry marks this week, and every growing bed advances one extra stage." },
-  { "id": "dryspell", "name": "Dry spell", "from": 6, "to": 7, "rule": "If you don't Tend this week, no beds grow." },
-  { "id": "fog", "name": "Fog", "from": 8, "to": 8, "rule": "Mixed Woods is closed this week.", "closes": ["mixedwoods"] },
-  { "id": "marketday", "name": "Market day", "from": 9, "to": 9, "rule": "Every sale is worth +1 coin this week." },
+  { "id": "rain", "name": "Rain", "from": 4, "to": 5, "rule": "No dry marks this month, and every growing bed advances one extra stage." },
+  { "id": "dryspell", "name": "Dry spell", "from": 6, "to": 7, "rule": "If you don't Tend this month, no beds grow." },
+  { "id": "fog", "name": "Fog", "from": 8, "to": 8, "rule": "Mixed Woods is closed this month.", "closes": ["mixedwoods"] },
+  { "id": "marketday", "name": "Market day", "from": 9, "to": 9, "rule": "Every sale is worth +1 coin this month." },
   { "id": "windfall", "name": "Windfall", "from": 10, "to": 10, "rule": "A Log lands in your shed." },
   { "id": "coldsnap", "name": "Cold snap", "from": 11, "to": 11, "rule": "Only Enoki, Frost Oyster and Tent beds grow." },
-  { "id": "goodseason", "name": "Good season", "from": 12, "to": 12, "rule": "Your basket holds 1 more this week." }
+  { "id": "goodseason", "name": "Good season", "from": 12, "to": 12, "rule": "Your basket holds 1 more this month." }
 ]

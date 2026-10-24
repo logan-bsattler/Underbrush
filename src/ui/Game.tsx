@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import {
-  actionsPerWeek,
+  actionsPerMonth,
   basketCapacity,
   canPlantOn,
   content,
@@ -25,7 +25,7 @@ import { Market } from './Market';
 import { Night } from './Night';
 import { YearEnd } from './YearEnd';
 import type { Store } from './store';
-import { growthName, masteryName, name, seasonsText, squareName, stageName, substrateName, weekLabel } from './text';
+import { growthName, masteryName, name, seasonsText, squareName, stageName, substrateName, monthLabel } from './text';
 
 export type Mode =
   | { kind: 'none' }
@@ -80,10 +80,10 @@ function Hud({ g, onWeather, onMenu }: { g: GameState; onWeather: () => void; on
   const weather = content.weather.find((w) => w.id === g.weather)!;
   return (
     <header class="hud">
-      <div class="hud-week">
+      <div class="hud-month">
         <div class="hud-title">
-          {g.finale ? 'Festival morning' : `Week ${g.round}`}
-          {!g.finale && <span class="hud-season">{weekLabel(g.round)}</span>}
+          {g.finale ? 'Festival morning' : `Month ${g.round}`}
+          {!g.finale && <span class="hud-season">{monthLabel(g.round)}</span>}
         </div>
         <div class="year-track" aria-hidden="true">
           {Array.from({ length: content.rules.rounds }, (_, i) => (
@@ -305,6 +305,27 @@ function Tray({
   );
 }
 
+/** Clears a bed and its tile onto the compost pile, so the square can take a fresh tile. Asks for a second tap. */
+function CompostSquare({ g, i, store, onClose }: { g: GameState; i: number; store: Store; onClose: () => void }) {
+  const [sure, setSure] = useState(false);
+  const sq = g.grid[i];
+  const what = sq.species ? `${name(sq.species)} and its ${substrateName[sq.substrate!]}` : `the ${substrateName[sq.substrate!]}`;
+  return (
+    <>
+      <button
+        class={`btn wide compost-square ${sure ? 'warn' : ''}`}
+        disabled={g.actionsLeft < 1 || !!g.finale}
+        onClick={() => (sure ? store.act({ type: 'compostSquare', square: i }) && onClose() : setSure(true))}
+      >
+        {sure ? `Tap again to compost ${what}` : 'Compost this square · 1 action'}
+      </button>
+      <p class="small muted">
+        {sq.species ? 'The bed and its tile' : 'The tile'} go on the compost pile and the square becomes empty ground, ready for a new tile from your shed.
+      </p>
+    </>
+  );
+}
+
 function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: Store; onClose: () => void }) {
   const sq = g.grid[i];
   if (sq.tree)
@@ -328,6 +349,7 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
         {inStream(i, g.size) && <p class="note">Beside the stream: beds here never dry out.</p>}
         {isShaded(g.grid, i, g.size) && <p class="note">In the shade of a tree.</p>}
         {sq.tent && <p class="note">Under the grow tent: ignores season and cold snaps.</p>}
+        <CompostSquare g={g} i={i} store={store} onClose={onClose} />
       </SheetFrame>
     );
   }
@@ -395,6 +417,7 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
           {g.finale ? 'Bring in the last harvest' : 'Harvest every fruiting bed · 1 action'}
         </button>
       ) : null}
+      <CompostSquare g={g} i={i} store={store} onClose={onClose} />
     </SheetFrame>
   );
 }
@@ -584,16 +607,25 @@ function Reveal({ r, g, onDone, onPlant }: { r: ActionResult & { kind: 'identify
 function TendSheet({ g, store, onClose, onBed }: { g: GameState; store: Store; onClose: () => void; onBed: (i: number) => void }) {
   const blighted = g.grid.map((_, i) => i).filter((i) => g.grid[i].blight);
   const dry = g.grid.filter((sq, i) => sq.species && !inStream(i, g.size)).length;
+  // Beds whose season won't come round again before the festival.
+  const spent = g.grid
+    .map((_, i) => i)
+    .filter((i) => {
+      const sq = g.grid[i];
+      if (!sq.species || sq.tent) return false;
+      for (let r = g.round; r <= content.rules.rounds; r++) if (inSeason(sq.species, seasonOf(r))) return false;
+      return true;
+    });
   return (
     <SheetFrame title="Tend the farm" onClose={onClose}>
       <button class="btn primary wide" disabled={g.watered || g.actionsLeft < 1} onClick={() => store.act({ type: 'water' }) && onClose()}>
-        <Icon name="water" /> {g.watered ? 'Watered this week' : 'Water every bed · 1 action'}
+        <Icon name="water" /> {g.watered ? 'Watered this month' : 'Water every bed · 1 action'}
       </button>
       <p class="small muted">
         {g.weather === 'rain'
-          ? 'Rain is watering everything this week already.'
+          ? 'Rain is watering everything this month already.'
           : g.weather === 'dryspell'
-            ? 'Dry spell: nothing grows this week unless you water.'
+            ? 'Dry spell: nothing grows this month unless you water.'
             : `${dry} bed${dry === 1 ? '' : 's'} away from the stream will take a dry mark tonight if you don't water.`}
       </p>
       <h3>Blight</h3>
@@ -605,6 +637,19 @@ function TendSheet({ g, store, onClose, onBed }: { g: GameState; store: Store; o
             <li>
               <button class="list-btn" onClick={() => onBed(i)}>
                 <Icon name="blight" /> {name(g.grid[i].species!)} · {squareName(i, g.size)}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      <h3>Compost a square</h3>
+      <p class="small muted">Tap any bed or tile on the farm to compost it and free the square for a new tile.</p>
+      {spent.length > 0 && (
+        <ul class="list">
+          {spent.map((i) => (
+            <li>
+              <button class="list-btn" onClick={() => onBed(i)}>
+                <Icon name="pile" /> {name(g.grid[i].species!)} · {squareName(i, g.size)} · done for the year
               </button>
             </li>
           ))}
@@ -712,14 +757,14 @@ export function Game({
   const finale = g.finale;
   // On festival morning, skipping the last harvest or market visit asks for a second tap, like resting with actions left.
   const finaleUnused = !!finale && (!finale.marketed || (ready > 0 && !finale.harvested));
-  const endWeek = () => {
+  const endMonth = () => {
     if ((finale ? finaleUnused : g.actionsLeft > 0) && !confirmEnd) {
       setConfirmEnd(true);
       return;
     }
     setConfirmEnd(false);
     setMode({ kind: 'none' });
-    store.act(finale ? { type: 'festival' } : { type: 'endWeek' });
+    store.act(finale ? { type: 'festival' } : { type: 'endMonth' });
   };
 
   if (g.over && !g.night) return <YearEnd store={store} onTitle={onTitle} onNewYear={onNewYear} />;
@@ -766,9 +811,9 @@ export function Game({
           </div>
         ) : (
           <div class="banner quiet">
-            <ActionsPips left={g.actionsLeft} total={actionsPerWeek(g)} />
+            <ActionsPips left={g.actionsLeft} total={actionsPerMonth(g)} />
             <span class="small">
-              {g.actionsLeft > 0 ? `${g.actionsLeft} action${g.actionsLeft === 1 ? '' : 's'} left this week` : 'No actions left. Time to rest.'}
+              {g.actionsLeft > 0 ? `${g.actionsLeft} action${g.actionsLeft === 1 ? '' : 's'} left this month` : 'No actions left. Time to rest.'}
             </span>
           </div>
         )}
@@ -807,10 +852,10 @@ export function Game({
         </button>
         <button
           class={`act end ${finale ? 'festival' : ''} ${(finale ? !finaleUnused : g.actionsLeft === 0) ? 'glow' : ''} ${confirmEnd ? 'confirm' : ''}`}
-          onClick={endWeek}
+          onClick={endMonth}
         >
           <Icon name={finale ? 'spark' : 'moon'} size={26} />
-          <span>{confirmEnd ? (finale ? 'Tap to go' : 'Tap to rest') : finale ? 'Festival' : 'End week'}</span>
+          <span>{confirmEnd ? (finale ? 'Tap to go' : 'Tap to rest') : finale ? 'Festival' : 'End month'}</span>
         </button>
       </nav>
 
@@ -832,7 +877,7 @@ export function Game({
       {sheet?.kind === 'weather' && (
         <SheetFrame title={content.weather.find((w) => w.id === g.weather)!.name} onClose={() => setSheet(null)}>
           <p>{content.weather.find((w) => w.id === g.weather)!.rule}</p>
-          <p class="small muted">A new weather card turns over every week.</p>
+          <p class="small muted">A new weather card turns over every month.</p>
         </SheetFrame>
       )}
       {sheet?.kind === 'menu' && <Menu g={g} onClose={() => setSheet(null)} onHelp={onHelp} onTitle={onTitle} onAlmanac={onAlmanac} />}

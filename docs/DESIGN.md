@@ -16,16 +16,17 @@ Following the spec's "let the app do the bookkeeping, hidden information and gro
 | "May combine" hybrids | A prompt each morning: pick which bed becomes the hybrid, or keep them; declined pairs aren't re-offered |
 | Season track, spoilage, Mold Bloom | Tracked and announced in the overnight report |
 | Field journal pad | Persistent journal of species, hybrids and lookalikes met, plus years played and best score |
-| Playtest log | Collapsible log on the festival screen: tend actions per week, unused actions, busts |
+| Playtest log | Collapsible log on the festival screen: tend actions per month, unused actions, busts |
 
-Saves happen after every action. The farm only grows when you end the week, never in real time.
+Saves happen after every action. The farm only grows when you end the month, never in real time.
 
 ## Rules as implemented
 
-The solo kit's rules, in its order: 12 weeks, 4 actions, weather d12, then dry → crowding →
-blight spread → grow → overripe → spreaders → hybrids, then the Mold Bloom check.
+The solo kit's rules, in its order: 12 rounds (the kit calls them weeks; the app calls them months,
+since 12 make a year), 4 actions, weather d12, then dry → crowding → blight spread → grow →
+overripe → spreaders → hybrids, then the Mold Bloom check.
 
-After week 12's growth there is no week 13. Instead a **festival morning** gives one last harvest
+After month 12's growth there is no month 13. Instead a **festival morning** gives one last harvest
 and one market visit (sell, deliver one order), neither costing an action, so fruit that ripens on
 the last night still counts. Nothing else is possible that morning, the shop sells no gear, and a
 hybrid offered on the last night can still be made before the festival scores the year.
@@ -36,6 +37,9 @@ Interpretations where the kit left room:
   are out of season, unshaded, blighted, or sitting at Fruiting.
 - **Market** costs 1 action per visit, charged on the first trade, so opening the sheet to look is free.
 - **Substrate finds and compost** go to a shed; laying a tile on empty ground is free.
+- **Compost a square** (not in the kit) is a Tend action: the bed, if any, and its tile go on the
+  compost pile as one scrap each, and the square becomes empty ground for a new tile. It frees a
+  square whose species is out of season for the rest of the year, like Wine Cap after summer.
 - **Rain** advances growing beds twice (a slow bed's waiting phase counts as one step).
 - **Blighted beds** can't be harvested or crossed.
 - **Spreader targets** are picked with the seeded RNG when several squares qualify.
@@ -106,7 +110,7 @@ homestead's level, and each level adds something to every later story year:
 | 3 | Forager | 40 | Lantern (opens Old-growth) |
 | 4 | Grower | 70 | Farm grows to 5×5 (one more tree); +2 starting coins |
 | 5 | Mycophile | 105 | 2nd heirloom slot; Trail Map (opens Burn Scar) |
-| 6 | Steward | 150 | Farmhand: 5 actions a week |
+| 6 | Steward | 150 | Farmhand: 5 actions a month |
 | 7 | Elder of the Wood | 210 | 3rd heirloom slot |
 
 Year one matches the paper-prototype plan (Meadow, Mixed Woods, the basic kit), and the content
@@ -114,8 +118,8 @@ expands from there, which is also how new biomes can slot in later. At a human s
 a year, the last level arrives around year 9–10, roughly 7 hours of play.
 
 **Heirlooms.** Before a story year starts you pack gear you've bought in earlier years, up to your
-slots, and own it from week one. This is the spec's "permanent gear unlocks" with a choice attached,
-so the first weeks of each year still differ.
+slots, and own it from month one. This is the spec's "permanent gear unlocks" with a choice attached,
+so the first months of each year still differ.
 
 **Species mastery.** Real identifications of a species accumulate across years. Familiar (3):
 lookalikes fool you on one fewer number, so a cultivated species can no longer fail. Expert (8):
@@ -148,7 +152,7 @@ the renown pacing for a weak player. Whether the perks feel like a lift needs hu
 (first build, one specimen per Identify, blind draws):
 
 - Mean score about 9; roughly 1 in 10 years reaches Bronze (15+), none reach Silver.
-- Tending takes about 0.7 of 4 actions a week, under the kit's "more than 1 of 3" warning line.
+- Tending takes about 0.7 of 4 actions a month, under the kit's "more than 1 of 3" warning line.
 - Bust rate about 8% of trips (5% once the forest floor's numbers arrived).
 
 The bot is a floor, not a skill estimate: it never plans for orders or hybrids. Even so, the

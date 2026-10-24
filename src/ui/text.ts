@@ -1,12 +1,12 @@
-import { content, seasonOf, weekOfSeason, type Card, type DrawOutcome, type NightEvent, type Season, type Stage, type Substrate } from '../core';
+import { content, seasonOf, monthOfSeason, type Card, type DrawOutcome, type NightEvent, type Season, type Stage, type Substrate } from '../core';
 
 export const seasonName: Record<Season, string> = { spring: 'Spring', summer: 'Summer', fall: 'Fall', winter: 'Winter' };
 export const stageName: Record<Stage, string> = { S: 'Spawn', C: 'Colonized', P: 'Pinning', F: 'Fruiting' };
 export const substrateName: Record<Substrate, string> = { log: 'Log', straw: 'Straw', woodchip: 'Woodchip', compost: 'Compost' };
 export const growthName = { fast: 'Fast', medium: 'Medium', slow: 'Slow', verySlow: 'Very slow', none: '—' } as const;
 
-export function weekLabel(round: number) {
-  return `${['Early', 'Mid', 'Late'][weekOfSeason(round)]} ${seasonName[seasonOf(round)].toLowerCase()}`;
+export function monthLabel(round: number) {
+  return `${['Early', 'Mid', 'Late'][monthOfSeason(round)]} ${seasonName[seasonOf(round)].toLowerCase()}`;
 }
 
 export const name = (id: string) => content.species[id]?.name ?? id;
@@ -66,7 +66,7 @@ export function eventText(e: NightEvent, grid: { species: string | null }[]): st
   const sp = (i: number) => name(grid[i]?.species ?? '');
   switch (e.type) {
     case 'grow':
-      return e.to === 'F' ? `${sp(e.square)} is fruiting. Harvest it this week.` : null;
+      return e.to === 'F' ? `${sp(e.square)} is fruiting. Harvest it this month.` : null;
     case 'blight':
       return {
         dry: `${sp(e.square)} dried out and caught blight.`,
@@ -82,7 +82,7 @@ export function eventText(e: NightEvent, grid: { species: string | null }[]): st
     case 'eat':
       return 'Ember Puff ate an empty square of substrate.';
     case 'moldBloom':
-      return `Mold bloom: ${e.count} beds are blighted. You lose an action next week.`;
+      return `Mold bloom: ${e.count} beds are blighted. You lose an action next month.`;
     case 'spoil': {
       const n = Object.values(e.lost).reduce((a, b) => a + b, 0);
       return `The season turned and ${n} stored mushroom${n === 1 ? '' : 's'} spoiled onto the compost pile.`;

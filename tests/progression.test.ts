@@ -84,7 +84,7 @@ describe('a year with perks', () => {
   it('starts with heirlooms, bonus coins and the farmhand', () => {
     const s = newGame({ seed: 'p', perks: { ...standardPerks(), heirlooms: ['knife'], bonusCoins: 2, bonusActions: 1 } });
     expect(s).toMatchObject({ gear: ['knife'], coins: 5, actionsLeft: 5 });
-    const next = dispatch({ ...s, actionsLeft: 0 }, { type: 'endWeek' }).state;
+    const next = dispatch({ ...s, actionsLeft: 0 }, { type: 'endMonth' }).state;
     expect(next.actionsLeft).toBe(5);
   });
 

@@ -41,7 +41,7 @@ export function Title({
         <HomesteadCard journal={store.journal} onAlmanac={onAlmanac} />
         {save && !save.over && (
           <button class="btn primary big" onClick={onContinue}>
-            Continue · {save.finale ? 'festival morning' : `week ${save.round}`}
+            Continue · {save.finale ? 'festival morning' : `month ${save.round}`}
           </button>
         )}
         <button class={`btn big ${save && !save.over ? '' : 'primary'}`} onClick={() => onStart('story')}>
@@ -154,7 +154,7 @@ export function HowTo({ onBack }: { onBack: () => void }) {
       <section>
         <h2>The year</h2>
         <p>
-          {r.rounds} weeks, {r.roundsPerSeason} per season. Each week a weather card turns, you take{' '}
+          {r.rounds} months, {r.roundsPerSeason} per season. Each month a weather card turns, you take{' '}
           {r.actionsPerRound} actions, then you sleep and the farm grows on its own. After the last night you get a festival morning: one last harvest and one
           market visit, free of actions. Then the village Harvest Festival scores your
           delivered orders, +{r.hybridPoints} for every kind of hybrid you made, +{r.plantedPoints} for every species you planted and +1 for
@@ -177,7 +177,8 @@ export function HowTo({ onBack }: { onBack: () => void }) {
             <b>Plant</b> an identified specimen on an empty square of its substrate. It starts at Spawn.
           </li>
           <li>
-            <b>Tend:</b> water every bed (no dry marks tonight), or clear blight from one bed.
+            <b>Tend:</b> water every bed (no dry marks tonight), clear blight from one bed, or compost a square: its bed and tile go on the
+            compost pile, leaving empty ground for a new tile. Handy when a bed's season is over.
           </li>
           <li>
             <b>Harvest</b> every fruiting bed into storage.
@@ -206,7 +207,7 @@ export function HowTo({ onBack }: { onBack: () => void }) {
             Growing clears dry marks.
           </li>
           <li>
-            <b>Overripe.</b> Fruit left unpicked for a week drops back to Colonized.
+            <b>Overripe.</b> Fruit left unpicked for a month drops back to Colonized.
           </li>
           <li>
             <b>Spreaders</b> (Oyster, Wine Cap) colonize an empty neighbor of their substrate when they fruit.
@@ -216,7 +217,7 @@ export function HowTo({ onBack }: { onBack: () => void }) {
           </li>
         </ol>
         <p>
-          If {r.moldBloomAt}+ beds are blighted, a mold bloom costs you an action next week. Stored mushrooms spoil when the season turns unless you
+          If {r.moldBloomAt}+ beds are blighted, a mold bloom costs you an action next month. Stored mushrooms spoil when the season turns unless you
           own a Dehydrator.
         </p>
       </section>
@@ -225,7 +226,7 @@ export function HowTo({ onBack }: { onBack: () => void }) {
         <p>
           Every festival score becomes renown, and renown raises your homestead's level. Levels stock new gear (the Lantern and Trail Map
           open new zones), give you heirloom slots for carrying gear into the next year, grow the farm to 5×5 and, eventually, bring in a
-          farmhand for a fifth weekly action.
+          farmhand for a fifth monthly action.
         </p>
         <p>
           Identifying the same species again and again builds mastery: Familiar species fool you less often, you recognize Expert species on

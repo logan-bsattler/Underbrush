@@ -3,7 +3,7 @@ import { content, type GameState, type NightEvent } from '../core';
 import { Icon, Mushroom } from './art';
 import { Farm } from './Game';
 import type { Store } from './store';
-import { eventText, name, squareName, waitText, weekLabel } from './text';
+import { eventText, name, squareName, waitText, monthLabel } from './text';
 
 const markFor: Partial<Record<NightEvent['type'], string>> = {
   grow: 'grow',
@@ -42,7 +42,7 @@ export function Night({ g, store }: { g: GameState; store: Store }) {
       <header class="night-head">
         <Icon name="moon" size={34} />
         <div>
-          <div class="eyebrow">Night falls on week {report.round}</div>
+          <div class="eyebrow">Night falls on month {report.round}</div>
           <h2>The farm grows while you sleep</h2>
         </div>
       </header>
@@ -80,14 +80,14 @@ export function Night({ g, store }: { g: GameState; store: Store }) {
             <Icon name={weather.id} size={40} />
             <div>
               <div class="eyebrow">
-                Week {g.round} · {weekLabel(g.round)}
+                Month {g.round} · {monthLabel(g.round)}
               </div>
               <b>{weather.name}.</b> {weather.rule}
             </div>
           </div>
-          {g.moldPenalty > 0 && <p class="note warn">Mold bloom: only {g.actionsLeft} actions this week.</p>}
+          {g.moldPenalty > 0 && <p class="note warn">Mold bloom: only {g.actionsLeft} actions this month.</p>}
           <button class="btn primary big wide" onClick={() => store.act({ type: 'dismissNight' })}>
-            {g.pendingCrosses.length ? 'See what crossed' : 'Start the week'}
+            {g.pendingCrosses.length ? 'See what crossed' : 'Start the month'}
           </button>
         </footer>
       )}

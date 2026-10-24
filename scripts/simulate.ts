@@ -54,7 +54,7 @@ if (process.argv[3] === 'campaign') {
   console.log(`${n} years with the baseline bot`);
   console.log(`score: mean ${mean.toFixed(1)}, p10 ${pct(scores, 0.1)}, median ${pct(scores, 0.5)}, p90 ${pct(scores, 0.9)}`);
   console.log(`tiers: ${Object.entries(tiers).map(([k, v]) => `${k} ${((100 * v) / n).toFixed(0)}%`).join(', ')}`);
-  console.log(`tend actions per week: ${(tend / n / 12).toFixed(2)} of 4`);
+  console.log(`tend actions per month: ${(tend / n / 12).toFixed(2)} of 4`);
   console.log(`unused actions per year: ${(idle / n).toFixed(1)}`);
   console.log(`bust rate: ${((100 * busts) / Math.max(trips, 1)).toFixed(0)}% of ${(trips / n).toFixed(1)} trips a year`);
   console.log(`hybrids per year: ${(hybrids / n).toFixed(2)}`);

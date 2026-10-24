@@ -275,7 +275,7 @@ describe('compost pile', () => {
     expect(s.basket).toHaveLength(0);
     expect(s.compostPile).toHaveLength(per + 1);
     expect(s.actionsLeft).toBe(4);
-    s = run(s, { type: 'endWeek' });
+    s = run(s, { type: 'endMonth' });
     expect(s.shed).toEqual(['compost']);
     expect(s.compostPile).toHaveLength(1);
     expect(s.night!.events).toContainEqual({ type: 'compost', tiles: 1 });
@@ -295,7 +295,7 @@ describe('compost pile', () => {
     let s = blank('spoilpile');
     s.round = 3;
     s.storage = { oyster: per, shiitake: 1 };
-    s = run(s, { type: 'endWeek' });
+    s = run(s, { type: 'endMonth' });
     expect(s.storage).toEqual({});
     expect(s.shed).toEqual(['compost']);
     expect(s.compostPile).toHaveLength(1);
@@ -307,10 +307,38 @@ describe('compost pile', () => {
     let s = blank('short');
     s.basket = scraps(per - 1);
     for (const b of s.basket.slice()) s = run(s, { type: 'discard', uid: b.uid });
-    s = run(s, { type: 'endWeek' });
+    s = run(s, { type: 'endMonth' });
     expect(s.shed).toEqual([]);
     expect(s.compostPile).toHaveLength(per - 1);
     expect(s.night!.events.some((e) => e.type === 'compost')).toBe(false);
+  });
+
+  it('composts a spent bed and its tile for one action, leaving ground for a new tile', () => {
+    let s = blank('square');
+    s.round = 7; // fall: Wine Cap's season is over
+    bed(s, 1, 'winecap', 'C');
+    s.grid[1].blight = true;
+    s.grid[1].dry = 1;
+    s.shed = ['log'];
+    s = run(s, { type: 'compostSquare', square: 1 });
+    expect(s.grid[1]).toMatchObject({ substrate: null, species: null, stage: null, dry: 0, blight: false });
+    expect(s.compostPile).toEqual(['winecap', 'woodchip']);
+    expect(s.stats.scraps).toBe(2);
+    expect(s.actionsLeft).toBe(3);
+    s = run(s, { type: 'placeSubstrate', index: 0, square: 1 });
+    expect(s.grid[1].substrate).toBe('log');
+  });
+
+  it('composts a bare tile, but not trees, empty ground or festival morning', () => {
+    let s = blank('bare');
+    s.grid[1].substrate = 'straw';
+    s = run(s, { type: 'compostSquare', square: 1 });
+    expect(s.compostPile).toEqual(['straw']);
+    expect(s.stats.scraps).toBe(1);
+    expect(() => dispatch(s, { type: 'compostSquare', square: 1 })).toThrow(/nothing to compost/);
+    expect(() => dispatch(s, { type: 'compostSquare', square: content.rules.trees[0] })).toThrow(/nothing to compost/);
+    s.grid[1].substrate = 'straw';
+    expect(() => dispatch({ ...s, finale: { harvested: false, marketed: false } }, { type: 'compostSquare', square: 1 })).toThrow(/festival/);
   });
 });
 
@@ -330,7 +358,7 @@ describe('growth phase', () => {
     for (let i = 0; i < 6; i++) {
       grow(s);
       s.watered = true;
-      for (const sq of s.grid) if (sq.stage === 'F') sq.stage = 'C'; // harvest each week
+      for (const sq of s.grid) if (sq.stage === 'F') sq.stage = 'C'; // harvest each month
       stages.push([1, 3, 12].map((n) => s.grid[n].stage!));
     }
     // shiitake: S→C, C (slow), P, F; lion's mane: S→C→P→F; oyster: S→C→F
@@ -545,7 +573,7 @@ describe('the year', () => {
     let s = blank('spoil');
     s.round = 3;
     s.storage = { oyster: 2 };
-    s = run(s, { type: 'endWeek' });
+    s = run(s, { type: 'endMonth' });
     expect(s.round).toBe(4);
     expect(s.storage).toEqual({});
     expect(s.night!.events.some((e) => e.type === 'spoil')).toBe(true);
@@ -553,17 +581,17 @@ describe('the year', () => {
     d.round = 3;
     d.gear.push('dehydrator');
     d.storage = { oyster: 2 };
-    d = run(d, { type: 'endWeek' });
+    d = run(d, { type: 'endMonth' });
     expect(d.storage).toEqual({ oyster: 2 });
   });
 
-  it('mold bloom costs an action next week', () => {
+  it('mold bloom costs an action next month', () => {
     let s = blank('mold');
     for (const i of [0, 1, 3]) {
       bed(s, i, 'oyster', 'C');
       s.grid[i].blight = true;
     }
-    s = run(s, { type: 'endWeek' });
+    s = run(s, { type: 'endMonth' });
     expect(s.actionsLeft).toBe(3);
   });
 
@@ -574,7 +602,7 @@ describe('the year', () => {
     s.hybridsMade = ['shaggyoyster'];
     s.planted = ['shiitake', 'reishi'];
     s.coins = 8;
-    s = run(s, { type: 'endWeek' });
+    s = run(s, { type: 'endMonth' });
     expect(s.over).toBe(false);
     expect(s.finale).toEqual({ harvested: false, marketed: false });
     s = run(s, { type: 'dismissNight' }, { type: 'festival' });
@@ -584,7 +612,7 @@ describe('the year', () => {
   });
 
   describe('festival morning', () => {
-    /** The morning after week 12, with a fruiting bed and an order the harvest can fill. */
+    /** The morning after month 12, with a fruiting bed and an order the harvest can fill. */
     function morning() {
       let s = blank('morning');
       s.round = 12;
@@ -593,7 +621,7 @@ describe('the year', () => {
       bed(s, 8, 'oyster', 'C', 'straw');
       s.storage = { oyster: 1 };
       s.orders = { visible: ['o-oyster3'], deck: [], filled: [] };
-      s = run(s, { type: 'endWeek' }, { type: 'dismissNight' });
+      s = run(s, { type: 'endMonth' }, { type: 'dismissNight' });
       expect(s.grid[4].stage).toBe('F');
       return s;
     }
@@ -622,7 +650,7 @@ describe('the year', () => {
         { type: 'forage', zone: 'meadow' },
         { type: 'identify' },
         { type: 'water' },
-        { type: 'endWeek' },
+        { type: 'endMonth' },
       ] as Action[])
         expect(() => dispatch(s, a)).toThrow(/festival morning/);
       expect(() => dispatch(s, { type: 'buyGear', gear: 'knife' })).toThrow(/gear on festival day/);
@@ -634,7 +662,7 @@ describe('the year', () => {
       s.watered = true;
       bed(s, 4, 'oyster', 'C', 'straw');
       bed(s, 5, 'enoki', 'C', 'log');
-      s = run(s, { type: 'endWeek' }, { type: 'dismissNight' });
+      s = run(s, { type: 'endMonth' }, { type: 'dismissNight' });
       expect(s.pendingCrosses).toHaveLength(1);
       expect(() => dispatch(s, { type: 'festival' })).toThrow(/hybrids/);
       s = run(s, { type: 'resolveCross', index: 0, replace: 'b' }, { type: 'festival' });

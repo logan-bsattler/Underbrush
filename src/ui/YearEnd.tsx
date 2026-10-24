@@ -86,7 +86,7 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
       <details class="playtest">
         <summary>Playtest log</summary>
         <ul>
-          <li>Actions spent tending: {tend} ({(tend / content.rules.rounds).toFixed(1)} a week)</li>
+          <li>Actions spent tending: {tend} ({(tend / content.rules.rounds).toFixed(1)} a month)</li>
           <li>Actions left unused: {idle}</li>
           <li>
             Forage trips: {g.stats.trips}, busts: {g.stats.busts}

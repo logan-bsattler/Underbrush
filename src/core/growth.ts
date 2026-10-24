@@ -110,7 +110,7 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
     else events.push({ type: 'wait', square: i, reason: 'slow' });
   }
 
-  // 5. Overripe: still fruiting from last week, unharvested
+  // 5. Overripe: still fruiting from last month, unharvested
   for (const i of wasFruiting) {
     const sq = grid[i];
     if (sq.stage === 'F') {

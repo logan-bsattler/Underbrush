@@ -31,7 +31,7 @@ export function unlockText(u: Unlock): string {
     case 'startCoins':
       return `Start each year with ${u.amount} more coins`;
     case 'actions':
-      return `${content.rules.actionsPerRound + u.amount} actions a week`;
+      return `${content.rules.actionsPerRound + u.amount} actions a month`;
   }
 }
 
@@ -125,7 +125,7 @@ export function Almanac({ store, onBack }: { store: Store; onBack: () => void })
         ))}
       </ol>
       <p class="note">
-        Heirlooms: at the start of a story year, choose gear you've bought before to own from the first week. You have {heirloomSlots(st.level.level)}{' '}
+        Heirlooms: at the start of a story year, choose gear you've bought before to own from the first month. You have {heirloomSlots(st.level.level)}{' '}
         slot{heirloomSlots(st.level.level) === 1 ? '' : 's'}.
       </p>
 
@@ -185,7 +185,7 @@ export function Pack({ store, onStart, onBack }: { store: Store; onStart: (heirl
       </header>
       <p>
         Pack for the year. As a {st.level.title}, you can carry {slots} heirloom{slots === 1 ? '' : 's'} from earlier years; you'll own{' '}
-        {slots === 1 ? 'it' : 'them'} from the first week.
+        {slots === 1 ? 'it' : 'them'} from the first month.
       </p>
       <div class="heirlooms" role="group" aria-label="Heirlooms">
         {choices.map((id) => {
@@ -210,7 +210,7 @@ export function Pack({ store, onStart, onBack }: { store: Store; onStart: (heirl
         <li>
           {perks.size}×{perks.size} farm
         </li>
-        <li>{content.rules.actionsPerRound + perks.bonusActions} actions a week</li>
+        <li>{content.rules.actionsPerRound + perks.bonusActions} actions a month</li>
         <li>{content.rules.startCoins + perks.bonusCoins} coins to start</li>
         <li>Shop stocks {perks.shop.map(gearName).join(', ')}</li>
       </ul>

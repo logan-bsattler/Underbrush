@@ -46,7 +46,7 @@ export function saleValue(s: GameState, speciesId: string, c: Content = defaultC
   return c.species[speciesId].value + (s.weather === 'marketday' ? 1 : 0) + (masteryOf(s, speciesId) >= 3 ? 1 : 0);
 }
 
-export function actionsPerWeek(s: GameState, c: Content = defaultContent): number {
+export function actionsPerMonth(s: GameState, c: Content = defaultContent): number {
   return c.rules.actionsPerRound + s.perks.bonusActions;
 }
 
@@ -247,7 +247,7 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
 // ── Actions ──────────────────────────────────────────────────────────────
 
 function spendAction(s: GameState) {
-  if (s.actionsLeft <= 0) fail('No actions left this week. End the week to rest.');
+  if (s.actionsLeft <= 0) fail('No actions left this month. End the month to rest.');
   s.actionsLeft -= 1;
 }
 
@@ -522,7 +522,7 @@ export function dispatch(
     case 'water': {
       guardIdle(s);
       guardFinale(s);
-      if (s.watered) fail('Already watered this week.');
+      if (s.watered) fail('Already watered this month.');
       spendAction(s);
       s.market = null;
       s.watered = true;
@@ -539,6 +539,22 @@ export function dispatch(
       s.market = null;
       sq.blight = false;
       sq.dry = 0;
+      noteTend(s);
+      break;
+    }
+
+    case 'compostSquare': {
+      guardIdle(s);
+      guardFinale(s);
+      const sq = s.grid[action.square];
+      if (!sq || sq.tree || sq.substrate === null) fail('There is nothing to compost there.');
+      spendAction(s);
+      s.market = null;
+      // The bed and its tile both go on the pile, leaving empty ground for a fresh tile from the shed.
+      if (sq.species) s.compostPile.push(sq.species);
+      s.compostPile.push(sq.substrate);
+      s.stats.scraps += sq.species ? 2 : 1;
+      Object.assign(sq, { substrate: null, species: null, stage: null, hold: 0, dry: 0, blight: false });
       noteTend(s);
       break;
     }
@@ -649,7 +665,7 @@ export function dispatch(
       break;
     }
 
-    case 'endWeek': {
+    case 'endMonth': {
       guardIdle(s);
       guardFinale(s);
       s.forage = null;
@@ -673,7 +689,7 @@ export function dispatch(
         report.events.push({ type: 'compost', tiles });
       }
       if (final) {
-        // No week 13: the morning after is the festival, with time for one last harvest and market visit.
+        // No month 13: the morning after is the festival, with time for one last harvest and market visit.
         s.finale = { harvested: false, marketed: false };
         s.actionsLeft = 0;
         s.watered = false;
@@ -681,7 +697,7 @@ export function dispatch(
       } else {
         if (seasonTurns) report.events.push({ type: 'season', season: seasonOf(s.round + 1, c) });
         s.round += 1;
-        s.actionsLeft = actionsPerWeek(s, c) - s.moldPenalty;
+        s.actionsLeft = actionsPerMonth(s, c) - s.moldPenalty;
         s.watered = false;
         s.stats.tendActions[s.round - 1] = 0;
         rollWeather(s, rng, c);

@@ -28,7 +28,7 @@ npm run build      # static site in dist/, deployable anywhere
 ```sh
 npm test           # rules-core tests, including 60 bot-played years as a fuzz test
 npm run typecheck
-npm run sim -- 500 # pacing report: score spread, tiers, tend actions per week, bust rate
+npm run sim -- 500 # pacing report: score spread, tiers, tend actions per month, bust rate
 npm run sim -- 100 campaign  # ten-year campaigns with progression: level and score by year
 ```
 

@@ -111,16 +111,16 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
       const affordable = wanted.find(
         (g) => !s.gear.includes(g) && s.perks.shop.includes(g) && s.coins >= content.gear.find((x) => x.id === g)!.cost,
       );
-      const lastWeekOfSeason = s.round % 3 === 0;
-      if (fillable || affordable || (lastWeekOfSeason && Object.keys(s.storage).length && !s.gear.includes('dehydrator'))) {
+      const lastMonthOfSeason = s.round % 3 === 0;
+      if (fillable || affordable || (lastMonthOfSeason && Object.keys(s.storage).length && !s.gear.includes('dehydrator'))) {
         if (fillable) act({ type: 'fillOrder', order: fillable });
-        if (lastWeekOfSeason || affordable) {
+        if (lastMonthOfSeason || affordable) {
           for (const id of Object.keys(s.storage)) {
             const neededSomewhere = s.orders.visible.some((o) => {
               const need = content.orders.find((x) => x.id === o)!.need;
               return need.kind === 'species' && id in need.items;
             });
-            if (!neededSomewhere || lastWeekOfSeason) act({ type: 'sell', species: id, count: s.storage[id] });
+            if (!neededSomewhere || lastMonthOfSeason) act({ type: 'sell', species: id, count: s.storage[id] });
           }
         }
         for (const g of wanted) {
@@ -147,7 +147,7 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
       }
       act({ type: 'closeTrip' });
     }
-    act({ type: 'endWeek' });
+    act({ type: 'endMonth' });
   }
   return s;
 }

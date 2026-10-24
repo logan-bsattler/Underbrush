@@ -161,6 +161,11 @@ button {
   border-color: var(--moss-dark);
   color: #fff;
 }
+.btn.warn {
+  background: var(--rust);
+  border-color: var(--rust-dark);
+  color: #fff;
+}
 .btn.ghost {
   background: transparent;
   border-color: transparent;
@@ -184,6 +189,9 @@ button {
 }
 .btn.wide {
   width: 100%;
+}
+.btn.compost-square {
+  margin-top: 12px;
 }
 .btn.grow,
 .grow {
@@ -278,7 +286,7 @@ button.chip {
   align-items: center;
   gap: 6px;
 }
-.hud-week {
+.hud-month {
   flex: 1;
   min-width: 0;
 }

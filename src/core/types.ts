@@ -266,7 +266,7 @@ export interface Stats {
 export interface Perks {
   /** Gear the market stocks this year. */
   shop: string[];
-  /** Gear you own from the first week. */
+  /** Gear you own from the first month. */
   heirlooms: string[];
   /** Species mastery level by species id (0 when absent). */
   mastery: Record<string, number>;
@@ -290,7 +290,7 @@ export interface GameState {
   grid: Square[];
   basket: Specimen[];
   shed: Substrate[];
-  /** Species ids of specimens you've discarded; they rot into Compost tiles overnight. */
+  /** Scraps on the pile: discarded and spoiled species ids, and composted substrate tiles. They rot into Compost tiles overnight. */
   compostPile: string[];
   storage: Record<string, number>;
   gear: string[];
@@ -309,7 +309,7 @@ export interface GameState {
   declinedCrosses: string[];
   night: NightReport | null;
   /**
-   * The morning after week 12: one last harvest and one market visit, free of actions, before the
+   * The morning after month 12: one last harvest and one market visit, free of actions, before the
    * festival. Null during the year and after the festival.
    */
   finale: { harvested: boolean; marketed: boolean } | null;
@@ -333,6 +333,7 @@ export type Action =
   | { type: 'placeSubstrate'; index: number; square: number }
   | { type: 'water' }
   | { type: 'clearBlight'; square: number }
+  | { type: 'compostSquare'; square: number }
   | { type: 'harvest' }
   | { type: 'sell'; species: string; count: number }
   | { type: 'fillOrder'; order: string }
@@ -340,7 +341,7 @@ export type Action =
   | { type: 'leaveMarket' }
   | { type: 'placeTent'; square: number }
   | { type: 'resolveCross'; index: number; replace: 'a' | 'b' | null }
-  | { type: 'endWeek' }
+  | { type: 'endMonth' }
   | { type: 'festival' }
   | { type: 'dismissNight' };
 
