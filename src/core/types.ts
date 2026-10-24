@@ -120,6 +120,8 @@ export interface RulesDef {
   moldBloomPenalty: number;
   hybridPoints: number;
   plantedPoints: number;
+  /** Coins left over at the festival score 1 point per this many, rounded down. */
+  coinsPerPoint: number;
   tiers: TierDef[];
 }
 

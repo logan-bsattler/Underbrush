@@ -160,6 +160,14 @@ levers, all in `src/data`: lower the tier thresholds, or let Market not cost an 
 human paper-prototype log as the real signal; the tabletop rules would need the same change to
 stay in step with the app.
 
+**Leftover coins now score**: 1 festival point per 3 coins left at the end (`coinsPerPoint` in
+`rules.json`, rounded down). The bot ends a year holding about 15 coins (median 13, p90 31), so
+1:1 would have doubled scores and made selling worth more than orders. At 1:3 the same bot averages
+17.8 (from 13.1), reaches Bronze in 48% of years and Silver in 15% (from 35% and 3%). Over a
+ten-year campaign its median climbs from about 20 to 24 instead of staying flat, because it hoards
+coins and higher levels start it with more. Coins still spent on gear give up points, so buying
+late in the year is now a real choice.
+
 ## Not in this build
 
 Monetization and store builds (a natural demo cut is year one, levels 1–2), async co-op, expansion biomes, Riverbank/Waders, Burn Bed,

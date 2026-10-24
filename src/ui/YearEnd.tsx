@@ -41,6 +41,12 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
             <td>Species planted ({g.planted.length})</td>
             <td>{sc.planted}</td>
           </tr>
+          <tr>
+            <td>
+              Coins left over ({g.coins}, 1 point per {content.rules.coinsPerPoint})
+            </td>
+            <td>{sc.coins}</td>
+          </tr>
           <tr class="total">
             <td>Total</td>
             <td>{sc.total}</td>

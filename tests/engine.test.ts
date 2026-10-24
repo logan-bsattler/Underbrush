@@ -573,12 +573,13 @@ describe('the year', () => {
     s.orderPoints = 20;
     s.hybridsMade = ['shaggyoyster'];
     s.planted = ['shiitake', 'reishi'];
+    s.coins = 8;
     s = run(s, { type: 'endWeek' });
     expect(s.over).toBe(false);
     expect(s.finale).toEqual({ harvested: false, marketed: false });
     s = run(s, { type: 'dismissNight' }, { type: 'festival' });
     expect(s).toMatchObject({ over: true, finale: null });
-    expect(score(s)).toMatchObject({ total: 25, tier: { id: 'silver' } });
+    expect(score(s)).toMatchObject({ coins: 2, total: 27, tier: { id: 'silver' } });
     expect(() => dispatch(s, { type: 'water' })).toThrow(/over/);
   });
 

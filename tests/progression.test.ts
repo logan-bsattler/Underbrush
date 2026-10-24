@@ -140,7 +140,7 @@ describe('recording a year', () => {
   }
 
   it('turns the festival score into renown, once per seed', () => {
-    const s = finished('r1', { orderPoints: 20, gear: ['knife'], stats: { ...newGame().stats, identified: { oyster: 3 } } });
+    const s = finished('r1', { orderPoints: 20, coins: 0, gear: ['knife'], stats: { ...newGame().stats, identified: { oyster: 3 } } });
     const j = recordYear(emptyJournal(), s);
     expect(j.renown).toBe(score(s).total);
     expect(j.years[0]).toMatchObject({ renown: 20, levelFrom: 1, levelTo: 2, masteryUps: ['oyster'] });

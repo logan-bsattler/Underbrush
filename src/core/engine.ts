@@ -112,9 +112,10 @@ export function orderPayment(
 export function score(s: GameState, c: Content = defaultContent) {
   const hybrids = s.hybridsMade.length * c.rules.hybridPoints;
   const planted = s.planted.length * c.rules.plantedPoints;
-  const total = s.orderPoints + hybrids + planted;
+  const coins = Math.floor(s.coins / c.rules.coinsPerPoint);
+  const total = s.orderPoints + hybrids + planted + coins;
   const tier = [...c.rules.tiers].reverse().find((t) => total >= t.min) ?? null;
-  return { orders: s.orderPoints, hybrids, planted, total, tier };
+  return { orders: s.orderPoints, hybrids, planted, coins, total, tier };
 }
 
 // ── Setup ────────────────────────────────────────────────────────────────
