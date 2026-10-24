@@ -39,7 +39,7 @@ Interpretations where the kit left room:
 - **Substrate finds and compost** go to a shed; laying a tile on empty ground is free.
 - **Selling compost** (not in the kit): Compost tiles in the shed sell at the market for 1 coin
   each (`rules.compostValue`, +1 on Market day), so a pile with no room on the farm still pays a
-  little. At the festival's 1 point per 3 coins that is worth a third of a point a tile.
+  little. At the festival's 1 point per 5 coins that is worth a fifth of a point a tile.
 - **Compost a square** (not in the kit) is a Tend action: the bed, if any, and its tile go on the
   compost pile as one scrap each, and the square becomes empty ground for a new tile. It frees a
   square whose species is out of season for the rest of the year, like Wine Cap after summer.
@@ -178,6 +178,14 @@ stay in step with the app.
 ten-year campaign its median climbs from about 20 to 24 instead of staying flat, because it hoards
 coins and higher levels start it with more. Coins still spent on gear give up points, so buying
 late in the year is now a real choice.
+
+**Then raised to 1 point per 5 coins.** A human playtest reached Golden Chanterelle (45) with 28
+points from 84 leftover coins and only 4 from orders: once species reach Master (+1 coin a sale)
+and a 5×5 farm, selling everything outscores chasing orders. At 1:5 that year scores 39 (Gold).
+The bot, which hoards far less than a person, averages 16.4 (from 18.7) over 500 years: Bronze
+47%, Silver 9%, Gold 1%, and no tier 43% (from 29%). Its ten-year campaign median now goes from
+about 17 to 18 rather than 20 to 24, so if later years feel flat in play, the next lever is the
+tier thresholds or what higher levels unlock, not the coin rate.
 
 ## Not in this build
 

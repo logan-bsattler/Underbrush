@@ -661,7 +661,7 @@ describe('the year', () => {
     expect(s.finale).toEqual({ harvested: false, marketed: false });
     s = run(s, { type: 'dismissNight' }, { type: 'festival' });
     expect(s).toMatchObject({ over: true, finale: null });
-    expect(score(s)).toMatchObject({ coins: 2, total: 27, tier: { id: 'silver' } });
+    expect(score(s)).toMatchObject({ coins: 1, total: 26, tier: { id: 'silver' } });
     expect(() => dispatch(s, { type: 'water' })).toThrow(/over/);
   });
 

@@ -60,7 +60,7 @@
   "moldBloomPenalty": 1,
   "hybridPoints": 3,
   "plantedPoints": 1,
-  "coinsPerPoint": 3,
+  "coinsPerPoint": 5,
   "tiers": [
     {
       "id": "bronze",
