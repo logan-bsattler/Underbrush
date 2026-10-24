@@ -61,10 +61,16 @@ the numbers too; its bust rate fell from 8% to 5% of trips.
 ## The compost pile
 
 Specimens you compost, fruit that goes overripe unpicked, and stock that spoils when the season
-turns all go on a compost pile. Overnight, every 2 scraps (`rules.scrapsPerCompost`) rot into a
+turns all go on a compost pile. Overnight, every 3 scraps (`rules.scrapsPerCompost`) rot into a
 Compost tile in the shed, which Puffball grows on. Spoilage lands on the pile before it rots, so a
 season's lost stock becomes compost the same night. Lookalikes still become a Compost tile
 directly, as in the kit.
+
+Why 3: even a player who never composts anything by hand puts about 8 scraps a year on the pile
+from overripe fruit and spoiled stock (baseline bot, 300 years). At 2 per tile that made 3.7 tiles a
+year, more than lookalikes (2.3); at 3 it makes 2.4, on par with lookalikes; at 4 it drops to 1.6,
+about one a season. The festival's playtest log shows scraps and tiles for each year to check this
+against human play.
 
 ## Content beyond the kit
 

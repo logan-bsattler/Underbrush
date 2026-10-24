@@ -248,21 +248,22 @@ describe('identify and plant', () => {
 });
 
 describe('compost pile', () => {
-  it('puts composted specimens on the pile, and every two rot into a Compost tile overnight', () => {
+  const per = content.rules.scrapsPerCompost;
+  const scraps = (n: number, start = 1) =>
+    Array.from({ length: n }, (_, i) => ({ uid: start + i, species: ['oyster', 'puffball', 'shiitake'][i % 3], identified: i % 2 === 0, trip: 1 }));
+
+  it('puts composted specimens on the pile, and a full pile rots into a Compost tile overnight', () => {
     let s = blank('pile');
-    s.basket = [
-      { uid: 1, species: 'oyster', identified: true, trip: 1 },
-      { uid: 2, species: 'puffball', identified: false, trip: 1 },
-      { uid: 3, species: 'shiitake', identified: true, trip: 1 },
-    ];
-    s = run(s, { type: 'discard', uid: 1 }, { type: 'discard', uid: 2 }, { type: 'discard', uid: 3 });
+    s.basket = scraps(per + 1);
+    for (const b of s.basket.slice()) s = run(s, { type: 'discard', uid: b.uid });
     expect(s.basket).toHaveLength(0);
-    expect(s.compostPile).toEqual(['oyster', 'puffball', 'shiitake']);
+    expect(s.compostPile).toHaveLength(per + 1);
     expect(s.actionsLeft).toBe(4);
     s = run(s, { type: 'endWeek' });
     expect(s.shed).toEqual(['compost']);
-    expect(s.compostPile).toEqual(['shiitake']);
+    expect(s.compostPile).toHaveLength(1);
     expect(s.night!.events).toContainEqual({ type: 'compost', tiles: 1 });
+    expect(s.stats).toMatchObject({ scraps: per + 1, compostTiles: 1 });
   });
 
   it('overripe fruit goes on the pile', () => {
@@ -271,12 +272,13 @@ describe('compost pile', () => {
     bed(s, 0, 'oyster', 'F');
     grow(s);
     expect(s.compostPile).toEqual(['oyster']);
+    expect(s.stats.scraps).toBe(1);
   });
 
   it('stock that spoils at the season change goes on the pile and rots the same night', () => {
     let s = blank('spoilpile');
     s.round = 3;
-    s.storage = { oyster: 2, shiitake: 1 };
+    s.storage = { oyster: per, shiitake: 1 };
     s = run(s, { type: 'endWeek' });
     expect(s.storage).toEqual({});
     expect(s.shed).toEqual(['compost']);
@@ -285,11 +287,13 @@ describe('compost pile', () => {
     expect(kinds.indexOf('spoil')).toBeLessThan(kinds.indexOf('compost'));
   });
 
-  it('a single scrap waits for another', () => {
-    let s = blank('one');
-    s.basket = [{ uid: 1, species: 'oyster', identified: true, trip: 1 }];
-    s = run(s, { type: 'discard', uid: 1 }, { type: 'endWeek' });
+  it('a pile short of a full tile waits for more', () => {
+    let s = blank('short');
+    s.basket = scraps(per - 1);
+    for (const b of s.basket.slice()) s = run(s, { type: 'discard', uid: b.uid });
+    s = run(s, { type: 'endWeek' });
     expect(s.shed).toEqual([]);
+    expect(s.compostPile).toHaveLength(per - 1);
     expect(s.night!.events.some((e) => e.type === 'compost')).toBe(false);
   });
 });

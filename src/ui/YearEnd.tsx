@@ -86,6 +86,9 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
             Forage trips: {g.stats.trips}, busts: {g.stats.busts}
           </li>
           <li>Lookalikes picked: {g.stats.lookalikes}</li>
+          <li>
+            Compost: {g.stats.scraps} scraps on the pile, {g.stats.compostTiles} Compost tile{g.stats.compostTiles === 1 ? '' : 's'} made
+          </li>
           <li>Coins earned: {g.stats.coinsEarned}</li>
           <li>Seed: {g.seed}</li>
         </ul>

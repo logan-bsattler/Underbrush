@@ -136,6 +136,8 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   s.perks.bonusActions ??= 0;
   if (!s.stats.identified) s.stats.identified = {};
   s.compostPile ??= [];
+  s.stats.scraps ??= s.compostPile.length;
+  s.stats.compostTiles ??= 0;
   // A trip saved by the older draw-one-card build ends where it stood; its finds are already in the basket.
   if (s.forage && !s.forage.patch) {
     s.forage.patch = [];
@@ -220,7 +222,17 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     moldPenalty: 0,
     nextUid: 1,
     tripCount: 0,
-    stats: { identified: {}, tendActions: [0], idleActions: [], busts: 0, trips: 0, lookalikes: 0, coinsEarned: 0 },
+    stats: {
+      identified: {},
+      tendActions: [0],
+      idleActions: [],
+      busts: 0,
+      trips: 0,
+      lookalikes: 0,
+      coinsEarned: 0,
+      scraps: 0,
+      compostTiles: 0,
+    },
     over: false,
   };
   rollWeather(s, rng, c);
@@ -472,6 +484,7 @@ export function dispatch(
       const spec = specimenFor(s, action.uid);
       s.basket = s.basket.filter((b) => b.uid !== spec.uid);
       s.compostPile.push(spec.species);
+      s.stats.scraps += 1;
       break;
     }
 
@@ -622,6 +635,7 @@ export function dispatch(
       if (seasonTurns && !s.gear.includes('dehydrator') && Object.keys(s.storage).length) {
         report.events.push({ type: 'spoil', lost: { ...s.storage } });
         for (const [id, n] of Object.entries(s.storage)) for (let i = 0; i < n; i++) s.compostPile.push(id);
+        s.stats.scraps += Object.values(s.storage).reduce((a, b) => a + b, 0);
         s.storage = {};
       }
       // Discards, overripe fruit and spoiled stock all rot down together.
@@ -629,6 +643,7 @@ export function dispatch(
       if (tiles > 0) {
         s.compostPile.splice(0, tiles * c.rules.scrapsPerCompost);
         for (let i = 0; i < tiles; i++) s.shed.push('compost');
+        s.stats.compostTiles += tiles;
         report.events.push({ type: 'compost', tiles });
       }
       if (final) {

@@ -52,7 +52,7 @@
   "patchSize": 3,
   "bustAt": 2,
   "bustKeep": 2,
-  "scrapsPerCompost": 2,
+  "scrapsPerCompost": 3,
   "dryMarksToBlight": 2,
   "crowdingAt": 3,
   "moldBloomAt": 3,

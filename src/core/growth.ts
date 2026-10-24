@@ -117,6 +117,7 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
       sq.stage = 'C';
       sq.hold = 0;
       s.compostPile.push(sq.species!);
+      s.stats.scraps += 1;
       events.push({ type: 'overripe', square: i });
     }
   }

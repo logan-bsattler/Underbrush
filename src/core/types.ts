@@ -255,6 +255,9 @@ export interface Stats {
   trips: number;
   lookalikes: number;
   coinsEarned: number;
+  /** Scraps that reached the compost pile, and the Compost tiles they rotted into. */
+  scraps: number;
+  compostTiles: number;
 }
 
 /** What the homestead's progression brings into a year. Daily years use the standard kit. */
