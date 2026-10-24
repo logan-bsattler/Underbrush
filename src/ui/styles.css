@@ -268,7 +268,9 @@ button.chip {
   display: flex;
   flex-direction: column;
   height: 100dvh;
-  padding: calc(6px + var(--safe-top)) 12px calc(6px + var(--safe-bottom));
+  padding-block: calc(6px + var(--safe-top)) calc(6px + var(--safe-bottom));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
   gap: 8px;
 }
 .hud {
@@ -977,7 +979,9 @@ button.chip {
   flex-direction: column;
   max-width: 480px;
   margin: 0 auto;
-  padding: calc(14px + var(--safe-top)) 16px calc(14px + var(--safe-bottom));
+  padding-block: calc(14px + var(--safe-top)) calc(14px + var(--safe-bottom));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
   animation: fade-in 0.25s ease both;
 }
 .toast {
@@ -1505,7 +1509,9 @@ button.chip {
 /* ── Screens ─────────────────────────────────────────────────────────── */
 .screen {
   min-height: 100dvh;
-  padding: calc(18px + var(--safe-top)) 18px calc(24px + var(--safe-bottom));
+  padding-block: calc(18px + var(--safe-top)) calc(24px + var(--safe-bottom));
+  padding-left: max(18px, env(safe-area-inset-left, 0px));
+  padding-right: max(18px, env(safe-area-inset-right, 0px));
 }
 .screen-head {
   display: flex;
