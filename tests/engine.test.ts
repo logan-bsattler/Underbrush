@@ -282,6 +282,20 @@ describe('compost pile', () => {
     expect(s.stats).toMatchObject({ scraps: per + 1, compostTiles: 1 });
   });
 
+  it('composts the whole basket at once, for free, but not mid-trip or when empty', () => {
+    let s = blank('all');
+    s.basket = scraps(4);
+    s = run(s, { type: 'compostBasket' });
+    expect(s.basket).toEqual([]);
+    expect(s.compostPile).toEqual(['oyster', 'puffball', 'shiitake', 'oyster']);
+    expect(s.stats.scraps).toBe(4);
+    expect(s.actionsLeft).toBe(4);
+    expect(() => dispatch(s, { type: 'compostBasket' })).toThrow(/empty/);
+    s.basket = scraps(1, 10);
+    s.forage = { status: 'open' } as GameState['forage'];
+    expect(() => dispatch(s, { type: 'compostBasket' })).toThrow(/forage trip/);
+  });
+
   it('overripe fruit goes on the pile', () => {
     const s = blank('ripe');
     s.watered = true;

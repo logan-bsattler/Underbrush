@@ -332,6 +332,8 @@ export type Action =
   | { type: 'identify' }
   | { type: 'plant'; uid: number; square: number }
   | { type: 'discard'; uid: number }
+  /** Composts every specimen in the basket, identified or not. */
+  | { type: 'compostBasket' }
   | { type: 'placeSubstrate'; index: number; square: number }
   | { type: 'water' }
   | { type: 'clearBlight'; square: number }

@@ -246,25 +246,41 @@ function Tray({
   onSpecimen,
   onShed,
   onIdentify,
+  onCompostAll,
 }: {
   g: GameState;
   mode: Mode;
   onSpecimen: (s: Specimen) => void;
   onShed: (i: number) => void;
   onIdentify: () => void;
+  onCompostAll: () => void;
 }) {
   const cap = basketCapacity(g);
   const unknown = g.basket.filter((b) => !b.identified).length;
+  // Composting the whole basket asks for a second tap; any change to the basket takes the question back.
+  const [sure, setSure] = useState(false);
+  useEffect(() => setSure(false), [g.basket.length]);
   return (
     <div class="tray">
       <div class="tray-group">
         <div class="tray-label">
           <Icon name="basket" size={16} /> Basket {g.basket.length}/{cap}
-          {unknown > 0 && (
-            <button class="id-all" disabled={g.actionsLeft < 1 || !!g.finale} onClick={onIdentify} aria-label={`Identify ${unknown} specimen${unknown === 1 ? '' : 's'}, 1 action`}>
-              Identify {unknown}
-            </button>
-          )}
+          <span class="tray-pills">
+            {unknown > 0 && (
+              <button class="id-all" disabled={g.actionsLeft < 1 || !!g.finale} onClick={onIdentify} aria-label={`Identify ${unknown} specimen${unknown === 1 ? '' : 's'}, 1 action`}>
+                Identify {unknown}
+              </button>
+            )}
+            {g.basket.length > 0 && (
+              <button
+                class={`compost-all ${sure ? 'sure' : ''}`}
+                onClick={() => (sure ? onCompostAll() : setSure(true))}
+                aria-label={sure ? `Tap again to compost all ${g.basket.length} specimens` : 'Compost everything in the basket, free'}
+              >
+                {sure ? 'Tap again' : 'Compost all'}
+              </button>
+            )}
+          </span>
         </div>
         <div class={`slots basket-slots ${cap > 4 ? 'many' : ''}`}>
           {Array.from({ length: cap }, (_, i) => {
@@ -828,6 +844,10 @@ export function Game({
         onIdentify={() => {
           const r = store.act({ type: 'identify' });
           if (r?.kind === 'identify') setReveal(r);
+        }}
+        onCompostAll={() => {
+          store.act({ type: 'compostBasket' });
+          if (mode.kind === 'plant') setMode({ kind: 'none' });
         }}
       />
 

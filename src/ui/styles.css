@@ -2367,7 +2367,6 @@ button.chip {
   box-shadow: 0 0 0 3px #7fae5b, 0 20px 40px rgba(0, 0, 0, 0.35);
 }
 .id-all {
-  margin-left: auto;
   padding: 1px 9px;
   border-radius: 999px;
   border: 1.5px solid var(--moss);
@@ -2380,4 +2379,28 @@ button.chip {
 .id-all:disabled {
   opacity: 0.45;
   cursor: default;
+}
+.tray-pills {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.tray-pills button {
+  white-space: nowrap;
+}
+.compost-all {
+  padding: 1px 9px;
+  border-radius: 999px;
+  border: 1.5px solid var(--rust);
+  background: transparent;
+  color: var(--rust);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.compost-all.sure {
+  background: var(--rust);
+  color: #fff;
 }

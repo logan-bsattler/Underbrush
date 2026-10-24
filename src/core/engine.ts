@@ -512,6 +512,15 @@ export function dispatch(
       break;
     }
 
+    case 'compostBasket': {
+      if (s.forage && s.forage.status === 'open') fail('Finish your forage trip first.');
+      if (!s.basket.length) fail('Your basket is empty.');
+      for (const spec of s.basket) s.compostPile.push(spec.species);
+      s.stats.scraps += s.basket.length;
+      s.basket = [];
+      break;
+    }
+
     case 'placeSubstrate': {
       if (s.forage && s.forage.status === 'open') fail('Finish your forage trip first.');
       const sub: Substrate | undefined = s.shed[action.index];
