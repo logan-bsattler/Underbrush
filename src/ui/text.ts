@@ -91,6 +91,8 @@ export function eventText(e: NightEvent, grid: { species: string | null }[]): st
       return `${seasonName[e.season]} arrives.`;
     case 'windfall':
       return 'A windfall log landed in your shed.';
+    case 'compost':
+      return `The compost pile rotted down into ${e.tiles === 1 ? 'a Compost tile' : `${e.tiles} Compost tiles`} in your shed.`;
     default:
       return null;
   }

@@ -182,7 +182,7 @@ export function HowTo({ onBack }: { onBack: () => void }) {
             <b>Market:</b> sell, deliver one festival order and buy gear, as much as you like in one visit.
           </li>
         </ul>
-        <p class="small muted">Free any time: lay substrate from your shed on empty ground, and drop specimens you don't want.</p>
+        <p class="small muted">Free any time: lay substrate from your shed on empty ground, and compost specimens you don't want. Every {r.scrapsPerCompost} on the compost pile rot into a Compost tile overnight.</p>
       </section>
       <section>
         <h2>Overnight</h2>

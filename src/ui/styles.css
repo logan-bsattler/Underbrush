@@ -2176,3 +2176,20 @@ button.chip {
   /* square grid + 22px of stream and gap beside it, under a ~44px banner */
   width: min(100%, calc(100cqh - 44px + 22px));
 }
+
+.pile {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 6px 0 3px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+.pile.ready {
+  border-color: #6e5236;
+  color: #3e2c1c;
+}

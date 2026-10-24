@@ -110,6 +110,8 @@ export interface RulesDef {
   ordersVisible: number;
   bustAt: number;
   bustKeep: number;
+  /** Discarded specimens on the compost pile that rot into one Compost tile overnight. */
+  scrapsPerCompost: number;
   dryMarksToBlight: number;
   crowdingAt: number;
   moldBloomAt: number;
@@ -222,7 +224,8 @@ export type NightEvent =
   | { type: 'moldBloom'; count: number }
   | { type: 'spoil'; lost: Record<string, number> }
   | { type: 'season'; season: Season }
-  | { type: 'windfall' };
+  | { type: 'windfall' }
+  | { type: 'compost'; tiles: number };
 
 export interface NightReport {
   round: number;
@@ -268,6 +271,8 @@ export interface GameState {
   grid: Square[];
   basket: Specimen[];
   shed: Substrate[];
+  /** Species ids of specimens you've discarded; they rot into Compost tiles overnight. */
+  compostPile: string[];
   storage: Record<string, number>;
   gear: string[];
   tentPlaced: boolean;

@@ -134,6 +134,7 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   if (!s.perks) s.perks = standardPerks(c);
   s.perks.bonusActions ??= 0;
   if (!s.stats.identified) s.stats.identified = {};
+  s.compostPile ??= [];
   return s;
 }
 
@@ -192,6 +193,7 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     grid,
     basket: [],
     shed: [],
+    compostPile: [],
     storage: {},
     gear: perks.heirlooms.slice(),
     tentPlaced: false,
@@ -416,6 +418,7 @@ export function dispatch(
       if (s.forage && s.forage.status === 'open') fail('Finish your forage trip first.');
       const spec = specimenFor(s, action.uid);
       s.basket = s.basket.filter((b) => b.uid !== spec.uid);
+      s.compostPile.push(spec.species);
       break;
     }
 
@@ -561,6 +564,12 @@ export function dispatch(
       s.market = null;
       s.stats.idleActions[s.round - 1] = s.actionsLeft;
       const report = runGrowth(s, rng, c);
+      const tiles = Math.floor(s.compostPile.length / c.rules.scrapsPerCompost);
+      if (tiles > 0) {
+        s.compostPile.splice(0, tiles * c.rules.scrapsPerCompost);
+        for (let i = 0; i < tiles; i++) s.shed.push('compost');
+        report.events.push({ type: 'compost', tiles });
+      }
       if (s.round >= c.rules.rounds) {
         s.over = true;
         s.pendingCrosses = [];

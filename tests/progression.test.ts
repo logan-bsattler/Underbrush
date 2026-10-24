@@ -154,8 +154,9 @@ describe('recording a year', () => {
     delete old.size;
     delete old.perks;
     delete old.stats.identified;
+    delete old.compostPile;
     const s = migrateState(old);
-    expect(s).toMatchObject({ size: 4, perks: standardPerks() });
+    expect(s).toMatchObject({ size: 4, perks: standardPerks(), compostPile: [] });
     expect(dispatch(s, { type: 'water' }).state.watered).toBe(true);
     const j = normalizeJournal({ discovered: ['oyster'], years: [{ seed: 'x', score: 12 } as any] });
     expect(j).toMatchObject({ renown: 0, idCounts: {}, gearOwned: [], discovered: ['oyster'] });

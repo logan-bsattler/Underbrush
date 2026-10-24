@@ -524,6 +524,14 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
           <path d="M12 3 L13.5 10.5 L21 12 L13.5 13.5 L12 21 L10.5 13.5 L3 12 L10.5 10.5 Z" fill="#E9B949" stroke="#9A6A14" strokeWidth="1.2" strokeLinejoin="round" />
         </svg>
       );
+    case 'pile':
+      return (
+        <svg {...p}>
+          <path d="M3 19 Q6 10 12 9 Q18 10 21 19 Z" fill="#6E5236" stroke="#3E2C1C" strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="M8 14 l1 -1 M13 12 l1 1 M15 16 l1 -1 M10 17 l1 0" {...s} stroke="#C9A77E" strokeWidth="1.4" />
+          <path d="M11 9 Q10 5 13 4" {...s} stroke="#6E8B4E" strokeWidth="1.6" />
+        </svg>
+      );
     case 'shed':
       return (
         <svg {...p}>

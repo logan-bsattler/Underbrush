@@ -204,6 +204,33 @@ describe('identify and plant', () => {
   });
 });
 
+describe('compost pile', () => {
+  it('puts composted specimens on the pile, and every two rot into a Compost tile overnight', () => {
+    let s = blank('pile');
+    s.basket = [
+      { uid: 1, species: 'oyster', identified: true, trip: 1 },
+      { uid: 2, species: 'puffball', identified: false, trip: 1 },
+      { uid: 3, species: 'shiitake', identified: true, trip: 1 },
+    ];
+    s = run(s, { type: 'discard', uid: 1 }, { type: 'discard', uid: 2 }, { type: 'discard', uid: 3 });
+    expect(s.basket).toHaveLength(0);
+    expect(s.compostPile).toEqual(['oyster', 'puffball', 'shiitake']);
+    expect(s.actionsLeft).toBe(4);
+    s = run(s, { type: 'endWeek' });
+    expect(s.shed).toEqual(['compost']);
+    expect(s.compostPile).toEqual(['shiitake']);
+    expect(s.night!.events).toContainEqual({ type: 'compost', tiles: 1 });
+  });
+
+  it('a single scrap waits for another', () => {
+    let s = blank('one');
+    s.basket = [{ uid: 1, species: 'oyster', identified: true, trip: 1 }];
+    s = run(s, { type: 'discard', uid: 1 }, { type: 'endWeek' });
+    expect(s.shed).toEqual([]);
+    expect(s.night!.events.some((e) => e.type === 'compost')).toBe(false);
+  });
+});
+
 describe('growth phase', () => {
   it('grows fast, medium, slow and very slow species at their own pace', () => {
     const s = blank();

@@ -221,6 +221,22 @@ export function Farm({
   );
 }
 
+/** The compost pile: discarded specimens waiting to rot into a Compost tile overnight. */
+function CompostPile({ g }: { g: GameState }) {
+  const per = content.rules.scrapsPerCompost;
+  const n = g.compostPile.length;
+  const label =
+    n === 0
+      ? 'Compost pile is empty'
+      : `Compost pile: ${n} scrap${n === 1 ? '' : 's'}. ${n >= per ? 'A Compost tile will be ready by morning.' : `${per - n} more to make a Compost tile.`}`;
+  return (
+    <span class={`pile ${n >= per ? 'ready' : ''}`} title={label} aria-label={label} role="img">
+      <Icon name="pile" size={16} />
+      {n < per ? `${n}/${per}` : n}
+    </span>
+  );
+}
+
 function Tray({ g, mode, onSpecimen, onShed }: { g: GameState; mode: Mode; onSpecimen: (s: Specimen) => void; onShed: (i: number) => void }) {
   const cap = basketCapacity(g);
   return (
@@ -249,6 +265,7 @@ function Tray({ g, mode, onSpecimen, onShed }: { g: GameState; mode: Mode; onSpe
       <div class="tray-group shed">
         <div class="tray-label">
           <Icon name="shed" size={16} /> Shed
+          <CompostPile g={g} />
         </div>
         <div class="slots">
           {g.shed.length === 0 && <span class="muted small">empty</span>}
@@ -357,6 +374,14 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
   );
 }
 
+function CompostHint() {
+  return (
+    <p class="small muted">
+      Composted specimens go on the pile beside your shed. Every {content.rules.scrapsPerCompost} rot into a Compost tile overnight.
+    </p>
+  );
+}
+
 function SpecimenSheet({
   g,
   uid,
@@ -407,9 +432,10 @@ function SpecimenSheet({
             Identify · 1 action
           </button>
           <button class="btn ghost" onClick={() => store.act({ type: 'discard', uid }) && onClose()}>
-            Leave it
+            Compost it
           </button>
         </div>
+        <CompostHint />
       </SheetFrame>
     );
   return (
@@ -436,6 +462,7 @@ function SpecimenSheet({
           Compost it
         </button>
       </div>
+      <CompostHint />
     </SheetFrame>
   );
 }
