@@ -23,7 +23,12 @@ import { YearEnd } from './YearEnd';
 import type { Store } from './store';
 import { growthName, name, seasonsText, squareName, stageName, substrateName, weekLabel } from './text';
 
-type Mode = { kind: 'none' } | { kind: 'plant'; uid: number } | { kind: 'substrate'; index: number } | { kind: 'tent' };
+export type Mode =
+  | { kind: 'none' }
+  | { kind: 'plant'; uid: number }
+  | { kind: 'substrate'; index: number }
+  | { kind: 'tent' }
+  | { kind: 'cross'; a: number; b: number; hybrid: string; pick: number | null };
 type Sheet =
   | null
   | { kind: 'bed'; i: number }
@@ -135,6 +140,8 @@ export function Farm({
     if (spec) plantableSquares(g, spec.species).forEach((i) => targets.add(i));
   } else if (mode?.kind === 'substrate') emptyGround(g).forEach((i) => targets.add(i));
   else if (mode?.kind === 'tent') g.grid.forEach((sq, i) => !sq.tree && targets.add(i));
+  else if (mode?.kind === 'cross') [mode.a, mode.b].forEach((i) => targets.add(i));
+  const cross = mode?.kind === 'cross' ? mode : null;
   const choosing = mode && mode.kind !== 'none';
 
   return (
@@ -156,6 +163,7 @@ export function Farm({
             sq.stage === 'F' && !sq.blight ? 'ready' : '',
             choosing ? (isTarget ? 'target' : 'dim') : '',
             marks?.[i] ? `mark mark-${marks[i]}` : '',
+            cross?.pick === i ? 'picked' : '',
           ].join(' ');
           const label = sq.tree
             ? 'Tree'
@@ -168,7 +176,8 @@ export function Farm({
             <button
               key={i}
               class={cls}
-              aria-label={label}
+              aria-label={cross && isTarget ? `${label}. ${cross.pick === i ? 'Chosen to become' : 'Choose to turn into'} ${name(cross.hybrid)}` : label}
+              aria-pressed={cross && isTarget ? cross.pick === i : undefined}
               disabled={!onSquare || (choosing && !isTarget)}
               onClick={() => onSquare?.(i)}
             >
@@ -189,6 +198,16 @@ export function Farm({
                   )}
                   {sq.species && sq.stage && !small && <span class={`stage-chip st-${sq.stage}`}>{sq.stage}</span>}
                 </>
+              )}
+              {cross?.pick === i && (
+                <span class="hybrid-preview" aria-hidden="true">
+                  <Mushroom species={cross.hybrid} size={100} />
+                </span>
+              )}
+              {cross && isTarget && (
+                <span class="sq-tag" aria-hidden="true">
+                  {cross.pick === i ? name(cross.hybrid) : name(sq.species!)}
+                </span>
               )}
               {marks?.[i] && <span class="mark-dot" aria-hidden="true" />}
             </button>

@@ -1478,29 +1478,102 @@ button.chip {
 /* Cross prompt */
 .cross {
   background: rgba(31, 42, 28, 0.72);
-  justify-content: center;
+  overflow-y: auto;
+}
+.cross .cross-card {
+  margin-block: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cross-card p {
+  margin: 0;
+}
+.cross .farm.small {
+  width: min(86%, 300px);
+}
+.cross .sq.target {
+  border-width: 2.5px;
+}
+.sq.picked {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201, 150, 46, 0.7);
+  animation: none;
+}
+.sq.picked .stage-wrap {
+  opacity: 0.25;
+}
+.hybrid-preview {
+  position: absolute;
+  inset: 4%;
+  animation: sprout-in 0.45s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+.hybrid-preview svg {
+  width: 100%;
+  height: 100%;
+}
+@keyframes sprout-in {
+  from {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+}
+.sq-tag {
+  position: absolute;
+  left: 50%;
+  bottom: 3px;
+  transform: translateX(-50%);
+  max-width: 96%;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--moss);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sq.picked .sq-tag {
+  background: var(--gold);
+}
+.cross-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  cursor: pointer;
+}
+.choice small {
+  color: var(--ink-soft);
+}
+.choice.on {
+  border-color: var(--gold);
+  background: #fbf1d8;
+  box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.45);
 }
 .cross-card {
   border-radius: 18px;
-  padding: 18px;
+  padding: 14px 16px;
   border: 2px solid var(--ink);
   animation: slide-up 0.35s ease both;
 }
 .cross-card h2 {
-  font-size: 28px;
-  margin-bottom: 6px;
+  font-size: 26px;
 }
-.cross-art {
+.cross-head {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 2px;
-}
-.times {
-  font-family: var(--serif);
-  font-size: 26px;
-  font-weight: 800;
-  color: var(--ink-soft);
+  gap: 10px;
 }
 .cross-card .btn {
   font-size: 15px;

@@ -1,8 +1,9 @@
+import { useState } from 'preact/hooks';
 import { content, type GameState, type NightEvent } from '../core';
 import { Icon, Mushroom } from './art';
 import { Farm } from './Game';
 import type { Store } from './store';
-import { eventText, name, waitText, weekLabel } from './text';
+import { eventText, name, squareName, waitText, weekLabel } from './text';
 
 const markFor: Partial<Record<NightEvent['type'], string>> = {
   grow: 'grow',
@@ -17,7 +18,7 @@ export function Night({ g, store }: { g: GameState; store: Store }) {
   const report = g.night;
   const cross = g.pendingCrosses[0];
 
-  if (!report && cross) return <CrossPrompt g={g} store={store} />;
+  if (!report && cross) return <CrossPrompt key={`${cross.a}-${cross.b}-${cross.hybrid}`} g={g} store={store} />;
   if (!report) return null;
 
   const marks: Record<number, string> = {};
@@ -93,29 +94,38 @@ function CrossPrompt({ g, store }: { g: GameState; store: Store }) {
   const a = g.grid[x.a].species!;
   const b = g.grid[x.b].species!;
   const h = content.species[x.hybrid];
+  const [pick, setPick] = useState<number | null>(null);
   return (
     <div class="overlay cross">
       <div class="cross-card paper">
-        <div class="eyebrow">A hybrid is possible</div>
-        <div class="cross-art">
-          <Mushroom species={a} size={70} />
-          <span class="times">×</span>
-          <Mushroom species={b} size={70} />
-          <span class="times">=</span>
-          <Mushroom species={x.hybrid} size={96} />
+        <header class="cross-head">
+          <Mushroom species={x.hybrid} size={64} />
+          <div>
+            <div class="eyebrow">A hybrid is possible</div>
+            <h2>{h.name}</h2>
+            <div class="small muted">
+              {name(a)} × {name(b)} · worth {h.value} · +{content.rules.hybridPoints} festival points the first time
+            </div>
+          </div>
+        </header>
+        <p>Their mycelium met overnight. Tap the bed that should become {h.name}.</p>
+        <Farm g={g} small mode={{ kind: 'cross', a: x.a, b: x.b, hybrid: x.hybrid, pick }} onSquare={setPick} />
+        <div class="cross-choices" role="group" aria-label="Bed to change">
+          {([x.a, x.b] as const).map((sq) => (
+            <button class={`choice ${pick === sq ? 'on' : ''}`} aria-pressed={pick === sq} onClick={() => setPick(sq)}>
+              <b>{name(g.grid[sq].species!)} bed</b>
+              <small>{squareName(sq)}</small>
+            </button>
+          ))}
         </div>
-        <h2>{h.name}</h2>
-        <p>
-          {name(a)} and {name(b)} grew side by side and their mycelium met. One bed can turn into {h.name}: worth {h.value}, and{' '}
-          {content.rules.hybridPoints} festival points the first time you make it.
-        </p>
-        <p class="rule">{h.rule}</p>
+        <p class="rule small">{h.rule}</p>
         <div class="col">
-          <button class="btn primary" onClick={() => store.act({ type: 'resolveCross', index: 0, replace: 'a' })}>
-            Turn the {name(a)} bed into {h.name}
-          </button>
-          <button class="btn primary" onClick={() => store.act({ type: 'resolveCross', index: 0, replace: 'b' })}>
-            Turn the {name(b)} bed into {h.name}
+          <button
+            class="btn primary"
+            disabled={pick === null}
+            onClick={() => store.act({ type: 'resolveCross', index: 0, replace: pick === x.a ? 'a' : 'b' })}
+          >
+            {pick === null ? 'Tap a highlighted bed' : `Make ${h.name} on the ${name(g.grid[pick].species!)} bed`}
           </button>
           <button class="btn ghost" onClick={() => store.act({ type: 'resolveCross', index: 0, replace: null })}>
             Keep them as they are
