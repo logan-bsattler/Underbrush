@@ -666,6 +666,21 @@ export function dispatch(
       break;
     }
 
+    case 'moveTent': {
+      guardIdle(s);
+      guardFinale(s);
+      if (!s.tentPlaced) fail('Pitch the tent first.');
+      const sq = s.grid[action.square];
+      if (!sq || sq.tree) fail('Pick a square for the tent.');
+      if (sq.tent) fail('The tent is already there.');
+      spendAction(s);
+      s.market = null;
+      for (const other of s.grid) other.tent = false;
+      sq.tent = true;
+      noteTend(s);
+      break;
+    }
+
     case 'resolveCross': {
       const cross = s.pendingCrosses[action.index] ?? fail('No such cross.');
       s.pendingCrosses.splice(action.index, 1);

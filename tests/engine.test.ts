@@ -416,6 +416,23 @@ describe('growth phase', () => {
     expect(cold.grid[4].stage).toBe('P');
   });
 
+  it('moves the pitched tent to another square as a Tend action', () => {
+    let s = blank('tent');
+    s.gear.push('growtent');
+    expect(() => dispatch(s, { type: 'moveTent', square: 4 })).toThrow(/Pitch the tent first/);
+    s = run(s, { type: 'placeTent', square: 4 });
+    expect(s.actionsLeft).toBe(4);
+    s = run(s, { type: 'moveTent', square: 5 });
+    expect(s.grid.filter((sq) => sq.tent)).toHaveLength(1);
+    expect(s.grid[5].tent).toBe(true);
+    expect(s.actionsLeft).toBe(3);
+    expect(s.stats.tendActions[0]).toBe(1);
+    expect(() => dispatch(s, { type: 'moveTent', square: 5 })).toThrow(/already there/);
+    expect(() => dispatch(s, { type: 'moveTent', square: content.rules.trees[0] })).toThrow(/Pick a square/);
+    s.finale = { harvested: false, marketed: false };
+    expect(() => dispatch(s, { type: 'moveTent', square: 4 })).toThrow(/festival morning/);
+  });
+
   it('rain grows two stages and prevents dry marks', () => {
     const s = blank();
     s.weather = 'rain';

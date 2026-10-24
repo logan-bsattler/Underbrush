@@ -342,6 +342,16 @@ function CompostSquare({ g, i, store, onClose }: { g: GameState; i: number; stor
   );
 }
 
+/** Re-pitches the grow tent over this square, once it's pitched somewhere else. */
+function MoveTent({ g, i, store, onClose }: { g: GameState; i: number; store: Store; onClose: () => void }) {
+  if (!g.tentPlaced || g.grid[i].tent) return null;
+  return (
+    <button class="btn wide" disabled={g.actionsLeft < 1 || !!g.finale} onClick={() => store.act({ type: 'moveTent', square: i }) && onClose()}>
+      <Icon name="tent" /> Move the grow tent here · 1 action
+    </button>
+  );
+}
+
 function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: Store; onClose: () => void }) {
   const sq = g.grid[i];
   if (sq.tree)
@@ -365,6 +375,7 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
         {inStream(i, g.size) && <p class="note">Beside the stream: beds here never dry out.</p>}
         {isShaded(g.grid, i, g.size) && <p class="note">In the shade of a tree.</p>}
         {sq.tent && <p class="note">Under the grow tent: ignores season and cold snaps.</p>}
+        <MoveTent g={g} i={i} store={store} onClose={onClose} />
         <CompostSquare g={g} i={i} store={store} onClose={onClose} />
       </SheetFrame>
     );
@@ -433,6 +444,7 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
           {g.finale ? 'Bring in the last harvest' : 'Harvest every fruiting bed · 1 action'}
         </button>
       ) : null}
+      <MoveTent g={g} i={i} store={store} onClose={onClose} />
       <CompostSquare g={g} i={i} store={store} onClose={onClose} />
     </SheetFrame>
   );
@@ -632,6 +644,13 @@ function TendSheet({ g, store, onClose, onBed }: { g: GameState; store: Store; o
       for (let r = g.round; r <= content.rules.rounds; r++) if (inSeason(sq.species, seasonOf(r))) return false;
       return true;
     });
+  // Beds the tent would wake up: out of season this month and not already fruiting.
+  const waiting = g.grid
+    .map((_, i) => i)
+    .filter((i) => {
+      const sq = g.grid[i];
+      return sq.species && !sq.tent && sq.stage !== 'F' && !inSeason(sq.species, seasonOf(g.round));
+    });
   return (
     <SheetFrame title="Tend the farm" onClose={onClose}>
       <button class="btn primary wide" disabled={g.watered || g.actionsLeft < 1} onClick={() => store.act({ type: 'water' }) && onClose()}>
@@ -658,6 +677,25 @@ function TendSheet({ g, store, onClose, onBed }: { g: GameState; store: Store; o
           ))}
         </ul>
       )}
+      {g.tentPlaced && (
+        <>
+          <h3>Grow tent</h3>
+          <p class="small muted">
+            It's pitched on {squareName(g.grid.findIndex((sq) => sq.tent), g.size)}. Tap any bed or tile on the farm to move it there for 1 action.
+          </p>
+          {waiting.length > 0 && (
+            <ul class="list">
+              {waiting.map((i) => (
+                <li>
+                  <button class="list-btn" onClick={() => onBed(i)}>
+                    <Icon name="tent" /> {name(g.grid[i].species!)} · {squareName(i, g.size)} · {spent.includes(i) ? 'season over for the year' : 'out of season now'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
       <h3>Compost a square</h3>
       <p class="small muted">Tap any bed or tile on the farm to compost it and free the square for a new tile.</p>
       {spent.length > 0 && (
@@ -665,7 +703,7 @@ function TendSheet({ g, store, onClose, onBed }: { g: GameState; store: Store; o
           {spent.map((i) => (
             <li>
               <button class="list-btn" onClick={() => onBed(i)}>
-                <Icon name="pile" /> {name(g.grid[i].species!)} · {squareName(i, g.size)} · done for the year
+                <Icon name="pile" /> {name(g.grid[i].species!)} · {squareName(i, g.size)} · season over for the year
               </button>
             </li>
           ))}

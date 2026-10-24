@@ -177,7 +177,7 @@ export function HowTo({ onBack }: { onBack: () => void }) {
             <b>Plant</b> an identified specimen on an empty square of its substrate. It starts at Spawn.
           </li>
           <li>
-            <b>Tend:</b> water every bed (no dry marks tonight), clear blight from one bed, or compost a square: its bed and tile go on the
+            <b>Tend:</b> water every bed (no dry marks tonight), clear blight from one bed, move your grow tent to another square, or compost a square: its bed and tile go on the
             compost pile, leaving empty ground for a new tile. Handy when a bed's season is over.
           </li>
           <li>

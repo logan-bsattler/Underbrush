@@ -43,6 +43,10 @@ Interpretations where the kit left room:
 - **Compost a square** (not in the kit) is a Tend action: the bed, if any, and its tile go on the
   compost pile as one scrap each, and the square becomes empty ground for a new tile. It frees a
   square whose species is out of season for the rest of the year, like Wine Cap after summer.
+- **Moving the Grow Tent** (not in the kit) is a Tend action. Pitching it the first time is free;
+  after that it can follow the bed that needs it, such as a fall crop carried into winter. A
+  second tent was considered and left out: two tents take too much of a small farm out of the
+  season windows, and the frustration it would answer was the tent being stuck where it was first pitched.
 - **Rain** advances growing beds twice (a slow bed's waiting phase counts as one step).
 - **Blighted beds** can't be harvested or crossed.
 - **Spreader targets** are picked with the seeded RNG when several squares qualify.

@@ -2,7 +2,7 @@
   { "id": "biggerbasket", "name": "Bigger Basket", "cost": 4, "use": "Always on", "rule": "Your basket holds 6 specimens instead of 4." },
   { "id": "fieldguide", "name": "Field Guide", "cost": 5, "use": "When you Identify", "rule": "Roll two dice and keep the better result." },
   { "id": "knife", "name": "Mushroom Knife", "cost": 4, "use": "Each Forage trip", "rule": "Ignore the first hazard you draw on each trip. It doesn't count toward a bust." },
-  { "id": "growtent", "name": "Grow Tent", "cost": 6, "use": "Always on", "rule": "Pitch it on one square. The bed there ignores its season window and Cold Snap." },
+  { "id": "growtent", "name": "Grow Tent", "cost": 6, "use": "Always on", "rule": "Pitch it on one square. The bed there ignores its season window and Cold Snap. Moving it is a Tend action." },
   { "id": "dehydrator", "name": "Dehydrator", "cost": 5, "use": "Always on", "rule": "Stored mushrooms no longer spoil when the season changes." },
   { "id": "lantern", "name": "Lantern", "cost": 6, "use": "Unlocks a zone", "rule": "Opens the Old-growth: Lion's Mane, Reishi and Porcini." },
   { "id": "trailmap", "name": "Trail Map", "cost": 5, "use": "Unlocks a zone", "rule": "Opens the Burn Scar in spring: Morels, and plenty of hazards." }

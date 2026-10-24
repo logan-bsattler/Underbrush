@@ -346,6 +346,8 @@ export type Action =
   | { type: 'buyGear'; gear: string }
   | { type: 'leaveMarket' }
   | { type: 'placeTent'; square: number }
+  /** Re-pitches the grow tent on another square: a Tend action. */
+  | { type: 'moveTent'; square: number }
   | { type: 'resolveCross'; index: number; replace: 'a' | 'b' | null }
   | { type: 'endMonth' }
   | { type: 'festival' }
