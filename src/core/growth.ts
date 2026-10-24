@@ -116,6 +116,7 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
     if (sq.stage === 'F') {
       sq.stage = 'C';
       sq.hold = 0;
+      s.compostPile.push(sq.species!);
       events.push({ type: 'overripe', square: i });
     }
   }

@@ -1165,27 +1165,183 @@ button.chip {
 .knife.used {
   opacity: 0.3;
 }
-.table {
+.floor-msg {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-weight: 500;
+  margin: 0;
+}
+.floor-msg.bust,
+.floor-msg.hazard {
+  color: var(--rust-dark);
+  font-weight: 700;
+}
+.floor-wrap {
   flex: 1;
   min-height: 0;
+  container-type: size;
+  display: grid;
+  place-items: center;
+}
+/* Cards are 4:5, so three rows stand 1.25× the grid's width: fit whichever runs out first. */
+.floor {
+  width: min(100%, calc(100cqh * 0.78));
+  display: grid;
+  grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr));
+  gap: 8px;
+}
+.fc {
+  position: relative;
+  aspect-ratio: 4 / 5;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  perspective: 700px;
+  cursor: pointer;
+  animation: deal-up 0.5s cubic-bezier(0.2, 1.1, 0.4, 1) both;
+  animation-delay: calc(var(--i) * 45ms);
+}
+.fc:disabled {
+  cursor: default;
+}
+/* New patches fly up out of the deck at the bottom of the screen. */
+@keyframes deal-up {
+  from {
+    transform: translateY(70vh) rotate(-6deg) scale(0.7);
+    opacity: 0;
+  }
+}
+.fc-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.3, 1.2, 0.5, 1);
+}
+.fc.up .fc-inner {
+  transform: rotateY(180deg);
+}
+.fc-back,
+.fc-front {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  border: 2px solid var(--ink);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow: var(--shadow);
+}
+.fc-back {
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.22), transparent 55%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.1) 0 6px, transparent 6px 12px),
+    var(--zone);
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.75);
+}
+.fc:not(:disabled):active .fc-back {
+  transform: scale(0.96);
+}
+.fc-front {
+  transform: rotateY(180deg);
+  background: var(--card);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
+  padding: 4px;
+  overflow: hidden;
+}
+.fc-front .mush,
+.fc-front .sub-art {
+  width: 64%;
+  height: auto;
+  max-height: 58%;
+}
+.fc-front .icon {
+  width: 46%;
+  height: auto;
+}
+.fc-title {
+  font-family: var(--serif);
+  font-weight: 800;
+  font-size: clamp(11px, 3.2cqw, 15px);
+  line-height: 1.05;
+  text-align: center;
+}
+.fc.hazard .fc-front {
+  background: #fbe9cf;
+}
+.fc.bust .fc-front {
+  background: #f4d3c0;
+  animation: shake 0.5s;
+}
+.fc.basketFull .fc-front,
+.fc.emptyPatch .fc-front {
+  opacity: 0.6;
+}
+.fc.passed .fc-front {
+  opacity: 0.45;
+  border-style: dashed;
+}
+.near {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 5px 0 2px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  background: var(--moss-wash);
+  color: var(--moss-dark);
+  border: 1px solid var(--moss);
+}
+.near.n1 {
+  background: #fbf1d8;
+  color: #7a5a14;
+  border-color: var(--gold);
+}
+.near.n2,
+.near.n3,
+.near.n4 {
+  background: var(--rust-wash);
+  color: var(--rust-dark);
+  border-color: var(--rust);
+}
+.forage-foot {
+  display: grid;
+  grid-template-columns: auto 1fr;
   gap: 12px;
+  align-items: center;
+}
+.forage-foot.done {
+  grid-template-columns: 1fr;
 }
 .deck {
   position: relative;
-  width: 120px;
-  height: 150px;
-  cursor: pointer;
+  width: 82px;
+  height: 96px;
+  cursor: grab;
   touch-action: none;
   user-select: none;
+}
+.deck:focus-visible {
+  outline: 3px solid var(--moss);
+  outline-offset: 4px;
+  border-radius: 12px;
 }
 .deck-card {
   position: absolute;
   inset: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   border: 2px solid var(--ink);
   background:
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.12) 0 6px, transparent 6px 12px),
@@ -1193,26 +1349,31 @@ button.chip {
   box-shadow: var(--shadow);
 }
 .deck-card.d3 {
-  transform: translate(6px, 6px) rotate(4deg);
+  transform: translate(5px, 5px) rotate(4deg);
 }
 .deck-card.d2 {
-  transform: translate(3px, 3px) rotate(2deg);
+  transform: translate(2px, 2px) rotate(2deg);
 }
 .deck-card.d1 {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 1px;
   color: #fff;
-  font-family: var(--serif);
-  font-weight: 800;
-  font-size: 20px;
-  animation: nudge 2.4s ease-in-out infinite;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.15;
+  animation: nudge 2.6s ease-in-out infinite;
 }
 .deck-card.d1 small {
-  font-family: var(--sans);
   font-weight: 500;
-  font-size: 13px;
+  font-size: 10.5px;
+  opacity: 0.9;
+}
+.deck.dragging .deck-card.d1 {
+  animation: none;
 }
 @keyframes nudge {
   0%,
@@ -1221,111 +1382,25 @@ button.chip {
     transform: none;
   }
   80% {
-    transform: translateY(-8px);
+    transform: translateY(-10px);
   }
 }
-.deck-card .deck-count {
-  position: absolute;
-  bottom: 8px;
-  font-size: 11px;
-  opacity: 0.85;
-}
-.drawn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+.foot-actions {
+  display: grid;
   gap: 8px;
-  animation: deal 0.45s cubic-bezier(0.2, 1.2, 0.4, 1) both;
-}
-@keyframes deal {
-  from {
-    transform: translateY(-60px) rotate(-8deg) scale(0.8);
-    opacity: 0;
-  }
-}
-.fcard {
-  width: 170px;
-  height: 210px;
-  border-radius: 14px;
-  border: 2px solid var(--ink);
-  background: var(--card);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
-  box-shadow: var(--shadow);
-}
-.fcard.hazard {
-  background: #fbe9cf;
-}
-.fcard.bust {
-  background: #f4d3c0;
-  animation: shake 0.5s;
-}
-.fcard.basketFull,
-.fcard.emptyPatch {
-  opacity: 0.6;
-}
-.fcard-kind {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-soft);
-}
-.fcard-title {
-  font-family: var(--serif);
-  font-weight: 800;
-  font-size: 22px;
-  text-align: center;
-}
-.fcard.mini {
-  width: 40px;
-  height: 50px;
-  border-radius: 7px;
-  border-width: 1.5px;
-  flex: none;
-  box-shadow: none;
-}
-.outcome {
-  max-width: 300px;
-  text-align: center;
-  font-weight: 500;
-  margin: 0;
-}
-.outcome.bust,
-.outcome.hazard {
-  color: var(--rust-dark);
-  font-weight: 700;
-}
-.hint {
-  color: var(--ink-soft);
-  text-align: center;
-  max-width: 260px;
-}
-.trail {
-  display: flex;
-  gap: 4px;
-  min-height: 50px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.forage-foot {
-  display: flex;
-  gap: 8px;
-}
-.forage-foot .btn {
-  flex: 1;
 }
 .trip-end {
   text-align: center;
 }
 .trip-end h3 {
-  font-size: 30px;
+  font-size: 26px;
+  margin: 0 0 2px;
 }
 .trip-end.busted h3 {
   color: var(--rust);
+}
+.trip-end p {
+  margin: 0;
 }
 @keyframes shake {
   20% {

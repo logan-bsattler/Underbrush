@@ -10,7 +10,7 @@ Following the spec's "let the app do the bookkeeping, hidden information and gro
 
 | Tabletop | Mobile |
 | --- | --- |
-| Draw from a zone deck, count hazards | Swipe up (or tap) to draw; hazard meter, knife shield and basket count are always visible |
+| Draw from a zone deck, count hazards | Turn cards on a dealt patch of forest floor that tells you where hazards are (see below); hazard meter, knife shield and basket count are always visible |
 | Roll a d6 to identify | Card-flip reveal; the true species is hidden until you identify (specimens show only their lookalike group, e.g. "Golden funnel") |
 | Pencil growth phase | Automatic overnight: animated farm, highlighted squares, and a short report |
 | "May combine" hybrids | A prompt each morning: pick which bed becomes the hybrid, or keep them; declined pairs aren't re-offered |
@@ -35,6 +35,36 @@ Interpretations where the kit left room:
 - **Blighted beds** can't be harvested or crossed.
 - **Spreader targets** are picked with the seeded RNG when several squares qualify.
 - **Score** is the kit's: delivered orders + 3 per hybrid kind made + 1 per species you planted.
+
+## Foraging: the forest floor
+
+The kit's foraging is a blind push-your-luck draw. On a phone that is one tap repeated, so the app
+keeps the deck and the kit's rules but adds a small deduction game on top:
+
+- Entering a zone deals a 3×3 patch of face-down cards from the top of that zone's deck
+  (`rules.patchSize`).
+- Tap a card to turn it. It resolves exactly like a kit draw: specimen to the basket, find to you,
+  hazard to the meter. A turned non-hazard card shows how many hazards lie orthogonally beside it.
+- The kit's limits are unchanged: a second hazard busts the trip and you keep your first two
+  specimens, the Knife ignores the first hazard, the basket caps what you carry, and you can head
+  home at any time.
+- Swipe the deck up (at the bottom of the screen, by your thumb) to go deeper: unturned cards go
+  back under the deck and a fresh patch deals upward. Hazards you've met carry over, so going
+  deeper is the push-your-luck choice.
+- Unturned cards always return under the deck, so each deck keeps its printed mix across the year.
+  When a trip ends, the cards you passed are shown faded.
+
+The numbers give the player real information without making a patch solvable at a glance: the
+first card is always a blind pick, and later picks are informed guesses. The baseline bot reads
+the numbers too; its bust rate fell from 8% to 5% of trips.
+
+## The compost pile
+
+Specimens you compost, fruit that goes overripe unpicked, and stock that spoils when the season
+turns all go on a compost pile. Overnight, every 2 scraps (`rules.scrapsPerCompost`) rot into a
+Compost tile in the shed, which Puffball grows on. Spoilage lands on the pile before it rots, so a
+season's lost stock becomes compost the same night. Lookalikes still become a Compost tile
+directly, as in the kit.
 
 ## Content beyond the kit
 

@@ -13,9 +13,35 @@ import {
   plantableSquares,
   zoneStatus,
   type Action,
+  hazardsNear,
+  type ForageTrip,
   type GameState,
   type Journal,
 } from '../src/core';
+import { neighbors } from '../src/core/board';
+
+/**
+ * Reads the forest floor the way a careful player would: a turned card's number says how many
+ * hazards sit beside it, so spread each number's remaining hazards over its hidden neighbors
+ * and turn the card that looks least risky. Unknown cards count as the zone's base rate.
+ */
+function safestCard(t: ForageTrip): { index: number; risk: number } | null {
+  const size = content.rules.patchSize;
+  const risk = t.patch.map(() => 0.25);
+  t.patch.forEach((p, i) => {
+    if (!p.flipped || p.card.type === 'hazard') return;
+    const around = neighbors(i, size);
+    const hidden = around.filter((n) => !t.patch[n].flipped);
+    const found = around.filter((n) => t.patch[n].flipped && t.patch[n].card.type === 'hazard').length;
+    const left = hazardsNear(t, i) - found;
+    for (const n of hidden) risk[n] = left === 0 ? 0 : Math.max(risk[n] === 0 ? 0 : risk[n], left / hidden.length);
+  });
+  let best: { index: number; risk: number } | null = null;
+  t.patch.forEach((p, i) => {
+    if (!p.flipped && (!best || risk[i] < best.risk)) best = { index: i, risk: risk[i] };
+  });
+  return best;
+}
 
 /**
  * A simple greedy player used to fuzz the rules and to estimate pacing.
@@ -99,10 +125,13 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
       const zone = zones[zones.length - 1].id === 'burnscar' ? 'burnscar' : zones[(s.round + s.actionsLeft) % zones.length].id;
       act({ type: 'forage', zone });
       while (s.forage?.status === 'open') {
-        const t = s.forage;
+        const t: ForageTrip = s.forage;
         const full = s.basket.length >= (s.gear.includes('biggerbasket') ? 6 : 4);
+        const pick = safestCard(t);
         if (full || (t.hazards >= 1 && t.drawn.length >= greed)) act({ type: 'stopForage' });
-        else act({ type: 'draw' });
+        else if (pick && (pick.risk < 0.35 || t.hazards === 0)) act({ type: 'flip', index: pick.index });
+        else if (t.depth < 3 && t.hazards === 0) act({ type: 'deeper' });
+        else act({ type: 'stopForage' });
       }
       act({ type: 'closeTrip' });
     }

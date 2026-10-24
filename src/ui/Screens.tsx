@@ -163,8 +163,10 @@ export function HowTo({ onBack }: { onBack: () => void }) {
         <h2>Actions · 1 each</h2>
         <ul>
           <li>
-            <b>Forage.</b> Pick a zone and draw cards one at a time. Stop whenever you like. A second hazard busts the trip and you keep only
-            your first {r.bustKeep} specimens.
+            <b>Forage.</b> Pick a zone and a {r.patchSize}×{r.patchSize} patch of forest floor is dealt face down from its deck. Turn cards one
+            at a time: each turned card shows how many hazards lie beside it (up, down, left, right). Swipe the deck up to go deeper into a
+            fresh patch; unturned cards go back under the deck. Head home whenever you like. A second hazard busts the trip and you keep
+            only your first {r.bustKeep} specimens.
           </li>
           <li>
             <b>Identify</b> a specimen from your basket. A lookalike becomes a Compost tile; wild finds go straight to storage.
@@ -182,7 +184,8 @@ export function HowTo({ onBack }: { onBack: () => void }) {
             <b>Market:</b> sell, deliver one festival order and buy gear, as much as you like in one visit.
           </li>
         </ul>
-        <p class="small muted">Free any time: lay substrate from your shed on empty ground, and compost specimens you don't want. Every {r.scrapsPerCompost} on the compost pile rot into a Compost tile overnight.</p>
+        <p class="small muted">Free any time: lay substrate from your shed on empty ground, and compost specimens you don't want. Composted specimens, overripe fruit and spoiled stock all go on the compost pile, and every{' '}
+          {r.scrapsPerCompost} scraps rot into a Compost tile overnight.</p>
       </section>
       <section>
         <h2>Overnight</h2>

@@ -49,6 +49,7 @@
     ]
   },
   "ordersVisible": 3,
+  "patchSize": 3,
   "bustAt": 2,
   "bustKeep": 2,
   "scrapsPerCompost": 2,

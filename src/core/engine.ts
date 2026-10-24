@@ -1,13 +1,14 @@
 import { content as defaultContent } from './content';
 import { Rng, hashSeed } from './rng';
 import { runGrowth } from './growth';
-import { crossKey, farmLayout, hybridFor, inSeason, seasonOf } from './board';
+import { crossKey, farmLayout, hybridFor, inSeason, neighbors, seasonOf } from './board';
 
 export * from './board';
 import type {
   Action,
   ActionResult,
   Card,
+  ForageTrip,
   Content,
   GameState,
   OrderDef,
@@ -135,6 +136,12 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   s.perks.bonusActions ??= 0;
   if (!s.stats.identified) s.stats.identified = {};
   s.compostPile ??= [];
+  // A trip saved by the older draw-one-card build ends where it stood; its finds are already in the basket.
+  if (s.forage && !s.forage.patch) {
+    s.forage.patch = [];
+    s.forage.depth = 1;
+    if (s.forage.status === 'open') s.forage.status = 'stopped';
+  }
   return s;
 }
 
@@ -249,16 +256,34 @@ function openMarketVisit(s: GameState) {
   }
 }
 
-function drawCard(s: GameState, zone: string, rng: Rng): Card {
+/** Takes the top card of a zone deck, reshuffling the discards when it runs out. Null if every card is out. */
+function takeCard(s: GameState, zone: string, rng: Rng): Card | null {
   const deck = s.decks[zone];
   if (deck.draw.length === 0) {
     deck.draw = rng.shuffle(deck.discard);
     deck.discard = [];
   }
-  const card = deck.draw.shift();
-  if (!card) fail('This deck is empty.');
-  deck.discard.push(card);
-  return card;
+  return deck.draw.shift() ?? null;
+}
+
+/** Unturned cards go back under the deck, so the deck keeps its mix of finds and hazards. */
+function returnHidden(s: GameState, trip: ForageTrip) {
+  for (const p of trip.patch) if (!p.flipped) s.decks[trip.zone].draw.push(p.card);
+}
+
+function dealPatch(s: GameState, trip: ForageTrip, rng: Rng, c: Content) {
+  const n = c.rules.patchSize * c.rules.patchSize;
+  trip.patch = [];
+  for (let i = 0; i < n; i++) {
+    const card = takeCard(s, trip.zone, rng);
+    if (!card) break;
+    trip.patch.push({ card, flipped: false, outcome: null });
+  }
+}
+
+/** Hazards orthogonally beside a patch card: the rustle you notice once you've turned it. */
+export function hazardsNear(trip: ForageTrip, index: number, c: Content = defaultContent): number {
+  return neighbors(index, c.rules.patchSize).filter((n) => trip.patch[n]?.card.type === 'hazard').length;
 }
 
 function specimenFor(s: GameState, uid: number) {
@@ -297,15 +322,40 @@ export function dispatch(
       s.market = null;
       s.tripCount += 1;
       s.stats.trips += 1;
-      s.forage = { id: s.tripCount, zone: zone.id, drawn: [], hazards: 0, knifeUsed: false, picked: [], status: 'open', lost: [] };
+      s.forage = {
+        id: s.tripCount,
+        zone: zone.id,
+        patch: [],
+        depth: 1,
+        drawn: [],
+        hazards: 0,
+        knifeUsed: false,
+        picked: [],
+        status: 'open',
+        lost: [],
+      };
+      dealPatch(s, s.forage, rng, c);
       break;
     }
 
-    case 'draw': {
+    case 'deeper': {
       const trip = s.forage;
       if (!trip || trip.status !== 'open') fail('You are not out foraging.');
-      const card = drawCard(s, trip.zone, rng);
-      let outcome: ActionResult & { kind: 'draw' } = { kind: 'draw', card, outcome: 'basket' };
+      returnHidden(s, trip);
+      trip.depth += 1;
+      dealPatch(s, trip, rng, c);
+      break;
+    }
+
+    case 'flip': {
+      const trip = s.forage;
+      if (!trip || trip.status !== 'open') fail('You are not out foraging.');
+      const spot = trip.patch[action.index] ?? fail('There is no card there.');
+      if (spot.flipped) fail('You already turned that one.');
+      const card = spot.card;
+      spot.flipped = true;
+      s.decks[trip.zone].discard.push(card);
+      let outcome: ActionResult & { kind: 'draw' } = { kind: 'draw', index: action.index, card, outcome: 'basket' };
       if (card.type === 'specimen') {
         const sp = c.species[card.species];
         if (sp.kind === 'wild' && !inSeason(sp.id, seasonOf(s.round, c), c)) {
@@ -347,9 +397,11 @@ export function dispatch(
             s.stats.busts += 1;
             trip.lost = trip.picked.slice(c.rules.bustKeep);
             s.basket = s.basket.filter((b) => !trip.lost.includes(b.uid));
+            returnHidden(s, trip);
           }
         }
       }
+      spot.outcome = outcome.outcome;
       trip.drawn.push({ card, outcome: outcome.outcome });
       result = outcome;
       break;
@@ -357,6 +409,7 @@ export function dispatch(
 
     case 'stopForage': {
       if (!s.forage || s.forage.status !== 'open') fail('You are not out foraging.');
+      returnHidden(s, s.forage);
       s.forage.status = 'stopped';
       break;
     }
@@ -564,23 +617,25 @@ export function dispatch(
       s.market = null;
       s.stats.idleActions[s.round - 1] = s.actionsLeft;
       const report = runGrowth(s, rng, c);
+      const final = s.round >= c.rules.rounds;
+      const seasonTurns = !final && s.round % c.rules.roundsPerSeason === 0;
+      if (seasonTurns && !s.gear.includes('dehydrator') && Object.keys(s.storage).length) {
+        report.events.push({ type: 'spoil', lost: { ...s.storage } });
+        for (const [id, n] of Object.entries(s.storage)) for (let i = 0; i < n; i++) s.compostPile.push(id);
+        s.storage = {};
+      }
+      // Discards, overripe fruit and spoiled stock all rot down together.
       const tiles = Math.floor(s.compostPile.length / c.rules.scrapsPerCompost);
       if (tiles > 0) {
         s.compostPile.splice(0, tiles * c.rules.scrapsPerCompost);
         for (let i = 0; i < tiles; i++) s.shed.push('compost');
         report.events.push({ type: 'compost', tiles });
       }
-      if (s.round >= c.rules.rounds) {
+      if (final) {
         s.over = true;
         s.pendingCrosses = [];
       } else {
-        if (s.round % c.rules.roundsPerSeason === 0) {
-          if (!s.gear.includes('dehydrator') && Object.keys(s.storage).length) {
-            report.events.push({ type: 'spoil', lost: { ...s.storage } });
-            s.storage = {};
-          }
-          report.events.push({ type: 'season', season: seasonOf(s.round + 1, c) });
-        }
+        if (seasonTurns) report.events.push({ type: 'season', season: seasonOf(s.round + 1, c) });
         s.round += 1;
         s.actionsLeft = actionsPerWeek(s, c) - s.moldPenalty;
         s.watered = false;

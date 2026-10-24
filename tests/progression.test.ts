@@ -29,7 +29,7 @@ function forageOne(s: GameState, zone: string, card: Card) {
   s.weather = 'clear';
   s.decks[zone].draw.unshift(card);
   s = dispatch(s, { type: 'forage', zone }).state;
-  const r = dispatch(s, { type: 'draw' });
+  const r = dispatch(s, { type: 'flip', index: 0 });
   return { s: r.state, outcome: r.result.kind === 'draw' ? r.result.outcome : null };
 }
 

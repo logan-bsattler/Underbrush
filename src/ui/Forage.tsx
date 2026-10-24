@@ -1,5 +1,5 @@
-import { useRef } from 'preact/hooks';
-import { basketCapacity, content, gearUnlockLevel, zoneStatus, type Card, type DrawOutcome, type GameState } from '../core';
+import { useRef, useState } from 'preact/hooks';
+import { basketCapacity, content, gearUnlockLevel, hazardsNear, zoneStatus, type Card, type DrawOutcome, type GameState } from '../core';
 import { Icon, Mushroom, SubstrateArt, Unknown } from './art';
 import { SheetFrame } from './Game';
 import type { Store } from './store';
@@ -13,26 +13,16 @@ function buzz(ms: number | number[]) {
   }
 }
 
-export function CardFace({ card, outcome, small }: { card: Card; outcome?: DrawOutcome; small?: boolean }) {
-  const size = small ? 34 : 120;
-  const cls = `fcard ${card.type} ${outcome ?? ''} ${small ? 'mini' : ''}`;
-  return (
-    <div class={cls}>
-      <div class="fcard-art">
-        {card.type === 'specimen' &&
-          (outcome === 'known' ? <Mushroom species={card.species} size={size} /> : <Unknown species={card.species} size={size} />)}
-        {card.type === 'substrate' && <SubstrateArt substrate={card.substrate} size={size} />}
-        {card.type === 'coins' && <Icon name="coin" size={small ? 26 : 84} />}
-        {card.type === 'hazard' && <Icon name="hazard" size={small ? 26 : 84} />}
-      </div>
-      {!small && (
-        <>
-          <div class="fcard-kind">{card.type === 'specimen' ? 'Specimen' : card.type === 'hazard' ? 'Hazard' : 'Find'}</div>
-          <div class="fcard-title">{outcome === 'known' && card.type === 'specimen' ? name(card.species) : cardTitle(card)}</div>
-        </>
-      )}
-    </div>
-  );
+/** The face of a turned forest-floor card. */
+function CardArt({ card, outcome }: { card: Card; outcome: DrawOutcome | null }) {
+  if (card.type === 'specimen')
+    return outcome === 'known' ? <Mushroom species={card.species} size={64} /> : <Unknown species={card.species} size={64} />;
+  if (card.type === 'substrate') return <SubstrateArt substrate={card.substrate} size={64} />;
+  return <Icon name={card.type === 'coins' ? 'coin' : 'hazard'} size={44} />;
+}
+
+function cardLabel(card: Card, outcome: DrawOutcome | null) {
+  return outcome === 'known' && card.type === 'specimen' ? name(card.species) : cardTitle(card);
 }
 
 function lockedText(unlock: string | null, st: { reason: string; notStocked?: boolean }) {
@@ -45,7 +35,10 @@ function lockedText(unlock: string | null, st: { reason: string; notStocked?: bo
 function ZonePicker({ g, store, onClose }: { g: GameState; store: Store; onClose: () => void }) {
   return (
     <SheetFrame title="Where to forage?" onClose={onClose} tall>
-      <p class="small muted">A trip takes 1 action. Draw as long as you dare: a second hazard busts the trip and you keep only your first two finds.</p>
+      <p class="small muted">
+        A trip takes 1 action. Turn cards on the forest floor as long as you dare; each one tells you how many hazards lie beside it. A second
+        hazard busts the trip and you keep only your first two finds.
+      </p>
       <div class="zones">
         {content.zones.map((z) => {
           const st = zoneStatus(g, z);
@@ -79,33 +72,49 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   const open = trip.status === 'open';
   const cap = basketCapacity(g);
   const knife = g.gear.includes('knife');
+  const n = content.rules.patchSize;
   const start = useRef<number | null>(null);
+  const [dragging, setDragging] = useState(false);
 
-  const draw = () => {
-    const r = store.act({ type: 'draw' });
+  const flip = (index: number) => {
+    const r = store.act({ type: 'flip', index });
     if (r?.kind === 'draw') {
       if (r.outcome === 'bust') buzz([60, 40, 120]);
       else if (r.outcome === 'hazard') buzz(40);
     }
   };
+  const deeper = () => open && store.act({ type: 'deeper' });
 
   const kept = g.basket.filter((b) => trip.picked.includes(b.uid));
-  const coins = trip.drawn.filter((d) => d.card.type === 'coins').reduce((n, d) => n + (d.card as { amount: number }).amount, 0);
+  const coins = trip.drawn.filter((d) => d.card.type === 'coins').reduce((sum, d) => sum + (d.card as { amount: number }).amount, 0);
   const subs = trip.drawn.filter((d) => d.card.type === 'substrate').length;
+  const hidden = trip.patch.filter((p) => !p.flipped).length;
+  const left = g.decks[trip.zone].draw.length + g.decks[trip.zone].discard.length;
+  const turnedHere = trip.patch.some((p) => p.flipped);
+  const message =
+    last && (turnedHere || trip.status === 'busted')
+      ? outcomeText(last.outcome, last.card)
+      : !open
+        ? 'The faded cards are what you walked past.'
+        : trip.depth > 1
+          ? 'Deeper in. The hazards you already met still count.'
+          : 'Tap a card to turn it. Each one you turn shows how many hazards lie beside it.';
 
   return (
     <div class="overlay forage-screen" style={{ '--zone': zone.color } as any}>
       <div class="forage-wash" aria-hidden="true" />
       <header class="forage-head">
         <div>
-          <div class="eyebrow">Foraging</div>
+          <div class="eyebrow">Foraging{trip.depth > 1 ? ` · ${trip.depth} patches deep` : ''}</div>
           <h2>{zone.name}</h2>
         </div>
         <div class="forage-stats">
           <span class="hazards" aria-label={`${trip.hazards} of ${content.rules.bustAt} hazards`}>
-            {knife && <span class={`knife ${trip.knifeUsed ? 'used' : ''}`} title="Mushroom Knife">
-              <Icon name="knife" size={20} />
-            </span>}
+            {knife && (
+              <span class={`knife ${trip.knifeUsed ? 'used' : ''}`} title="Mushroom Knife">
+                <Icon name="knife" size={20} />
+              </span>
+            )}
             {Array.from({ length: content.rules.bustAt }, (_, i) => (
               <span class={`hz ${i < trip.hazards ? 'on' : ''}`}>
                 <Icon name="hazard" size={20} />
@@ -118,66 +127,103 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
         </div>
       </header>
 
-      <div class="table">
-        {open ? (
+      <p class={`floor-msg ${last?.outcome ?? ''}`} aria-live="polite">
+        {message}
+      </p>
+
+      <div class="floor-wrap">
+        <div class="floor" style={{ '--n': n } as any} role="grid" aria-label="Forest floor">
+          {trip.patch.map((p, i) => {
+            // Once the trip is over, the cards you didn't turn are shown faintly: what you walked past.
+            const shown = p.flipped || !open;
+            const near = hazardsNear(trip, i);
+            const label = p.flipped
+              ? `${cardLabel(p.card, p.outcome)}${p.card.type === 'hazard' ? '' : `, ${near} hazard${near === 1 ? '' : 's'} beside it`}`
+              : open
+                ? `Face-down card, row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}`
+                : `Passed by: ${cardLabel(p.card, null)}`;
+            return (
+              <button
+                key={`${trip.depth}-${i}`}
+                class={`fc ${p.card.type} ${p.outcome ?? ''} ${shown ? 'up' : ''} ${!p.flipped && !open ? 'passed' : ''}`}
+                style={{ '--i': i } as any}
+                disabled={!open || p.flipped}
+                onClick={() => flip(i)}
+                aria-label={label}
+              >
+                <span class="fc-inner">
+                  <span class="fc-back" aria-hidden="true">
+                    <Icon name="leaf" size={22} />
+                  </span>
+                  <span class="fc-front" aria-hidden="true">
+                    <CardArt card={p.card} outcome={p.outcome} />
+                    <span class="fc-title">{cardLabel(p.card, p.outcome)}</span>
+                    {p.flipped && p.card.type !== 'hazard' && (
+                      <span class={`near n${near}`} title={`${near} hazard${near === 1 ? '' : 's'} beside this card`}>
+                        <Icon name="hazard" size={12} />
+                        {near}
+                      </span>
+                    )}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {open ? (
+        <footer class="forage-foot">
           <div
-            class="deck"
+            class={`deck ${dragging ? 'dragging' : ''}`}
             role="button"
             tabIndex={0}
-            aria-label="Draw a card"
-            onPointerDown={(e) => (start.current = e.clientY)}
+            aria-label={`Go deeper: deal a fresh patch. ${hidden} unturned card${hidden === 1 ? '' : 's'} go back under the deck.`}
+            onPointerDown={(e) => {
+              // Keep receiving this pointer after it leaves the deck, so a mouse drag works like a touch swipe.
+              (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+              start.current = e.clientY;
+              setDragging(true);
+            }}
+            onPointerCancel={() => {
+              start.current = null;
+              setDragging(false);
+            }}
             onPointerUp={(e) => {
               const dy = start.current === null ? 0 : e.clientY - start.current;
               start.current = null;
-              if (dy < 12) draw();
+              setDragging(false);
+              if (dy < -30) deeper();
             }}
-            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && draw()}
+            onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && deeper()}
           >
             <div class="deck-card d3" />
             <div class="deck-card d2" />
             <div class="deck-card d1">
               <span>Swipe up</span>
-              <small>to draw</small>
-              <small class="deck-count">{g.decks[trip.zone].draw.length || g.decks[trip.zone].discard.length} cards</small>
+              <small>to go deeper</small>
+              <small>{left} cards</small>
             </div>
           </div>
-        ) : (
+          <div class="foot-actions">
+            <button class="btn big" onClick={() => store.act({ type: 'stopForage' })}>
+              Head home
+            </button>
+            <button class="btn small ghost" onClick={deeper}>
+              Go deeper{hidden ? ` (${hidden} unturned go back)` : ''}
+            </button>
+          </div>
+        </footer>
+      ) : (
+        <footer class="forage-foot done">
           <div class={`trip-end ${trip.status}`}>
             <h3>{trip.status === 'busted' ? 'Busted!' : 'Heading home'}</h3>
             <p>
               {kept.length ? `${kept.length} specimen${kept.length === 1 ? '' : 's'}` : 'No specimens'}
               {coins ? `, ${coins} coins` : ''}
-              {subs ? `, ${subs} substrate` : ''}.
-              {trip.lost.length ? ` Lost in the scramble: ${trip.lost.length}.` : ''}
+              {subs ? `, ${subs} substrate` : ''}.{trip.lost.length ? ` Lost in the scramble: ${trip.lost.length}.` : ''}
             </p>
           </div>
-        )}
-        {last && (
-          <div class="drawn" key={trip.drawn.length}>
-            <CardFace card={last.card} outcome={last.outcome} />
-            <p class={`outcome ${last.outcome}`}>{outcomeText(last.outcome, last.card)}</p>
-          </div>
-        )}
-        {!last && open && <p class="hint">Every card is a small mystery: a specimen, a find, or a hazard.</p>}
-      </div>
-
-      <div class="trail" aria-label="Cards drawn this trip">
-        {trip.drawn.map((d) => (
-          <CardFace card={d.card} outcome={d.outcome} small />
-        ))}
-      </div>
-
-      <footer class="forage-foot">
-        {open ? (
-          <>
-            <button class="btn primary big" onClick={draw}>
-              Draw
-            </button>
-            <button class="btn big" onClick={() => store.act({ type: 'stopForage' })}>
-              Stop and head home
-            </button>
-          </>
-        ) : (
           <button
             class="btn primary big wide"
             onClick={() => {
@@ -187,16 +233,13 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
           >
             Back to the homestead
           </button>
-        )}
-      </footer>
+        </footer>
+      )}
       {store.error && (
         <div class="toast" role="alert">
           {store.error}
         </div>
       )}
-      <span class="sr-only" aria-live="polite">
-        {last ? `${cardTitle(last.card)}: ${outcomeText(last.outcome, last.card)}` : ''}
-      </span>
     </div>
   );
 }

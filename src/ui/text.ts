@@ -74,7 +74,7 @@ export function eventText(e: NightEvent, grid: { species: string | null }[]): st
         spread: `Blight crept into a neighboring ${sp(e.square)} bed.`,
       }[e.cause];
     case 'overripe':
-      return `${sp(e.square)} went overripe unpicked.`;
+      return `${sp(e.square)} went overripe unpicked; the fruit went on the compost pile.`;
     case 'spread':
       return `${name(e.species)} spread to a new square.`;
     case 'takeover':
@@ -85,7 +85,7 @@ export function eventText(e: NightEvent, grid: { species: string | null }[]): st
       return `Mold bloom: ${e.count} beds are blighted. You lose an action next week.`;
     case 'spoil': {
       const n = Object.values(e.lost).reduce((a, b) => a + b, 0);
-      return `The season turned and ${n} stored mushroom${n === 1 ? '' : 's'} spoiled.`;
+      return `The season turned and ${n} stored mushroom${n === 1 ? '' : 's'} spoiled onto the compost pile.`;
     }
     case 'season':
       return `${seasonName[e.season]} arrives.`;

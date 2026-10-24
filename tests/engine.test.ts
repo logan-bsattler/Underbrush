@@ -3,6 +3,7 @@ import {
   content,
   dispatch,
   GameError,
+  hazardsNear,
   newGame,
   orderPayment,
   score,
@@ -90,12 +91,12 @@ describe('foraging', () => {
     ]);
     s = run(s, { type: 'forage', zone: 'meadow' });
     expect(s.actionsLeft).toBe(3);
-    for (let i = 0; i < 6; i++) s = run(s, { type: 'draw' });
+    for (let i = 0; i < 6; i++) s = run(s, { type: 'flip', index: i });
     expect(s.forage!.status).toBe('busted');
     expect(s.basket.map((b) => b.species)).toEqual(['puffball', 'winecap']);
     expect(s.coins).toBe(5);
     expect(s.stats.busts).toBe(1);
-    expect(() => dispatch(s, { type: 'draw' })).toThrow(GameError);
+    expect(() => dispatch(s, { type: 'flip', index: 6 })).toThrow(GameError);
   });
 
   it('lets the knife ignore the first hazard', () => {
@@ -107,7 +108,7 @@ describe('foraging', () => {
       { type: 'hazard', name: 'Ticks' },
       { type: 'specimen', species: 'puffball' },
     ]);
-    s = run(s, { type: 'forage', zone: 'meadow' }, { type: 'draw' }, { type: 'draw' }, { type: 'draw' });
+    s = run(s, { type: 'forage', zone: 'meadow' }, { type: 'flip', index: 0 }, { type: 'flip', index: 1 }, { type: 'flip', index: 2 });
     expect(s.forage!.status).toBe('open');
     expect(s.forage!.hazards).toBe(1);
     expect(s.basket).toHaveLength(1);
@@ -123,11 +124,53 @@ describe('foraging', () => {
     s = run(s, { type: 'forage', zone: 'mixedwoods' });
     const outcomes = [];
     for (let i = 0; i < 6; i++) {
-      const r = dispatch(s, { type: 'draw' });
+      const r = dispatch(s, { type: 'flip', index: i });
       s = r.state;
       outcomes.push(r.result.kind === 'draw' ? r.result.outcome : '');
     }
     expect(outcomes).toEqual(['emptyPatch', 'basket', 'basket', 'basket', 'basket', 'basketFull']);
+  });
+
+  it('deals a 3×3 patch from the top of the zone deck', () => {
+    let s = newGame({ seed: 'deal' });
+    s.weather = 'clear';
+    const top = s.decks.meadow.draw.slice(0, 9);
+    s = run(s, { type: 'forage', zone: 'meadow' });
+    expect(s.forage!.patch.map((p) => p.card)).toEqual(top);
+    expect(s.forage!.patch.every((p) => !p.flipped)).toBe(true);
+    expect(s.decks.meadow.draw).toHaveLength(24 - 9);
+    expect(() => dispatch(s, { type: 'flip', index: 9 })).toThrow(GameError);
+  });
+
+  it('counts the hazards beside a card, up, down, left and right', () => {
+    let s = newGame({ seed: 'near' });
+    s.weather = 'clear';
+    const h: Card = { type: 'hazard', name: 'Ticks' };
+    const f: Card = { type: 'coins', amount: 2 };
+    // h f h
+    // f f f
+    // f h f
+    stackDeck(s, 'meadow', [h, f, h, f, f, f, f, h, f]);
+    s = run(s, { type: 'forage', zone: 'meadow' });
+    expect([0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => hazardsNear(s.forage!, i))).toEqual([0, 2, 0, 1, 1, 1, 1, 0, 1]);
+  });
+
+  it('going deeper returns unturned cards under the deck and deals a fresh patch; hazards carry over', () => {
+    let s = newGame({ seed: 'deep' });
+    s.weather = 'clear';
+    stackDeck(s, 'meadow', [{ type: 'hazard', name: 'Ticks' }]);
+    const cards = s.decks.meadow.draw.length;
+    s = run(s, { type: 'forage', zone: 'meadow' }, { type: 'flip', index: 0 });
+    const unturned = s.forage!.patch.slice(1).map((p) => p.card);
+    const next = s.decks.meadow.draw.slice(0, 9);
+    s = run(s, { type: 'deeper' });
+    expect(s.forage).toMatchObject({ depth: 2, hazards: 1, status: 'open' });
+    expect(s.forage!.patch.map((p) => p.card)).toEqual(next);
+    expect(s.decks.meadow.draw.slice(-8)).toEqual(unturned);
+    const total = (x: GameState) => x.decks.meadow.draw.length + x.decks.meadow.discard.length + x.forage!.patch.length;
+    expect(total(s)).toBe(cards);
+    s = run(s, { type: 'stopForage' });
+    expect(s.decks.meadow.draw.length + s.decks.meadow.discard.length).toBe(cards);
   });
 
   it('respects locks, seasons and fog', () => {
@@ -220,6 +263,26 @@ describe('compost pile', () => {
     expect(s.shed).toEqual(['compost']);
     expect(s.compostPile).toEqual(['shiitake']);
     expect(s.night!.events).toContainEqual({ type: 'compost', tiles: 1 });
+  });
+
+  it('overripe fruit goes on the pile', () => {
+    const s = blank('ripe');
+    s.watered = true;
+    bed(s, 0, 'oyster', 'F');
+    grow(s);
+    expect(s.compostPile).toEqual(['oyster']);
+  });
+
+  it('stock that spoils at the season change goes on the pile and rots the same night', () => {
+    let s = blank('spoilpile');
+    s.round = 3;
+    s.storage = { oyster: 2, shiitake: 1 };
+    s = run(s, { type: 'endWeek' });
+    expect(s.storage).toEqual({});
+    expect(s.shed).toEqual(['compost']);
+    expect(s.compostPile).toHaveLength(1);
+    const kinds = s.night!.events.map((e) => e.type);
+    expect(kinds.indexOf('spoil')).toBeLessThan(kinds.indexOf('compost'));
   });
 
   it('a single scrap waits for another', () => {

@@ -108,6 +108,8 @@ export interface RulesDef {
   largeFarm: { size: number; extraTrees: [number, number][] };
   start: { squares: { index: number; substrate: Substrate; species?: string; stage?: Stage }[] };
   ordersVisible: number;
+  /** A forage patch is patchSize × patchSize face-down cards dealt from the zone deck. */
+  patchSize: number;
   bustAt: number;
   bustKeep: number;
   /** Discarded specimens on the compost pile that rot into one Compost tile overnight. */
@@ -182,9 +184,21 @@ export interface Specimen {
   trip: number;
 }
 
+/** One face-down card on the forest floor. */
+export interface PatchCard {
+  card: Card;
+  flipped: boolean;
+  outcome: DrawOutcome | null;
+}
+
 export interface ForageTrip {
   id: number;
   zone: string;
+  /** The patch of forest floor in front of you, row by row. */
+  patch: PatchCard[];
+  /** How many patches deep into the zone you've walked this trip (1 on arrival). */
+  depth: number;
+  /** Every card turned this trip, in order. */
   drawn: { card: Card; outcome: DrawOutcome }[];
   hazards: number;
   knifeUsed: boolean;
@@ -298,7 +312,8 @@ export interface GameState {
 
 export type Action =
   | { type: 'forage'; zone: string }
-  | { type: 'draw' }
+  | { type: 'flip'; index: number }
+  | { type: 'deeper' }
   | { type: 'stopForage' }
   | { type: 'closeTrip' }
   | { type: 'identify'; uid: number }
@@ -321,7 +336,7 @@ export type Action =
 export type ActionResult =
   | { kind: 'none' }
   | { kind: 'identify'; uid: number; species: string; real: boolean; rolls: number[]; kept: number }
-  | { kind: 'draw'; card: Card; outcome: DrawOutcome }
+  | { kind: 'draw'; index: number; card: Card; outcome: DrawOutcome }
   | { kind: 'harvest'; gained: Record<string, number> }
   | { kind: 'sell'; coins: number }
   | { kind: 'order'; points: number }
