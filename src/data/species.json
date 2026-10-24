@@ -1,0 +1,92 @@
+[
+  {
+    "id": "oyster", "name": "Oyster", "latin": "Pleurotus ostreatus", "kind": "cultivated", "value": 1,
+    "substrates": ["straw"], "seasons": "any", "growth": "fast",
+    "group": "Pale shelf", "lookalike": { "name": "Angel Wing", "on": 1 },
+    "traits": { "spreader": "normal" },
+    "rule": "Spreader. When it fruits, it colonizes one adjacent empty Straw square.",
+    "blurb": "Fans of soft grey shelves. The bed you start with.",
+    "art": { "shape": "shelf", "cap": "#B9B4A6", "shade": "#8E8879", "gill": "#E8E2D2", "stem": "#D9D2C0" }
+  },
+  {
+    "id": "winecap", "name": "Wine Cap", "latin": "Stropharia rugosoannulata", "kind": "cultivated", "value": 1,
+    "substrates": ["woodchip"], "seasons": ["spring", "summer"], "growth": "fast",
+    "group": "Burgundy cap", "lookalike": { "name": "Redlead Roundhead", "on": 1 },
+    "traits": { "spreader": "aggressive" },
+    "rule": "Aggressive spreader. When it fruits, it colonizes an adjacent empty Woodchip square. If there is none, it takes over an adjacent Puffball bed.",
+    "blurb": "A garden giant that loves fresh wood chips.",
+    "art": { "shape": "cap", "cap": "#8E2F2A", "shade": "#5E1C1A", "gill": "#6B5A6A", "stem": "#EDE5D3" }
+  },
+  {
+    "id": "puffball", "name": "Puffball", "latin": "Calvatia gigantea", "kind": "cultivated", "value": 1,
+    "substrates": ["compost"], "seasons": ["summer", "fall"], "growth": "fast",
+    "group": "White orb", "lookalike": { "name": "Earthball", "on": 1 },
+    "traits": {},
+    "rule": "Grows on the compost your lookalikes leave behind, so a bad pick still feeds the farm.",
+    "blurb": "A soft white moon in the grass.",
+    "art": { "shape": "ball", "cap": "#F2EEE3", "shade": "#CFC7B2", "gill": "#F2EEE3", "stem": "#E2DCCB" }
+  },
+  {
+    "id": "shiitake", "name": "Shiitake", "latin": "Lentinula edodes", "kind": "cultivated", "value": 3,
+    "substrates": ["log"], "seasons": ["spring", "fall"], "growth": "slow",
+    "group": "Brown log cap", "lookalike": { "name": "Sulphur Tuft", "on": 1 },
+    "traits": {},
+    "rule": "Slow. Stays two growth phases at C before it pins. A steady earner once it's going.",
+    "blurb": "Speckled brown caps that crack like bread crust.",
+    "art": { "shape": "cap", "cap": "#7A4A2B", "shade": "#4F2E1A", "gill": "#EDE2CC", "stem": "#D8C7A8" }
+  },
+  {
+    "id": "lionsmane", "name": "Lion's Mane", "latin": "Hericium erinaceus", "kind": "cultivated", "value": 2,
+    "substrates": ["log"], "seasons": ["fall"], "growth": "medium",
+    "group": "Icicle tooth", "lookalike": { "name": "Coral Tooth", "on": 1 },
+    "traits": { "needsShade": true },
+    "rule": "Needs shade. Only grows on a square beside a Tree.",
+    "blurb": "A cascade of white icicles on old hardwood.",
+    "art": { "shape": "tooth", "cap": "#F4EFE2", "shade": "#D6CBB0", "gill": "#F4EFE2", "stem": "#E6DCC5" }
+  },
+  {
+    "id": "reishi", "name": "Reishi", "latin": "Ganoderma lucidum", "kind": "cultivated", "value": 4,
+    "substrates": ["log"], "seasons": ["summer"], "growth": "verySlow",
+    "group": "Lacquered shelf", "lookalike": { "name": "Artist's Conk", "on": 1 },
+    "traits": {},
+    "rule": "Very slow. Two growth phases at C and two at P. Plant it early or not at all.",
+    "blurb": "A glossy kidney of red-brown lacquer.",
+    "art": { "shape": "kidney", "cap": "#9B3A1E", "shade": "#5C1E10", "gill": "#E9C47A", "stem": "#6E2A15" }
+  },
+  {
+    "id": "enoki", "name": "Enoki", "latin": "Flammulina velutipes", "kind": "cultivated", "value": 2,
+    "substrates": ["log"], "seasons": ["winter"], "growth": "medium",
+    "group": "Velvet stem", "lookalike": { "name": "Funeral Bell", "on": 1 },
+    "traits": { "coldHardy": true },
+    "rule": "The only species that grows in winter, and it ignores Cold Snap.",
+    "blurb": "Wild velvet shank: honey caps on dark velvet stems in the snow.",
+    "art": { "shape": "cluster", "cap": "#D9963C", "shade": "#A9661F", "gill": "#F3E1BC", "stem": "#5A3A24" }
+  },
+  {
+    "id": "chanterelle", "name": "Chanterelle", "latin": "Cantharellus cibarius", "kind": "wild", "value": 4,
+    "substrates": [], "seasons": ["summer"], "growth": "none",
+    "group": "Golden funnel", "lookalike": { "name": "Jack-o'-lantern", "on": 2 },
+    "traits": {},
+    "rule": "Can't be planted. Once identified it goes straight to storage. Drawn outside summer, it's an empty patch.",
+    "blurb": "Apricot-scented gold with false gills running down the stem.",
+    "art": { "shape": "funnel", "cap": "#E9A23B", "shade": "#C27A1C", "gill": "#F2C46B", "stem": "#EDB453" }
+  },
+  {
+    "id": "morel", "name": "Morel", "latin": "Morchella esculenta", "kind": "wild", "value": 4,
+    "substrates": [], "seasons": ["spring"], "growth": "none",
+    "group": "Honeycomb cap", "lookalike": { "name": "False Morel", "on": 2 },
+    "traits": {},
+    "rule": "Can't be planted. Only in the Burn Scar, only in spring. Once identified it goes straight to storage.",
+    "blurb": "A honeycomb cone that rises from ash the spring after a fire.",
+    "art": { "shape": "morel", "cap": "#A88B5F", "shade": "#6E5634", "gill": "#C9B38A", "stem": "#EFE6D2" }
+  },
+  {
+    "id": "porcini", "name": "Porcini", "latin": "Boletus edulis", "kind": "wild", "value": 5,
+    "substrates": [], "seasons": ["fall"], "growth": "none",
+    "group": "Fat bolete", "lookalike": { "name": "Bitter Bolete", "on": 2 },
+    "traits": {},
+    "rule": "Can't be planted. Old-growth only, fall only. The most valuable thing in the forest.",
+    "blurb": "A bread-bun cap on a barrel stem, deep under the old pines.",
+    "art": { "shape": "bolete", "cap": "#8A5A2E", "shade": "#5E3A1B", "gill": "#E8D9A8", "stem": "#EADFC6" }
+  }
+]

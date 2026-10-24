@@ -1,0 +1,65 @@
+[
+  {
+    "id": "meadow", "name": "Meadow", "unlock": null, "hazard": "Low",
+    "blurb": "Sunny grass and old hay bales. Easy walking.",
+    "color": "#C9B458",
+    "deck": [
+      { "card": { "type": "specimen", "species": "puffball" }, "copies": 5 },
+      { "card": { "type": "specimen", "species": "winecap" }, "copies": 5 },
+      { "card": { "type": "substrate", "substrate": "straw" }, "copies": 2 },
+      { "card": { "type": "substrate", "substrate": "woodchip" }, "copies": 3 },
+      { "card": { "type": "substrate", "substrate": "compost" }, "copies": 1 },
+      { "card": { "type": "coins", "amount": 2 }, "copies": 2 },
+      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 2 },
+      { "card": { "type": "hazard", "name": "Sudden Rain" }, "copies": 2 },
+      { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }
+    ]
+  },
+  {
+    "id": "mixedwoods", "name": "Mixed Woods", "unlock": null, "hazard": "Medium",
+    "blurb": "Oak, birch and fallen logs. Most of the farm's species live here.",
+    "color": "#6E8B4E",
+    "deck": [
+      { "card": { "type": "specimen", "species": "oyster" }, "copies": 3 },
+      { "card": { "type": "specimen", "species": "chanterelle" }, "copies": 3 },
+      { "card": { "type": "specimen", "species": "shiitake" }, "copies": 3 },
+      { "card": { "type": "specimen", "species": "lionsmane" }, "copies": 2 },
+      { "card": { "type": "specimen", "species": "reishi" }, "copies": 2 },
+      { "card": { "type": "specimen", "species": "enoki" }, "copies": 2 },
+      { "card": { "type": "substrate", "substrate": "log" }, "copies": 2 },
+      { "card": { "type": "coins", "amount": 2 }, "copies": 1 },
+      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 2 },
+      { "card": { "type": "hazard", "name": "Sudden Rain" }, "copies": 2 },
+      { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }
+    ]
+  },
+  {
+    "id": "oldgrowth", "name": "Old-growth", "unlock": "lantern", "hazard": "Medium",
+    "blurb": "Dim, mossy and very quiet. Bring a light.",
+    "color": "#3F5A44",
+    "deck": [
+      { "card": { "type": "specimen", "species": "lionsmane" }, "copies": 4 },
+      { "card": { "type": "specimen", "species": "reishi" }, "copies": 4 },
+      { "card": { "type": "specimen", "species": "porcini" }, "copies": 4 },
+      { "card": { "type": "specimen", "species": "shiitake" }, "copies": 1 },
+      { "card": { "type": "substrate", "substrate": "log" }, "copies": 3 },
+      { "card": { "type": "coins", "amount": 3 }, "copies": 2 },
+      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 2 },
+      { "card": { "type": "hazard", "name": "Deadfall" }, "copies": 2 },
+      { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }
+    ]
+  },
+  {
+    "id": "burnscar", "name": "Burn Scar", "unlock": "trailmap", "seasons": ["spring"], "hazard": "High",
+    "blurb": "Last summer's fire line. Open only in spring, when the morels rise.",
+    "color": "#7A5F4E",
+    "deck": [
+      { "card": { "type": "specimen", "species": "morel" }, "copies": 8 },
+      { "card": { "type": "substrate", "substrate": "woodchip" }, "copies": 3 },
+      { "card": { "type": "coins", "amount": 3 }, "copies": 3 },
+      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 3 },
+      { "card": { "type": "hazard", "name": "Ash Slide" }, "copies": 3 },
+      { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 4 }
+    ]
+  }
+]

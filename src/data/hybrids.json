@@ -1,0 +1,34 @@
+[
+  {
+    "id": "shaggyoyster", "name": "Shaggy Oyster", "kind": "hybrid", "value": 3, "parents": ["oyster", "lionsmane"],
+    "substrates": ["straw", "log"], "seasons": "any", "growth": "medium",
+    "traits": { "spreader": "normal", "needsShade": true },
+    "rule": "Shaded spreader. Spreads like Oyster onto an adjacent empty Straw or Log square, but only grows beside a Tree.",
+    "blurb": "Oyster shelves fringed with soft white teeth.",
+    "art": { "shape": "shelf", "cap": "#DCD6C6", "shade": "#A9A190", "gill": "#F4EFE2", "stem": "#E6DCC5", "fringe": true }
+  },
+  {
+    "id": "lacquercap", "name": "Lacquer Cap", "kind": "hybrid", "value": 6, "parents": ["shiitake", "reishi"],
+    "substrates": ["log"], "seasons": ["spring", "summer", "fall"], "growth": "slow",
+    "traits": {},
+    "rule": "Slow. Two growth phases at C. The most valuable thing your farm can grow.",
+    "blurb": "Shiitake's crust under Reishi's gloss.",
+    "art": { "shape": "cap", "cap": "#7E2416", "shade": "#3E0F08", "gill": "#E9C47A", "stem": "#6E2A15", "gloss": true }
+  },
+  {
+    "id": "emberpuff", "name": "Ember Puff", "kind": "hybrid", "value": 2, "parents": ["winecap", "puffball"],
+    "substrates": ["woodchip", "compost"], "seasons": ["spring", "summer", "fall"], "growth": "fast",
+    "traits": { "hungry": true },
+    "rule": "Hungry. Each time it fruits, it eats one adjacent empty Compost or Woodchip square.",
+    "blurb": "A puffball blushing wine-red at the seams.",
+    "art": { "shape": "ball", "cap": "#E07B4F", "shade": "#A8432A", "gill": "#F3C3A0", "stem": "#E2B496" }
+  },
+  {
+    "id": "frostoyster", "name": "Frost Oyster", "kind": "hybrid", "value": 2, "parents": ["oyster", "enoki"],
+    "substrates": ["straw", "log"], "seasons": "any", "growth": "fast",
+    "traits": { "coldHardy": true, "thirsty": true },
+    "rule": "Hardy but thirsty. Grows year-round and ignores Cold Snap, but gets blight after one dry mark instead of two.",
+    "blurb": "Blue-grey shelves rimed like a January window.",
+    "art": { "shape": "shelf", "cap": "#A9BFCB", "shade": "#6F8B9A", "gill": "#E3ECEF", "stem": "#CFDCE2" }
+  }
+]

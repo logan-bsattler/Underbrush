@@ -1,0 +1,691 @@
+import type { ComponentChildren } from 'preact';
+import { useEffect, useState } from 'preact/hooks';
+import {
+  basketCapacity,
+  canPlantOn,
+  content,
+  emptyGround,
+  inSeason,
+  inStream,
+  isShaded,
+  orderPayment,
+  plantableSquares,
+  seasonOf,
+  type ActionResult,
+  type GameState,
+  type Specimen,
+} from '../core';
+import { BedArt, Icon, Mushroom, SubstrateArt, TreeArt, Unknown } from './art';
+import { Forage } from './Forage';
+import { Market } from './Market';
+import { Night } from './Night';
+import { YearEnd } from './YearEnd';
+import type { Store } from './store';
+import { growthName, name, seasonsText, squareName, stageName, substrateName, weekLabel } from './text';
+
+type Mode = { kind: 'none' } | { kind: 'plant'; uid: number } | { kind: 'substrate'; index: number } | { kind: 'tent' };
+type Sheet =
+  | null
+  | { kind: 'bed'; i: number }
+  | { kind: 'specimen'; uid: number }
+  | { kind: 'tend' }
+  | { kind: 'market' }
+  | { kind: 'forage' }
+  | { kind: 'weather' }
+  | { kind: 'menu' };
+
+export function SheetFrame({ title, onClose, children, tall }: { title: string; onClose: () => void; children: ComponentChildren; tall?: boolean }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div class="sheet-wrap" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <section class={`sheet paper ${tall ? 'tall' : ''}`} role="dialog" aria-label={title}>
+        <header class="sheet-head">
+          <h2>{title}</h2>
+          <button class="icon-btn" onClick={onClose} aria-label="Close">
+            <Icon name="close" />
+          </button>
+        </header>
+        <div class="sheet-body">{children}</div>
+      </section>
+    </div>
+  );
+}
+
+export function ActionsPips({ left, total }: { left: number; total: number }) {
+  return (
+    <span class="pips" aria-label={`${left} of ${total} actions left`}>
+      {Array.from({ length: total }, (_, i) => (
+        <span class={`pip ${i < left ? 'on' : ''}`}>
+          <Icon name="leaf" size={16} />
+        </span>
+      ))}
+    </span>
+  );
+}
+
+function Hud({ g, onWeather, onMenu }: { g: GameState; onWeather: () => void; onMenu: () => void }) {
+  const weather = content.weather.find((w) => w.id === g.weather)!;
+  return (
+    <header class="hud">
+      <div class="hud-week">
+        <div class="hud-title">
+          Week {g.round}
+          <span class="hud-season">{weekLabel(g.round)}</span>
+        </div>
+        <div class="year-track" aria-hidden="true">
+          {Array.from({ length: content.rules.rounds }, (_, i) => (
+            <span class={`yt yt-${seasonOf(i + 1)} ${i + 1 < g.round ? 'done' : i + 1 === g.round ? 'now' : ''}`} />
+          ))}
+        </div>
+      </div>
+      <button class="chip weather" onClick={onWeather} aria-label={`Weather: ${weather.name}`}>
+        <Icon name={weather.id} size={18} />
+        <span class="weather-name">{weather.name}</span>
+      </button>
+      <span class="chip coins" aria-label={`${g.coins} coins`}>
+        <Icon name="coin" size={18} />
+        {g.coins}
+      </span>
+      <button class="icon-btn" onClick={onMenu} aria-label="Menu">
+        <Icon name="menu" />
+      </button>
+    </header>
+  );
+}
+
+function Orders({ g, onOpen }: { g: GameState; onOpen: () => void }) {
+  return (
+    <div class="orders" role="list" aria-label="Festival orders">
+      {g.orders.visible.map((id) => {
+        const o = content.orders.find((x) => x.id === id)!;
+        const ready = !!orderPayment(g.storage, o);
+        return (
+          <button role="listitem" class={`order ${ready ? 'ready' : ''}`} onClick={onOpen}>
+            <span class="order-label">{o.label}</span>
+            <span class="order-pts">{o.points}</span>
+            {ready && <span class="order-ready">Ready</span>}
+          </button>
+        );
+      })}
+      {g.orders.visible.length === 0 && <div class="muted small">Every order is filled. What a festival this will be.</div>}
+    </div>
+  );
+}
+
+export function Farm({
+  g,
+  mode,
+  onSquare,
+  marks,
+  small,
+}: {
+  g: GameState;
+  mode?: Mode;
+  onSquare?: (i: number) => void;
+  marks?: Record<number, string>;
+  small?: boolean;
+}) {
+  const targets = new Set<number>();
+  if (mode?.kind === 'plant') {
+    const spec = g.basket.find((b) => b.uid === mode.uid);
+    if (spec) plantableSquares(g, spec.species).forEach((i) => targets.add(i));
+  } else if (mode?.kind === 'substrate') emptyGround(g).forEach((i) => targets.add(i));
+  else if (mode?.kind === 'tent') g.grid.forEach((sq, i) => !sq.tree && targets.add(i));
+  const choosing = mode && mode.kind !== 'none';
+
+  return (
+    <div class={`farm ${small ? 'small' : ''}`}>
+      <div class="stream" aria-hidden="true">
+        <svg viewBox="0 0 20 100" preserveAspectRatio="none">
+          <path d="M10 0 Q4 12 10 25 T10 50 T10 75 T10 100" stroke="#FFFFFF" strokeOpacity="0.7" strokeWidth="1.4" fill="none" />
+        </svg>
+        {!small && <span>stream</span>}
+      </div>
+      <div class="grid">
+        {g.grid.map((sq, i) => {
+          const isTarget = targets.has(i);
+          const cls = [
+            'sq',
+            sq.tree ? 'tree' : '',
+            inStream(i) ? 'damp' : '',
+            sq.blight ? 'blighted' : '',
+            sq.stage === 'F' && !sq.blight ? 'ready' : '',
+            choosing ? (isTarget ? 'target' : 'dim') : '',
+            marks?.[i] ? `mark mark-${marks[i]}` : '',
+          ].join(' ');
+          const label = sq.tree
+            ? 'Tree'
+            : sq.species
+              ? `${name(sq.species)}, ${stageName[sq.stage!]}${sq.blight ? ', blighted' : ''}, ${squareName(i)}`
+              : sq.substrate
+                ? `Empty ${substrateName[sq.substrate]}, ${squareName(i)}`
+                : `Empty ground, ${squareName(i)}`;
+          return (
+            <button
+              key={i}
+              class={cls}
+              aria-label={label}
+              disabled={!onSquare || (choosing && !isTarget)}
+              onClick={() => onSquare?.(i)}
+            >
+              {sq.tree ? (
+                <TreeArt />
+              ) : (
+                <>
+                  <SubstrateArt substrate={sq.substrate} />
+                  {sq.species && sq.stage && <BedArt key={`${sq.species}-${sq.stage}`} species={sq.species} stage={sq.stage} />}
+                  {sq.blight && <span class="mold" aria-hidden="true" />}
+                  {!small && (
+                    <span class="badges">
+                      {sq.tent && <Icon name="tent" size={14} />}
+                      {Array.from({ length: sq.dry }, () => (
+                        <Icon name="dry" size={13} />
+                      ))}
+                    </span>
+                  )}
+                  {sq.species && sq.stage && !small && <span class={`stage-chip st-${sq.stage}`}>{sq.stage}</span>}
+                </>
+              )}
+              {marks?.[i] && <span class="mark-dot" aria-hidden="true" />}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function Tray({ g, mode, onSpecimen, onShed }: { g: GameState; mode: Mode; onSpecimen: (s: Specimen) => void; onShed: (i: number) => void }) {
+  const cap = basketCapacity(g);
+  return (
+    <div class="tray">
+      <div class="tray-group">
+        <div class="tray-label">
+          <Icon name="basket" size={16} /> Basket {g.basket.length}/{cap}
+        </div>
+        <div class="slots">
+          {Array.from({ length: cap }, (_, i) => {
+            const spec = g.basket[i];
+            if (!spec) return <span class="slot empty" />;
+            const sel = mode.kind === 'plant' && mode.uid === spec.uid;
+            return (
+              <button
+                class={`slot ${spec.identified ? 'known' : 'unknown'} ${sel ? 'sel' : ''}`}
+                onClick={() => onSpecimen(spec)}
+                aria-label={spec.identified ? name(spec.species) : `Unidentified ${content.species[spec.species].group}`}
+              >
+                {spec.identified ? <Mushroom species={spec.species} size={40} /> : <Unknown species={spec.species} size={40} />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div class="tray-group shed">
+        <div class="tray-label">
+          <Icon name="shed" size={16} /> Shed
+        </div>
+        <div class="slots">
+          {g.shed.length === 0 && <span class="muted small">empty</span>}
+          {g.shed.map((sub, i) => (
+            <button
+              class={`slot sub ${mode.kind === 'substrate' && mode.index === i ? 'sel' : ''}`}
+              onClick={() => onShed(i)}
+              aria-label={`${substrateName[sub]} tile: tap, then tap empty ground`}
+            >
+              <SubstrateArt substrate={sub} size={40} />
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: Store; onClose: () => void }) {
+  const sq = g.grid[i];
+  if (sq.tree)
+    return (
+      <SheetFrame title="Tree" onClose={onClose}>
+        <p>You can't plant here. A tree shades its four neighbors, and Lion's Mane and Shaggy Oyster only grow in shade.</p>
+      </SheetFrame>
+    );
+  if (!sq.substrate && !sq.species)
+    return (
+      <SheetFrame title="Empty ground" onClose={onClose}>
+        <p>Lay substrate here from your shed. Foraging trips turn up straw, logs and woodchip; a lookalike you identify turns into compost.</p>
+        {inStream(i) && <p class="note">Beside the stream: beds here never dry out.</p>}
+      </SheetFrame>
+    );
+  if (!sq.species) {
+    const fits = content.speciesOrder.filter((id) => content.species[id].kind === 'cultivated' && content.species[id].substrates.includes(sq.substrate!));
+    return (
+      <SheetFrame title={`Empty ${substrateName[sq.substrate!]}`} onClose={onClose}>
+        <p>Ready to inoculate. Grows here: {fits.map(name).join(', ') || 'nothing yet'}.</p>
+        {inStream(i) && <p class="note">Beside the stream: beds here never dry out.</p>}
+        {isShaded(g.grid, i) && <p class="note">In the shade of a tree.</p>}
+        {sq.tent && <p class="note">Under the grow tent: ignores season and cold snaps.</p>}
+      </SheetFrame>
+    );
+  }
+  const sp = content.species[sq.species];
+  const season = seasonOf(g.round);
+  const needs: string[] = [];
+  if (!sq.tent && !inSeason(sp.id, season)) needs.push(`Out of season: it grows in ${seasonsText(sp.id).toLowerCase()}.`);
+  if (sp.traits.needsShade && !isShaded(g.grid, i)) needs.push('Needs a tree beside it to grow.');
+  const dryLimit = sp.traits.thirsty ? 1 : content.rules.dryMarksToBlight;
+  return (
+    <SheetFrame title={sp.name} onClose={onClose}>
+      <div class="bed-sheet">
+        <div class="plate small">
+          <Mushroom species={sp.id} size={96} />
+        </div>
+        <div>
+          <div class="stage-track" aria-label={`Stage: ${stageName[sq.stage!]}`}>
+            {(['S', 'C', 'P', 'F'] as const).map((st) => (
+              <span class={`stage-step ${st === sq.stage ? 'now' : ''} ${sp.growth === 'fast' && st === 'P' ? 'skip' : ''}`}>
+                <b>{st}</b>
+                <small>{stageName[st]}</small>
+              </span>
+            ))}
+          </div>
+          <dl class="meta">
+            <dt>Substrate</dt>
+            <dd>{substrateName[sq.substrate!]}</dd>
+            <dt>Season</dt>
+            <dd>{seasonsText(sp.id)}</dd>
+            <dt>Growth</dt>
+            <dd>{growthName[sp.growth]}</dd>
+            <dt>Value</dt>
+            <dd>
+              {sp.value} coin{sp.value === 1 ? '' : 's'}
+            </dd>
+            <dt>Dry marks</dt>
+            <dd>
+              {inStream(i) ? 'Never (stream)' : `${sq.dry} of ${dryLimit}`}
+            </dd>
+          </dl>
+        </div>
+      </div>
+      <p class="rule">{sp.rule}</p>
+      {needs.map((n) => (
+        <p class="note warn">{n}</p>
+      ))}
+      {sq.tent && <p class="note">Under the grow tent: ignores season and cold snaps.</p>}
+      {sq.blight ? (
+        <>
+          <p class="note warn">Blighted: it won't grow or fruit, and blight spreads to neighbors of the same species.</p>
+          <button
+            class="btn primary wide"
+            disabled={g.actionsLeft < 1}
+            onClick={() => store.act({ type: 'clearBlight', square: i }) && onClose()}
+          >
+            Clear blight · 1 action
+          </button>
+        </>
+      ) : sq.stage === 'F' ? (
+        <button class="btn primary wide" disabled={g.actionsLeft < 1} onClick={() => store.act({ type: 'harvest' }) && onClose()}>
+          Harvest every fruiting bed · 1 action
+        </button>
+      ) : null}
+    </SheetFrame>
+  );
+}
+
+function SpecimenSheet({
+  g,
+  uid,
+  store,
+  onClose,
+  onPlant,
+  onReveal,
+}: {
+  g: GameState;
+  uid: number;
+  store: Store;
+  onClose: () => void;
+  onPlant: (uid: number) => void;
+  onReveal: (r: ActionResult) => void;
+}) {
+  const spec = g.basket.find((b) => b.uid === uid);
+  if (!spec) return null;
+  const sp = content.species[spec.species];
+  const guide = g.gear.includes('fieldguide');
+  const bad = sp.lookalike?.on ?? 1;
+  const risk = guide ? (bad / 6) ** 2 : bad / 6;
+  const spots = plantableSquares(g, spec.species);
+  if (!spec.identified)
+    return (
+      <SheetFrame title={`${sp.group}?`} onClose={onClose}>
+        <div class="bed-sheet">
+          <div class="plate small">
+            <Unknown species={sp.id} size={96} />
+          </div>
+          <div>
+            <p>An unidentified specimen from the {sp.group?.toLowerCase()} group. It might be the real thing, or a lookalike.</p>
+            <p class="small muted">
+              Lookalike chance: {Math.round(risk * 100)}%{guide ? ' with your Field Guide' : ''}. A lookalike becomes compost.
+            </p>
+          </div>
+        </div>
+        <div class="row">
+          <button
+            class="btn primary grow"
+            disabled={g.actionsLeft < 1}
+            onClick={() => {
+              const r = store.act({ type: 'identify', uid });
+              if (r) onReveal(r);
+            }}
+          >
+            Identify · 1 action
+          </button>
+          <button class="btn ghost" onClick={() => store.act({ type: 'discard', uid }) && onClose()}>
+            Leave it
+          </button>
+        </div>
+      </SheetFrame>
+    );
+  return (
+    <SheetFrame title={sp.name} onClose={onClose}>
+      <div class="bed-sheet">
+        <div class="plate small">
+          <Mushroom species={sp.id} size={96} />
+        </div>
+        <div>
+          <p class="rule">{sp.rule}</p>
+          <p class="small muted">
+            {substrateName[sp.substrates[0]]} · {seasonsText(sp.id)} · {growthName[sp.growth]}
+          </p>
+        </div>
+      </div>
+      {spots.length === 0 && (
+        <p class="note warn">No empty {sp.substrates.map((x) => substrateName[x]).join(' or ')} square. Lay one from your shed, or find one in the forest.</p>
+      )}
+      <div class="row">
+        <button class="btn primary grow" disabled={!spots.length || g.actionsLeft < 1} onClick={() => onPlant(uid)}>
+          Plant · 1 action
+        </button>
+        <button class="btn ghost" onClick={() => store.act({ type: 'discard', uid }) && onClose()}>
+          Compost it
+        </button>
+      </div>
+    </SheetFrame>
+  );
+}
+
+function Reveal({ r, g, onDone, onPlant }: { r: ActionResult & { kind: 'identify' }; g: GameState; onDone: () => void; onPlant: (uid: number) => void }) {
+  const sp = content.species[r.species];
+  const [flipped, setFlipped] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setFlipped(true), 650);
+    return () => clearTimeout(t);
+  }, []);
+  const canPlant = r.real && sp.kind === 'cultivated' && plantableSquares(g, r.species).length > 0 && g.actionsLeft > 0;
+  return (
+    <div class="overlay reveal">
+      <div class={`flip ${flipped ? 'flipped' : ''}`}>
+        <div class="face back paper">
+          <Unknown species={r.species} size={150} />
+          <div class="plate-name">{sp.group}</div>
+        </div>
+        <div class={`face front paper ${r.real ? 'real' : 'fake'}`}>
+          {r.real ? <Mushroom species={r.species} size={170} /> : <Unknown species={r.species} size={150} lookalike />}
+          {!r.real && <span class="stamp">Lookalike</span>}
+          <div class="plate-name">{r.real ? sp.name : sp.lookalike?.name}</div>
+          <div class="plate-latin">{r.real ? sp.latin : `a ${sp.name} lookalike`}</div>
+        </div>
+      </div>
+      <div class={`reveal-text ${flipped ? 'show' : ''}`}>
+        <div class="dice">
+          {r.rolls.map((d) => (
+            <span class={`die ${d === r.kept ? 'kept' : ''}`}>{d}</span>
+          ))}
+        </div>
+        {r.real ? (
+          <p>
+            The real thing.{' '}
+            {sp.kind === 'wild' ? 'It goes straight into storage to sell or deliver.' : 'Plant it on ' + sp.substrates.map((x) => substrateName[x]).join(' or ') + '.'}
+          </p>
+        ) : (
+          <p>A lookalike. Not a loss: it rots down into a Compost tile in your shed.</p>
+        )}
+        <div class="row center">
+          {canPlant && (
+            <button class="btn primary" onClick={() => onPlant(r.uid)}>
+              Plant it
+            </button>
+          )}
+          <button class={`btn ${canPlant ? 'ghost' : 'primary'}`} onClick={onDone}>
+            {canPlant ? 'Later' : 'Done'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TendSheet({ g, store, onClose, onBed }: { g: GameState; store: Store; onClose: () => void; onBed: (i: number) => void }) {
+  const blighted = g.grid.map((_, i) => i).filter((i) => g.grid[i].blight);
+  const dry = g.grid.filter((sq, i) => sq.species && !inStream(i)).length;
+  return (
+    <SheetFrame title="Tend the farm" onClose={onClose}>
+      <button class="btn primary wide" disabled={g.watered || g.actionsLeft < 1} onClick={() => store.act({ type: 'water' }) && onClose()}>
+        <Icon name="water" /> {g.watered ? 'Watered this week' : 'Water every bed · 1 action'}
+      </button>
+      <p class="small muted">
+        {g.weather === 'rain'
+          ? 'Rain is watering everything this week already.'
+          : g.weather === 'dryspell'
+            ? 'Dry spell: nothing grows this week unless you water.'
+            : `${dry} bed${dry === 1 ? '' : 's'} away from the stream will take a dry mark tonight if you don't water.`}
+      </p>
+      <h3>Blight</h3>
+      {blighted.length === 0 ? (
+        <p class="muted">No blight. The farm looks healthy.</p>
+      ) : (
+        <ul class="list">
+          {blighted.map((i) => (
+            <li>
+              <button class="list-btn" onClick={() => onBed(i)}>
+                <Icon name="blight" /> {name(g.grid[i].species!)} · {squareName(i)}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </SheetFrame>
+  );
+}
+
+function Menu({ g, onClose, onHelp, onTitle }: { g: GameState; onClose: () => void; onHelp: () => void; onTitle: () => void }) {
+  return (
+    <SheetFrame title="Underbrush" onClose={onClose}>
+      <p class="small muted">
+        {g.mode === 'daily' ? 'Daily year' : 'Story year'} · saved after every action
+      </p>
+      <div class="col">
+        <button class="btn" onClick={onHelp}>
+          How to play
+        </button>
+        <button class="btn" onClick={onTitle}>
+          Save and return to title
+        </button>
+      </div>
+      <p class="disclaimer">Underbrush is a game, not a foraging guide. Never eat a wild mushroom because of anything you saw here.</p>
+    </SheetFrame>
+  );
+}
+
+export function Game({ store, onHelp, onTitle }: { store: Store; onHelp: () => void; onTitle: () => void }) {
+  const g = store.game!;
+  const [mode, setMode] = useState<Mode>({ kind: 'none' });
+  const [sheet, setSheet] = useState<Sheet>(null);
+  const [reveal, setReveal] = useState<(ActionResult & { kind: 'identify' }) | null>(null);
+  const [confirmEnd, setConfirmEnd] = useState(false);
+
+  useEffect(() => {
+    if (!confirmEnd) return;
+    const t = setTimeout(() => setConfirmEnd(false), 2600);
+    return () => clearTimeout(t);
+  }, [confirmEnd]);
+
+  // Leaving plant or placement mode when its subject disappears (e.g. after planting).
+  useEffect(() => {
+    if (mode.kind === 'plant' && !g.basket.some((b) => b.uid === mode.uid)) setMode({ kind: 'none' });
+    if (mode.kind === 'substrate' && !g.shed[mode.index]) setMode({ kind: 'none' });
+    if (mode.kind === 'tent' && g.tentPlaced) setMode({ kind: 'none' });
+  }, [g, mode]);
+
+  const needTent = g.gear.includes('growtent') && !g.tentPlaced;
+  const ready = g.grid.filter((sq) => sq.stage === 'F' && !sq.blight && sq.species).length;
+  const blighted = g.grid.filter((sq) => sq.blight).length;
+  const busy = !!g.night || g.pendingCrosses.length > 0;
+
+  const onSquare = (i: number) => {
+    if (mode.kind === 'plant') {
+      const spec = g.basket.find((b) => b.uid === mode.uid);
+      if (spec && canPlantOn(g, spec.species, i)) store.act({ type: 'plant', uid: mode.uid, square: i });
+      return;
+    }
+    if (mode.kind === 'substrate') {
+      store.act({ type: 'placeSubstrate', index: mode.index, square: i });
+      setMode({ kind: 'none' });
+      return;
+    }
+    if (mode.kind === 'tent') {
+      store.act({ type: 'placeTent', square: i });
+      return;
+    }
+    setSheet({ kind: 'bed', i });
+  };
+
+  const startPlant = (uid: number) => {
+    setSheet(null);
+    setReveal(null);
+    setMode({ kind: 'plant', uid });
+  };
+
+  const endWeek = () => {
+    if (g.actionsLeft > 0 && !confirmEnd) {
+      setConfirmEnd(true);
+      return;
+    }
+    setConfirmEnd(false);
+    setMode({ kind: 'none' });
+    store.act({ type: 'endWeek' });
+  };
+
+  if (g.over && !g.night) return <YearEnd store={store} onTitle={onTitle} />;
+
+  const plantSpec = mode.kind === 'plant' ? g.basket.find((b) => b.uid === mode.uid) : null;
+  const banner =
+    mode.kind === 'plant' && plantSpec
+      ? `Tap an empty ${content.species[plantSpec.species].substrates.map((x) => substrateName[x]).join(' or ')} square for ${name(plantSpec.species)}`
+      : mode.kind === 'substrate'
+        ? `Tap empty ground to lay the ${substrateName[g.shed[mode.index]]?.toLowerCase()}`
+        : mode.kind === 'tent'
+          ? 'Tap a square to pitch your grow tent'
+          : null;
+
+  return (
+    <div class="game">
+      <Hud g={g} onWeather={() => setSheet({ kind: 'weather' })} onMenu={() => setSheet({ kind: 'menu' })} />
+      <Orders g={g} onOpen={() => setSheet({ kind: 'market' })} />
+
+      <main class="farm-area">
+        {banner ? (
+          <div class="banner">
+            <span>{banner}</span>
+            {mode.kind !== 'tent' && (
+              <button class="btn small ghost" onClick={() => setMode({ kind: 'none' })}>
+                Cancel
+              </button>
+            )}
+          </div>
+        ) : needTent ? (
+          <div class="banner">
+            <span>Your grow tent is ready to pitch.</span>
+            <button class="btn small primary" onClick={() => setMode({ kind: 'tent' })}>
+              Pitch it
+            </button>
+          </div>
+        ) : (
+          <div class="banner quiet">
+            <ActionsPips left={g.actionsLeft} total={content.rules.actionsPerRound} />
+            <span class="small">
+              {g.actionsLeft > 0 ? `${g.actionsLeft} action${g.actionsLeft === 1 ? '' : 's'} left this week` : 'No actions left. Time to rest.'}
+            </span>
+          </div>
+        )}
+        <Farm g={g} mode={mode} onSquare={onSquare} />
+      </main>
+
+      <Tray
+        g={g}
+        mode={mode}
+        onSpecimen={(s) => (mode.kind === 'plant' && mode.uid === s.uid ? setMode({ kind: 'none' }) : setSheet({ kind: 'specimen', uid: s.uid }))}
+        onShed={(i) => setMode(mode.kind === 'substrate' && mode.index === i ? { kind: 'none' } : { kind: 'substrate', index: i })}
+      />
+
+      <nav class="actions" aria-label="Actions">
+        <button class="act" disabled={g.actionsLeft < 1} onClick={() => setSheet({ kind: 'forage' })}>
+          <Icon name="forage" size={26} />
+          <span>Forage</span>
+        </button>
+        <button class="act" onClick={() => setSheet({ kind: 'tend' })}>
+          <Icon name="tend" size={26} />
+          <span>Tend</span>
+          {blighted > 0 && <span class="badge warn">{blighted}</span>}
+        </button>
+        <button class="act" disabled={!ready || g.actionsLeft < 1} onClick={() => store.act({ type: 'harvest' })}>
+          <Icon name="harvest" size={26} />
+          <span>Harvest</span>
+          {ready > 0 && <span class="badge">{ready}</span>}
+        </button>
+        <button class="act" onClick={() => setSheet({ kind: 'market' })}>
+          <Icon name="market" size={26} />
+          <span>Market</span>
+        </button>
+        <button class={`act end ${g.actionsLeft === 0 ? 'glow' : ''} ${confirmEnd ? 'confirm' : ''}`} onClick={endWeek}>
+          <Icon name="moon" size={26} />
+          <span>{confirmEnd ? 'Tap to rest' : 'End week'}</span>
+        </button>
+      </nav>
+
+      {sheet?.kind === 'bed' && <BedSheet g={g} i={sheet.i} store={store} onClose={() => setSheet(null)} />}
+      {sheet?.kind === 'specimen' && (
+        <SpecimenSheet
+          g={g}
+          uid={sheet.uid}
+          store={store}
+          onClose={() => setSheet(null)}
+          onPlant={startPlant}
+          onReveal={(r) => {
+            setSheet(null);
+            if (r.kind === 'identify') setReveal(r);
+          }}
+        />
+      )}
+      {sheet?.kind === 'tend' && <TendSheet g={g} store={store} onClose={() => setSheet(null)} onBed={(i) => setSheet({ kind: 'bed', i })} />}
+      {sheet?.kind === 'weather' && (
+        <SheetFrame title={content.weather.find((w) => w.id === g.weather)!.name} onClose={() => setSheet(null)}>
+          <p>{content.weather.find((w) => w.id === g.weather)!.rule}</p>
+          <p class="small muted">A new weather card turns over every week.</p>
+        </SheetFrame>
+      )}
+      {sheet?.kind === 'menu' && <Menu g={g} onClose={() => setSheet(null)} onHelp={onHelp} onTitle={onTitle} />}
+      {sheet?.kind === 'market' && <Market g={g} store={store} onClose={() => setSheet(null)} />}
+      {(sheet?.kind === 'forage' || g.forage) && <Forage g={g} store={store} onClose={() => setSheet(null)} />}
+      {reveal && <Reveal r={reveal} g={g} onDone={() => setReveal(null)} onPlant={startPlant} />}
+      {busy && <Night g={g} store={store} />}
+      {store.error && (
+        <div class="toast" role="alert" onClick={store.clearError}>
+          {store.error}
+        </div>
+      )}
+    </div>
+  );
+}

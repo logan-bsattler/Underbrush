@@ -1,0 +1,35 @@
+{
+  "rounds": 12,
+  "roundsPerSeason": 3,
+  "seasons": ["spring", "summer", "fall", "winter"],
+  "actionsPerRound": 4,
+  "basketSize": 4,
+  "biggerBasketSize": 6,
+  "startCoins": 3,
+  "gridSize": 4,
+  "trees": [2, 9],
+  "streamColumn": 0,
+  "start": {
+    "squares": [
+      { "index": 4, "substrate": "straw", "species": "oyster", "stage": "C" },
+      { "index": 8, "substrate": "straw" },
+      { "index": 5, "substrate": "log" },
+      { "index": 6, "substrate": "log" }
+    ]
+  },
+  "ordersVisible": 3,
+  "bustAt": 2,
+  "bustKeep": 2,
+  "dryMarksToBlight": 2,
+  "crowdingAt": 3,
+  "moldBloomAt": 3,
+  "moldBloomPenalty": 1,
+  "hybridPoints": 3,
+  "plantedPoints": 1,
+  "tiers": [
+    { "id": "bronze", "name": "Bronze", "min": 15 },
+    { "id": "silver", "name": "Silver", "min": 25 },
+    { "id": "gold", "name": "Gold", "min": 35 },
+    { "id": "golden", "name": "Golden Chanterelle", "min": 45 }
+  ]
+}
