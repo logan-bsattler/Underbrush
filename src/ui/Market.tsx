@@ -1,5 +1,5 @@
-import { content, gearUnlockLevel, orderPayment, saleValue, type GameState } from '../core';
-import { Icon, Mushroom } from './art';
+import { compostSaleValue, content, gearUnlockLevel, orderPayment, saleValue, type GameState } from '../core';
+import { Icon, Mushroom, SubstrateArt } from './art';
 import { SheetFrame } from './Game';
 import type { Store } from './store';
 import { name } from './text';
@@ -10,6 +10,7 @@ export function Market({ g, store, onClose }: { g: GameState; store: Store; onCl
     onClose();
   };
   const stored = content.speciesOrder.filter((id) => (g.storage[id] ?? 0) > 0);
+  const compost = g.shed.filter((x) => x === 'compost').length;
   const canTrade = !!g.market || (g.finale ? !g.finale.marketed : g.actionsLeft > 0);
   const lastMonth = g.round % content.rules.roundsPerSeason === 0 && g.round < content.rules.rounds;
 
@@ -80,6 +81,29 @@ export function Market({ g, store, onClose }: { g: GameState; store: Store; onCl
             );
           })}
         </ul>
+      )}
+
+      {compost > 0 && (
+        <>
+          <h3>Your shed</h3>
+          <ul class="storage">
+            <li>
+              <SubstrateArt substrate="compost" size={40} />
+              <span class="grow">
+                <b>Compost tile</b> × {compost}
+                <small class="muted"> · {compostSaleValue(g)} each</small>
+              </span>
+              <button class="btn small" disabled={!canTrade} onClick={() => store.act({ type: 'sellCompost', count: 1 })}>
+                Sell 1
+              </button>
+              {compost > 1 && (
+                <button class="btn small" disabled={!canTrade} onClick={() => store.act({ type: 'sellCompost', count: compost })}>
+                  All
+                </button>
+              )}
+            </li>
+          </ul>
+        </>
       )}
 
       {!g.finale && (

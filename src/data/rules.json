@@ -53,6 +53,7 @@
   "bustAt": 2,
   "bustKeep": 2,
   "scrapsPerCompost": 3,
+  "compostValue": 1,
   "dryMarksToBlight": 2,
   "crowdingAt": 3,
   "moldBloomAt": 3,

@@ -114,6 +114,8 @@ export interface RulesDef {
   bustKeep: number;
   /** Discarded specimens on the compost pile that rot into one Compost tile overnight. */
   scrapsPerCompost: number;
+  /** Coins a Compost tile from the shed sells for at the market. */
+  compostValue: number;
   dryMarksToBlight: number;
   crowdingAt: number;
   moldBloomAt: number;
@@ -336,6 +338,8 @@ export type Action =
   | { type: 'compostSquare'; square: number }
   | { type: 'harvest' }
   | { type: 'sell'; species: string; count: number }
+  /** Sells Compost tiles from the shed. */
+  | { type: 'sellCompost'; count: number }
   | { type: 'fillOrder'; order: string }
   | { type: 'buyGear'; gear: string }
   | { type: 'leaveMarket' }

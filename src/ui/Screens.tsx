@@ -184,7 +184,7 @@ export function HowTo({ onBack }: { onBack: () => void }) {
             <b>Harvest</b> every fruiting bed into storage.
           </li>
           <li>
-            <b>Market:</b> sell, deliver one festival order and buy gear, as much as you like in one visit.
+            <b>Market:</b> sell mushrooms and spare Compost tiles, deliver one festival order and buy gear, as much as you like in one visit.
           </li>
         </ul>
         <p class="small muted">Free any time: lay substrate from your shed on empty ground, and compost specimens you don't want. Composted specimens, overripe fruit and spoiled stock all go on the compost pile, and every{' '}

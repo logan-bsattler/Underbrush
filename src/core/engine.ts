@@ -46,6 +46,10 @@ export function saleValue(s: GameState, speciesId: string, c: Content = defaultC
   return c.species[speciesId].value + (s.weather === 'marketday' ? 1 : 0) + (masteryOf(s, speciesId) >= 3 ? 1 : 0);
 }
 
+export function compostSaleValue(s: GameState, c: Content = defaultContent): number {
+  return c.rules.compostValue + (s.weather === 'marketday' ? 1 : 0);
+}
+
 export function actionsPerMonth(s: GameState, c: Content = defaultContent): number {
   return c.rules.actionsPerRound + s.perks.bonusActions;
 }
@@ -586,6 +590,20 @@ export function dispatch(
       openMarketVisit(s);
       const each = saleValue(s, action.species, c);
       takeStorage(s, action.species, n);
+      s.coins += each * n;
+      s.stats.coinsEarned += each * n;
+      result = { kind: 'sell', coins: each * n };
+      break;
+    }
+
+    case 'sellCompost': {
+      guardIdle(s);
+      const have = s.shed.filter((x) => x === 'compost').length;
+      const n = Math.min(action.count, have);
+      if (n <= 0) fail('No Compost tiles in your shed to sell.');
+      openMarketVisit(s);
+      const each = compostSaleValue(s, c);
+      for (let i = 0; i < n; i++) s.shed.splice(s.shed.lastIndexOf('compost'), 1);
       s.coins += each * n;
       s.stats.coinsEarned += each * n;
       result = { kind: 'sell', coins: each * n };

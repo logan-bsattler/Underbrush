@@ -72,6 +72,8 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
         .sort((a, b) => b.points - a.points)[0];
       if (best) act({ type: 'fillOrder', order: best.id });
       for (const id of Object.keys(s.storage)) act({ type: 'sell', species: id, count: s.storage[id] });
+      const compost = s.shed.filter((x) => x === 'compost').length;
+      if (compost) act({ type: 'sellCompost', count: compost });
       act({ type: 'festival' });
       continue;
     }

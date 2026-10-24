@@ -37,6 +37,9 @@ Interpretations where the kit left room:
   are out of season, unshaded, blighted, or sitting at Fruiting.
 - **Market** costs 1 action per visit, charged on the first trade, so opening the sheet to look is free.
 - **Substrate finds and compost** go to a shed; laying a tile on empty ground is free.
+- **Selling compost** (not in the kit): Compost tiles in the shed sell at the market for 1 coin
+  each (`rules.compostValue`, +1 on Market day), so a pile with no room on the farm still pays a
+  little. At the festival's 1 point per 3 coins that is worth a third of a point a tile.
 - **Compost a square** (not in the kit) is a Tend action: the bed, if any, and its tile go on the
   compost pile as one scrap each, and the square becomes empty ground for a new tile. It frees a
   square whose species is out of season for the rest of the year, like Wine Cap after summer.

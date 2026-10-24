@@ -540,6 +540,29 @@ describe('market and orders', () => {
     expect(s.coins).toBe(3 + 5);
   });
 
+  it('sells Compost tiles from the shed, a coin each, within the same market visit', () => {
+    let s = blank('sc');
+    s.shed = ['compost', 'log', 'compost', 'compost'];
+    s.storage = { oyster: 1 };
+    s = run(s, { type: 'sell', species: 'oyster', count: 1 }, { type: 'sellCompost', count: 2 });
+    expect(s.actionsLeft).toBe(3);
+    expect(s.coins).toBe(3 + 1 + 2);
+    expect(s.shed).toEqual(['compost', 'log']);
+    expect(s.stats.coinsEarned).toBe(3);
+    s = run(s, { type: 'sellCompost', count: 5 });
+    expect(s.shed).toEqual(['log']);
+    expect(s.coins).toBe(7);
+    expect(() => dispatch(s, { type: 'sellCompost', count: 1 })).toThrow(/No Compost tiles/);
+  });
+
+  it('market day adds a coin per Compost tile too', () => {
+    let s = blank('scm');
+    s.weather = 'marketday';
+    s.shed = ['compost'];
+    s = run(s, { type: 'sellCompost', count: 1 });
+    expect(s.coins).toBe(3 + 2);
+  });
+
   it('fills one order per visit and refills the board', () => {
     let s = blank('o');
     s.orders = { visible: ['o-oyster3', 'o-hyb2', 'o-four'], deck: ['o-lion2'], filled: [] };
