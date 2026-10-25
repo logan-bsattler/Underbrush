@@ -144,6 +144,13 @@ export interface RulesDef {
   swapCost: number;
   /** Spawn of a species costs its value plus this many coins at the market. */
   spawnMarkup: number;
+  /** Hiring a hand for +1 action costs this many coins, plus hireStep for every hand already hired this year. */
+  hireCost: number;
+  hireStep: number;
+  /** Each order past the first delivered on one market visit costs this many coins. */
+  extraDeliveryCost: number;
+  /** What a substrate tile costs at the market stall. */
+  substrateCost: Record<Substrate, number>;
   /** A forage patch is patchSize × patchSize face-down cards dealt from the zone deck. */
   patchSize: number;
   /** From this many patches deep, every patch dealt holds one of the zone's deep finds. */
@@ -362,6 +369,10 @@ export interface GameState {
   orderPoints: number;
   /** Orders swapped off the board this year; each swap costs a coin more than the last. */
   orderSwaps: number;
+  /** Hands hired this year; each costs more than the last. */
+  hires: number;
+  /** The month a hand was last hired (0 if never): one a month. */
+  hiredRound: number;
   /** The dish eaten this month, if any; it lasts until the month ends. */
   meal: string | null;
   /** Festival points from dishes that the judges remember. */
@@ -411,6 +422,10 @@ export type Action =
   | { type: 'fillOrder'; order: string }
   /** Sends a festival order to the bottom of the deck and deals the next, for coins. */
   | { type: 'swapOrder'; order: string }
+  /** Hires a hand for the month: +1 action, for coins. One a month; no market visit needed. */
+  | { type: 'hireHand' }
+  /** Buys a substrate tile for the shed. */
+  | { type: 'buySubstrate'; substrate: Substrate }
   /** Buys spawn of a cultivated species you've identified: an identified specimen for your basket. */
   | { type: 'buySpawn'; species: string }
   /** Takes one stored cultivated or hybrid mushroom back out as spawn to plant. Free. */

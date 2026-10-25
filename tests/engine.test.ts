@@ -676,17 +676,48 @@ describe('market and orders', () => {
     expect(s.coins).toBe(3 + 2);
   });
 
-  it('fills one order per visit and refills the board', () => {
+  it('fills the first order of a visit free, charges coins for each one after, and refills the board', () => {
     let s = blank('o');
+    s.coins = 3;
     s.orders = { visible: ['o-oyster3', 'o-hyb2', 'o-four'], deck: ['o-lion2'], filled: [] };
     s.storage = { oyster: 3, shaggyoyster: 1, frostoyster: 2, puffball: 1, winecap: 1 };
     s = run(s, { type: 'fillOrder', order: 'o-oyster3' });
     expect(s.orderPoints).toBe(4);
+    expect(s.coins).toBe(3);
     expect(s.orders.visible).toEqual(['o-hyb2', 'o-four', 'o-lion2']);
-    expect(() => dispatch(s, { type: 'fillOrder', order: 'o-hyb2' })).toThrow(/One order/);
-    s = run(s, { type: 'leaveMarket' }, { type: 'fillOrder', order: 'o-hyb2' });
+    expect(() => dispatch(s, { type: 'fillOrder', order: 'o-hyb2' })).toThrow(/costs 4 coins/);
+    s.coins = 5;
+    s = run(s, { type: 'fillOrder', order: 'o-hyb2' });
+    expect(s.coins).toBe(1);
+    expect(s.actionsLeft).toBe(3);
     // Cheapest hybrids first: both Frost Oysters (value 2) before the Shaggy Oyster (3).
     expect(s.storage).toEqual({ shaggyoyster: 1, puffball: 1, winecap: 1 });
+    // A new visit's first delivery is free again.
+    s.storage = { oyster: 3 };
+    s.orders.visible = ['o-oyster3'];
+    s = run(s, { type: 'leaveMarket' }, { type: 'fillOrder', order: 'o-oyster3' });
+    expect(s.coins).toBe(1);
+  });
+
+  it('hires a hand once a month, dearer each time, with no market visit', () => {
+    let s = blank('hire');
+    s.coins = 30;
+    s = run(s, { type: 'hireHand' });
+    expect(s).toMatchObject({ coins: 25, actionsLeft: 5, hires: 1, market: null });
+    expect(() => dispatch(s, { type: 'hireHand' })).toThrow(/already hired/);
+    s = run(s, { type: 'endMonth' }, { type: 'dismissNight' }, { type: 'hireHand' });
+    expect(s.coins).toBe(25 - 7);
+    s.coins = 8;
+    s.round += 1;
+    expect(() => dispatch(s, { type: 'hireHand' })).toThrow(/9 coins/);
+  });
+
+  it('sells substrate tiles into the shed', () => {
+    let s = blank('stall');
+    s.coins = 5;
+    s = run(s, { type: 'buySubstrate', substrate: 'log' }, { type: 'buySubstrate', substrate: 'straw' });
+    expect(s).toMatchObject({ coins: 0, shed: ['log', 'straw'], actionsLeft: 3 });
+    expect(() => dispatch(s, { type: 'buySubstrate', substrate: 'woodchip' })).toThrow(/costs 2 coins/);
   });
 
   it('works out payment for "different species" orders', () => {

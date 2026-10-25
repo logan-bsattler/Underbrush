@@ -76,6 +76,16 @@ export function swapCost(s: GameState, c: Content = defaultContent): number {
   return c.rules.swapCost + s.orderSwaps;
 }
 
+/** Coins to hire a hand: dearer with every hand hired this year. */
+export function hireCost(s: GameState, c: Content = defaultContent): number {
+  return c.rules.hireCost + c.rules.hireStep * s.hires;
+}
+
+/** Coins to deliver an order on this market visit: free for the first, then rules.extraDeliveryCost. */
+export function deliveryCost(s: GameState, c: Content = defaultContent): number {
+  return s.market?.orderFilled ? c.rules.extraDeliveryCost : 0;
+}
+
 export function spawnCost(speciesId: string, c: Content = defaultContent): number {
   return c.species[speciesId].value + c.rules.spawnMarkup;
 }
@@ -224,6 +234,8 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   s.board ??= 'streamside';
   s.grid.forEach((sq, i) => (sq.damp ??= i % s.size === 0));
   s.orderSwaps ??= 0;
+  s.hires ??= 0;
+  s.hiredRound ??= 0;
   s.meal ??= null;
   s.feastPoints ??= 0;
   for (const z of c.zones) s.decks[z.id] ??= { draw: new Rng(hashSeed(`${s.seed}:${z.id}`)).shuffle(buildDeck(z)), discard: [] };
@@ -317,6 +329,8 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     orders: { visible: orderDeck.slice(0, r.ordersVisible), deck: orderDeck.slice(r.ordersVisible), filled: [] },
     orderPoints: 0,
     orderSwaps: 0,
+    hires: 0,
+    hiredRound: 0,
     meal: null,
     feastPoints: 0,
     planted: [],
@@ -758,11 +772,13 @@ export function dispatch(
     case 'fillOrder': {
       guardIdle(s);
       if (!s.orders.visible.includes(action.order)) fail('That order is not on the board.');
-      if (s.market?.orderFilled) fail('One order per market visit.');
       const order = c.orders.find((o) => o.id === action.order)!;
       const pay = orderPayment(s.storage, order, c);
       if (!pay) fail("You don't have what this order needs.");
+      const extra = deliveryCost(s, c);
+      if (s.coins < extra) fail(`Another delivery this visit costs ${extra} coins.`);
       openMarketVisit(s);
+      s.coins -= extra;
       for (const [id, n] of Object.entries(pay)) takeStorage(s, id, n);
       s.market!.orderFilled = true;
       s.orderPoints += order.points;
@@ -786,6 +802,30 @@ export function dispatch(
       const at = s.orders.visible.indexOf(action.order);
       s.orders.visible[at] = s.orders.deck.shift()!;
       s.orders.deck.push(action.order);
+      break;
+    }
+
+    case 'hireHand': {
+      guardIdle(s);
+      guardFinale(s);
+      if (s.hiredRound === s.round) fail("You've already hired a hand this month.");
+      const cost = hireCost(s, c);
+      if (s.coins < cost) fail(`A hand costs ${cost} coins this time.`);
+      s.coins -= cost;
+      s.hires += 1;
+      s.hiredRound = s.round;
+      s.actionsLeft += 1;
+      break;
+    }
+
+    case 'buySubstrate': {
+      guardIdle(s);
+      guardFinale(s);
+      const cost = c.rules.substrateCost[action.substrate] ?? fail("The stall doesn't sell that.");
+      if (s.coins < cost) fail(`A tile costs ${cost} coins.`);
+      openMarketVisit(s);
+      s.coins -= cost;
+      s.shed.push(action.substrate);
       break;
     }
 

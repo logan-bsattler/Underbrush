@@ -27,7 +27,7 @@ since 12 make a year), 4 actions, weather d12, then dry → crowding → blight 
 overripe → spreaders → hybrids, then the Mold Bloom check.
 
 After month 12's growth there is no month 13. Instead a **festival morning** gives one last harvest
-and one market visit (sell, deliver one order), neither costing an action, so fruit that ripens on
+and one market visit (sell, deliver orders), neither costing an action, so fruit that ripens on
 the last night still counts. Nothing else is possible that morning, the shop sells no gear, and a
 hybrid offered on the last night can still be made before the festival scores the year.
 
@@ -190,6 +190,16 @@ the valuable species, and something to aim for after level 7. All of it is data 
   more for each swap that year (`rules.swapCost`). A human playtest ended with 171 leftover coins;
   swaps and spawn give them somewhere to go besides the festival's coin points, which stop at 10. Orders that need a
   zone the shop can't open (`requires` in `orders.json`) aren't dealt.
+- **More ways to spend coins.** Once leftover coins stopped scoring past 10 points, a playtester
+  still had coins with nowhere to go, so the market has three more uses for them, all in `rules.json`:
+  - *Hire a hand* (`hireCost` 5, `hireStep` 2): +1 action this month for 5, 7, 9… coins, one a
+    month. It needs no market visit, so it is a straight trade of coins for the tightest
+    resource in the game; the rising price keeps it from replacing the Farmhand level.
+  - *Extra deliveries* (`extraDeliveryCost` 4): the first order on a visit is free as before, and
+    each further one that visit costs 4 coins. The one-order limit throttled the part of the score
+    meant to carry a year, most of all on festival morning with a full storage.
+  - *A substrate stall* (`substrateCost`): Straw, Woodchip and Compost tiles for 2 coins, Logs for
+    3, into the shed. Beds no longer wait on the forest dealing the right substrate.
 - **Going deeper.** From the third patch of a trip (`rules.deepAt`), every patch holds one
   deep find, dealt from the zone's `deep` list and never part of its deck: the zone's
   rare mushroom for the season, or, one time in four (`rules.deepCoinChance`), a cache of coins.

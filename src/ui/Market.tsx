@@ -1,8 +1,22 @@
-import { basketCapacity, compostSaleValue, content, gearUnlockLevel, orderPayment, saleValue, spawnCost, spawnStock, swapCost, type GameState } from '../core';
+import {
+  basketCapacity,
+  compostSaleValue,
+  content,
+  deliveryCost,
+  gearUnlockLevel,
+  hireCost,
+  orderPayment,
+  saleValue,
+  spawnCost,
+  spawnStock,
+  swapCost,
+  type GameState,
+  type Substrate,
+} from '../core';
 import { Icon, Mushroom, SubstrateArt } from './art';
 import { SheetFrame } from './Game';
 import type { Store } from './store';
-import { name } from './text';
+import { name, substrateName } from './text';
 
 export function Market({ g, store, onClose, onPantry }: { g: GameState; store: Store; onClose: () => void; onPantry: () => void }) {
   // Closing the sheet keeps the visit open: it ends when you next spend an action, so coming back to trade is free.
@@ -14,18 +28,22 @@ export function Market({ g, store, onClose, onPantry }: { g: GameState; store: S
   const swap = swapCost(g);
   const spawn = spawnStock(g);
   const roomInBasket = g.basket.length < basketCapacity(g);
+  const extra = deliveryCost(g);
+  const hire = hireCost(g);
+  const hired = g.hiredRound === g.round;
+  const stall = Object.entries(content.rules.substrateCost) as [Substrate, number][];
 
   return (
     <SheetFrame title="Village market" onClose={close} tall>
       <p class={`market-visit ${g.market ? 'on' : ''}`}>
         {g.market
-          ? `You're at the market. Trade as much as you like${g.market.orderFilled ? '' : ', and fill one order'}. Your visit lasts until you spend another action.`
+          ? `You're at the market. Trade as much as you like${g.market.orderFilled ? `; another delivery costs ${extra} coins` : ''}. Your visit lasts until you spend another action.`
           : g.finale
             ? g.finale.marketed
               ? "You've had your last market visit. The festival is next."
-              : 'Festival morning: one last market visit, no action needed. Deliver one order and sell what you like.'
+              : `Festival morning: one last market visit, no action needed. Deliver an order, more for ${content.rules.extraDeliveryCost} coins each, and sell what you like.`
             : g.actionsLeft > 0
-            ? 'A market visit takes 1 action, spent on your first trade. Fill one order per visit.'
+            ? `A market visit takes 1 action, spent on your first trade. The first order you deliver is free; each one after it that visit costs ${content.rules.extraDeliveryCost} coins.`
             : 'No actions left to visit the market this month.'}
       </p>
 
@@ -34,7 +52,7 @@ export function Market({ g, store, onClose, onPantry }: { g: GameState; store: S
         {g.orders.visible.map((id) => {
           const o = content.orders.find((x) => x.id === id)!;
           const pay = orderPayment(g.storage, o);
-          const blocked = !pay || !canTrade || g.market?.orderFilled;
+          const blocked = !pay || !canTrade || g.coins < extra;
           return (
             <div class={`order-card ${pay ? 'ready' : ''}`}>
               <div class="order-card-top">
@@ -43,8 +61,19 @@ export function Market({ g, store, onClose, onPantry }: { g: GameState; store: S
               </div>
               {pay && <div class="small muted">Uses {Object.entries(pay).map(([id, n]) => `${n} ${name(id)}`).join(', ')}</div>}
               <div class="order-card-actions">
-                <button class="btn small primary" disabled={!!blocked} onClick={() => store.act({ type: 'fillOrder', order: id })}>
+                <button
+                  class="btn small primary"
+                  disabled={!!blocked}
+                  onClick={() => store.act({ type: 'fillOrder', order: id })}
+                  aria-label={extra ? `Deliver this order, ${extra} coins` : 'Deliver this order'}
+                >
                   Deliver
+                  {extra > 0 && (
+                    <>
+                      {' · '}
+                      <Icon name="coin" size={13} /> {extra}
+                    </>
+                  )}
                 </button>
                 <button
                   class="btn small ghost"
@@ -154,6 +183,42 @@ export function Market({ g, store, onClose, onPantry }: { g: GameState; store: S
               <p class="small muted">{roomInBasket ? 'Spawn goes into your basket, already identified.' : 'Your basket is full.'}</p>
             </>
           )}
+        </>
+      )}
+
+      {!g.finale && (
+        <>
+          <h3>Hands and supplies</h3>
+          <ul class="storage">
+            <li>
+              <Icon name="tend" size={40} />
+              <span class="grow">
+                <b>Hire a hand</b>
+                <small class="muted"> · +1 action this month</small>
+              </span>
+              <button class="btn small" disabled={hired || g.coins < hire} onClick={() => store.act({ type: 'hireHand' })}>
+                <Icon name="coin" size={14} /> {hire}
+              </button>
+            </li>
+            {stall.map(([sub, cost]) => (
+              <li>
+                <SubstrateArt substrate={sub} size={40} />
+                <span class="grow">
+                  <b>{substrateName[sub]} tile</b>
+                  <small class="muted"> · to your shed</small>
+                </span>
+                <button class="btn small" disabled={!canTrade || g.coins < cost} onClick={() => store.act({ type: 'buySubstrate', substrate: sub })}>
+                  <Icon name="coin" size={14} /> {cost}
+                </button>
+              </li>
+            ))}
+          </ul>
+          <p class="small muted">
+            {hired
+              ? "You've hired a hand this month."
+              : `A hand needs no market visit: one a month, and each one this year costs ${content.rules.hireStep} coins more.`}{' '}
+            Tiles go to your shed; lay them on empty ground for free.
+          </p>
         </>
       )}
 
