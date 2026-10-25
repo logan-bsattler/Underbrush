@@ -186,9 +186,22 @@ the valuable species, and something to aim for after level 7. All of it is data 
   swaps and spawn give them somewhere to go besides the 1-per-5 festival points. Orders that need a
   zone the shop can't open (`requires` in `orders.json`) aren't dealt.
 - **Going deeper.** From the third patch of a trip (`rules.deepAt`), every patch holds one
-  glinting deep find, dealt from the zone's `deep` list and never part of its deck: a deep-woods
-  species in season (Blewit in the Meadow, Hen of the Woods in the Mixed Woods, Black Trumpet in
-  the Old-growth) or a cache of coins.
+  glinting deep find, dealt from the zone's `deep` list and never part of its deck: the zone's
+  rare mushroom for the season, or, one time in four (`rules.deepCoinChance`), a cache of coins.
+  Every zone has exactly one rare mushroom for each season it's open:
+
+  | Zone | Spring | Summer | Fall | Winter |
+  | --- | --- | --- | --- | --- |
+  | Meadow | St. George's Mushroom | Fairy Ring Champignon | Blewit | Blewit |
+  | Mixed Woods | Morel | Chicken of the Woods | Hen of the Woods | Wood Ear |
+  | Old-growth | Spring King Bolete | Black Trumpet | Black Trumpet | Yellowfoot |
+  | Burn Scar | Black Morel | | | |
+  | The Hollow | | | Matsutake | Truffle |
+
+  Eight of them (St. George's, Fairy Ring, Chicken of the Woods, Wood Ear, Spring King, Yellowfoot,
+  Black Morel, Matsutake) are wild species found only this way, valued 4 to 7 like the other wild
+  finds. Before them, a zone with nothing in season always dealt coins, so most deep finds were
+  coins. The zone picker shows the rare find in season now.
 - **The Hollow** (Compass, 7 coins, level 8; fall and winter): Blewit, Truffle, Hen of the Woods
   and Black Trumpet, with 10 hazards in 32 cards. Truffle (value 7, winter) gives winter something
   to forage for.

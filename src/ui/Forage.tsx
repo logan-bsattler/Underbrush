@@ -1,5 +1,5 @@
 import { useRef, useState } from 'preact/hooks';
-import { basketCapacity, bustAt, content, gearUnlockLevel, hazardsNear, zoneStatus, type Card, type DrawOutcome, type GameState } from '../core';
+import { basketCapacity, bustAt, content, gearUnlockLevel, hazardsNear, inSeason, seasonOf, zoneStatus, type Card, type DrawOutcome, type GameState } from '../core';
 import { Icon, Mushroom, SubstrateArt, Unknown } from './art';
 import { SheetFrame } from './Game';
 import type { Store } from './store';
@@ -35,6 +35,7 @@ function lockedText(unlock: string | null, st: { reason: string; notStocked?: bo
 const ordinal = (n: number) => ['first', 'second', 'third', 'fourth', 'fifth'][n - 1] ?? `${n}th`;
 
 function ZonePicker({ g, store, onClose }: { g: GameState; store: Store; onClose: () => void }) {
+  const season = seasonOf(g.round);
   return (
     <SheetFrame title="Where to forage?" onClose={onClose} tall>
       <p class="small muted">
@@ -46,7 +47,8 @@ function ZonePicker({ g, store, onClose }: { g: GameState; store: Store; onClose
         {content.zones.map((z) => {
           const st = zoneStatus(g, z);
           const finds = Array.from(new Set(z.deck.filter((e) => e.card.type === 'specimen').map((e) => (e.card as { species: string }).species)));
-          const deep = z.deep.flatMap((card) => (card.type === 'specimen' && !finds.includes(card.species) ? [card.species] : []));
+          // The rare mushroom deep in this zone right now (each zone has one for every season it's open).
+          const deep = z.deep.flatMap((card) => (card.type === 'specimen' && inSeason(card.species, season) ? [card.species] : []));
           return (
             <button
               class={`zone ${st.open ? '' : 'locked'}`}
@@ -61,7 +63,11 @@ function ZonePicker({ g, store, onClose }: { g: GameState; store: Store; onClose
                 <span>Hazard: {z.hazard}</span>
                 <span>{finds.map((id) => content.species[id].group).join(' · ')}</span>
               </span>
-              {deep.length > 0 && <span class="zone-deep">Deep in: {deep.map((id) => content.species[id].group).join(' · ')}</span>}
+              {deep.length > 0 && (
+                <span class="zone-deep">
+                  Deep in, this {season}: {deep.map((id) => content.species[id].group).join(' · ')}
+                </span>
+              )}
             </button>
           );
         })}

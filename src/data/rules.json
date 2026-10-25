@@ -19,6 +19,7 @@
   "deepAt": 3,
   "bustAt": 2,
   "bustKeep": 2,
+  "deepCoinChance": 0.25,
   "scrapsPerCompost": 3,
   "compostValue": 1,
   "dryMarksToBlight": 2,

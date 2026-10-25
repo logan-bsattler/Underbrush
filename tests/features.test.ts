@@ -286,16 +286,28 @@ describe('going deeper', () => {
     expect(three.forage!.patch).toHaveLength(9);
   });
 
-  it('only offers deep species in season, falling back to a cache of coins', () => {
+  it('deals the rare mushroom in season, and a cache of coins about one time in four', () => {
     const s = fresh('deep2');
-    s.round = 1; // spring: no Blewit
-    for (let i = 0; i < 10; i++) {
-      const t = walk({ ...s, seed: `d${i}`, rng: i }, 'meadow', 3);
-      expect(t.forage!.patch.find((p) => p.deep)!.card).toEqual({ type: 'coins', amount: 5 });
+    const finds = (round: number) => {
+      s.round = round;
+      return Array.from({ length: 200 }, (_, i) => walk({ ...s, rng: i }, 'meadow', 3).forage!.patch.find((p) => p.deep)!.card);
+    };
+    for (const [round, species] of [[1, 'stgeorge'], [4, 'fairyring'], [7, 'blewit'], [10, 'blewit']] as const) {
+      const cards = finds(round);
+      const coins = cards.filter((c) => c.type === 'coins').length;
+      expect(new Set(cards.map((c) => (c.type === 'specimen' ? c.species : c.type)))).toEqual(new Set([species, 'coins']));
+      expect(coins / cards.length).toBeGreaterThan(0.15);
+      expect(coins / cards.length).toBeLessThan(0.35);
     }
-    s.round = 7; // fall
-    const kinds = new Set(Array.from({ length: 20 }, (_, i) => walk({ ...s, rng: i }, 'meadow', 3).forage!.patch.find((p) => p.deep)!.card.type));
-    expect(kinds).toEqual(new Set(['specimen', 'coins']));
+  });
+
+  it('has a rare mushroom in every season each zone is open', () => {
+    for (const z of content.zones) {
+      for (const season of z.seasons ?? content.rules.seasons) {
+        const inSeason = z.deep.filter((c) => c.type === 'specimen' && content.species[c.species].seasons.includes(season));
+        expect(inSeason, `${z.id} in ${season}`).toHaveLength(1);
+      }
+    }
   });
 
   it('never puts a deep find into the deck', () => {

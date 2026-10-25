@@ -76,7 +76,7 @@
     "substrates": [], "seasons": ["spring"], "growth": "none",
     "group": "Honeycomb cap", "lookalike": { "name": "False Morel", "on": 2 },
     "traits": {},
-    "rule": "Can't be planted. Only in the Burn Scar, only in spring. Once identified it goes straight to storage.",
+    "rule": "Can't be planted. Spring only: all through the Burn Scar, and a deep find in the Mixed Woods. Once identified it goes straight to storage.",
     "blurb": "A honeycomb cone that rises from ash the spring after a fire.",
     "art": { "shape": "morel", "cap": "#A88B5F", "shade": "#6E5634", "gill": "#C9B38A", "stem": "#EFE6D2" }
   },
@@ -124,5 +124,77 @@
     "rule": "Can't be planted. Only in the Hollow, only in winter. Worth more than anything else you can find.",
     "blurb": "A warty black knob under the roots, and a smell you can't forget.",
     "art": { "shape": "ball", "cap": "#3A2C26", "shade": "#1F1612", "gill": "#3A2C26", "stem": "#3A2C26" }
+  },
+  {
+    "id": "stgeorge", "name": "St. George's Mushroom", "latin": "Calocybe gambosa", "kind": "wild", "value": 4,
+    "substrates": [], "seasons": ["spring"], "growth": "none",
+    "group": "White spring cap", "lookalike": { "name": "Deadly Fibrecap", "on": 2 },
+    "traits": {},
+    "rule": "Can't be planted. A deep find in the Meadow, spring only.",
+    "blurb": "A stout cream cap in a ring in the grass, up around St. George's Day and smelling of fresh meal.",
+    "art": { "shape": "cap", "cap": "#EDE3CC", "shade": "#C9BB98", "gill": "#F6F0E0", "stem": "#F1EADA" }
+  },
+  {
+    "id": "fairyring", "name": "Fairy Ring Champignon", "latin": "Marasmius oreades", "kind": "wild", "value": 4,
+    "substrates": [], "seasons": ["summer"], "growth": "none",
+    "group": "Tan ring cap", "lookalike": { "name": "Fool's Funnel", "on": 2 },
+    "traits": {},
+    "rule": "Can't be planted. A deep find in the Meadow, summer only.",
+    "blurb": "Small tan caps that come up in a ring on the lawn after summer rain, and dry out and revive.",
+    "art": { "shape": "cap", "cap": "#C9A577", "shade": "#9A7A50", "gill": "#EADBC0", "stem": "#DCC8A6" }
+  },
+  {
+    "id": "chicken", "name": "Chicken of the Woods", "latin": "Laetiporus sulphureus", "kind": "wild", "value": 5,
+    "substrates": [], "seasons": ["summer"], "growth": "none",
+    "group": "Sulphur shelf", "lookalike": { "name": "Dyer's Polypore", "on": 1 },
+    "traits": {},
+    "rule": "Can't be planted. A deep find in the Mixed Woods, summer only.",
+    "blurb": "Bright orange and sulphur-yellow shelves stacked up an old oak. Tastes, they say, like chicken.",
+    "art": { "shape": "shelf", "cap": "#F08A24", "shade": "#C2611A", "gill": "#F6D24A", "stem": "#E7B23A" }
+  },
+  {
+    "id": "woodear", "name": "Wood Ear", "latin": "Auricularia auricula-judae", "kind": "wild", "value": 4,
+    "substrates": [], "seasons": ["winter"], "growth": "none",
+    "group": "Brown ear", "lookalike": { "name": "Amber Jelly", "on": 1 },
+    "traits": {},
+    "rule": "Can't be planted. A deep find in the Mixed Woods, winter only.",
+    "blurb": "Soft brown ears on the elder branches, swelling with every winter thaw.",
+    "art": { "shape": "kidney", "cap": "#7A4A3A", "shade": "#4E2C22", "gill": "#9C6A58", "stem": "#7A4A3A", "gloss": true }
+  },
+  {
+    "id": "springking", "name": "Spring King Bolete", "latin": "Boletus rex-veris", "kind": "wild", "value": 6,
+    "substrates": [], "seasons": ["spring"], "growth": "none",
+    "group": "Spring bolete", "lookalike": { "name": "Satan's Bolete", "on": 2 },
+    "traits": {},
+    "rule": "Can't be planted. A deep find in the Old-growth, spring only.",
+    "blurb": "A ruddy porcini that pushes up through the needles while the snowmelt is still running.",
+    "art": { "shape": "bolete", "cap": "#9A4E36", "shade": "#6A3020", "gill": "#EAD9A2", "stem": "#EDE2C8" }
+  },
+  {
+    "id": "yellowfoot", "name": "Yellowfoot", "latin": "Craterellus tubaeformis", "kind": "wild", "value": 5,
+    "substrates": [], "seasons": ["winter"], "growth": "none",
+    "group": "Yellow-stemmed funnel", "lookalike": { "name": "False Chanterelle", "on": 1 },
+    "traits": {},
+    "rule": "Can't be planted. A deep find in the Old-growth, winter only.",
+    "blurb": "Small brown funnels on hollow yellow stems, carpeting the moss long after the first frost.",
+    "art": { "shape": "funnel", "cap": "#7B6248", "shade": "#4E3C2A", "gill": "#B9A27E", "stem": "#E3B83E" }
+  },
+  {
+    "id": "blackmorel", "name": "Black Morel", "latin": "Morchella elata", "kind": "wild", "value": 6,
+    "substrates": [], "seasons": ["spring"], "growth": "none",
+    "group": "Dark honeycomb", "lookalike": { "name": "Snowbank False Morel", "on": 2 },
+    "traits": {},
+    "rule": "Can't be planted. A deep find in the Burn Scar, spring only.",
+    "blurb": "A tall, sooty morel that comes up thickest where the fire burned hottest.",
+    "art": { "shape": "morel", "cap": "#4A3A2C", "shade": "#251B13", "gill": "#7A6650", "stem": "#EDE3CF" }
+  },
+  {
+    "id": "matsutake", "name": "Matsutake", "latin": "Tricholoma matsutake", "kind": "wild", "value": 7,
+    "substrates": [], "seasons": ["fall"], "growth": "none",
+    "group": "Scaly pine cap", "lookalike": { "name": "Smith's Amanita", "on": 2 },
+    "traits": {},
+    "rule": "Can't be planted. A deep find in the Hollow, fall only. Prized almost as much as truffle.",
+    "blurb": "A thick-stemmed cap with cinnamon scales, half buried under the pines, smelling of spice.",
+    "art": { "shape": "cap", "cap": "#A9734A", "shade": "#764A2B", "gill": "#F2E8D6", "stem": "#EFE5D2" }
   }
 ]

@@ -383,11 +383,13 @@ function restockDeck(s: GameState, trip: ForageTrip, rng: Rng) {
   deck.discard = [];
 }
 
-/** A rare find for a patch this deep: a wild species that is in season now, or a forager's cache of coins. */
+/** A rare find for a patch this deep: usually a wild species in season now, sometimes a forager's cache of coins. */
 function deepFind(s: GameState, zone: ZoneDef, rng: Rng, c: Content): Card | null {
   const season = seasonOf(s.round, c);
-  const options = zone.deep.filter((card) => card.type !== 'specimen' || inSeason(card.species, season, c));
-  return options.length ? { ...rng.pick(options) } : null;
+  const finds = zone.deep.filter((card) => card.type === 'specimen' && inSeason(card.species, season, c));
+  const caches = zone.deep.filter((card) => card.type !== 'specimen');
+  const pool = finds.length && (!caches.length || rng.next() >= c.rules.deepCoinChance) ? finds : caches;
+  return pool.length ? { ...rng.pick(pool) } : null;
 }
 
 function dealPatch(s: GameState, trip: ForageTrip, rng: Rng, c: Content) {

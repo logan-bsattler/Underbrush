@@ -14,7 +14,12 @@
       { "card": { "type": "hazard", "name": "Sudden Rain" }, "copies": 3 },
       { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }
     ],
-    "deep": [{ "type": "specimen", "species": "blewit" }, { "type": "coins", "amount": 5 }]
+    "deep": [
+      { "type": "specimen", "species": "stgeorge" },
+      { "type": "specimen", "species": "fairyring" },
+      { "type": "specimen", "species": "blewit" },
+      { "type": "coins", "amount": 5 }
+    ]
   },
   {
     "id": "mixedwoods", "name": "Mixed Woods", "unlock": null, "hazard": "Medium",
@@ -33,7 +38,13 @@
       { "card": { "type": "hazard", "name": "Sudden Rain" }, "copies": 3 },
       { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }
     ],
-    "deep": [{ "type": "specimen", "species": "hen" }, { "type": "coins", "amount": 5 }]
+    "deep": [
+      { "type": "specimen", "species": "morel" },
+      { "type": "specimen", "species": "chicken" },
+      { "type": "specimen", "species": "hen" },
+      { "type": "specimen", "species": "woodear" },
+      { "type": "coins", "amount": 5 }
+    ]
   },
   {
     "id": "oldgrowth", "name": "Old-growth", "unlock": "lantern", "hazard": "Medium",
@@ -50,7 +61,12 @@
       { "card": { "type": "hazard", "name": "Deadfall" }, "copies": 3 },
       { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }
     ],
-    "deep": [{ "type": "specimen", "species": "blacktrumpet" }, { "type": "coins", "amount": 6 }]
+    "deep": [
+      { "type": "specimen", "species": "springking" },
+      { "type": "specimen", "species": "blacktrumpet" },
+      { "type": "specimen", "species": "yellowfoot" },
+      { "type": "coins", "amount": 6 }
+    ]
   },
   {
     "id": "burnscar", "name": "Burn Scar", "unlock": "trailmap", "seasons": ["spring"], "hazard": "High",
@@ -64,7 +80,7 @@
       { "card": { "type": "hazard", "name": "Ash Slide" }, "copies": 4 },
       { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 5 }
     ],
-    "deep": [{ "type": "coins", "amount": 6 }]
+    "deep": [{ "type": "specimen", "species": "blackmorel" }, { "type": "coins", "amount": 6 }]
   },
   {
     "id": "hollow", "name": "The Hollow", "unlock": "compass", "seasons": ["fall", "winter"], "hazard": "High",
@@ -81,6 +97,6 @@
       { "card": { "type": "hazard", "name": "Bog" }, "copies": 4 },
       { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 3 }
     ],
-    "deep": [{ "type": "specimen", "species": "truffle" }, { "type": "coins", "amount": 8 }]
+    "deep": [{ "type": "specimen", "species": "matsutake" }, { "type": "specimen", "species": "truffle" }, { "type": "coins", "amount": 8 }]
   }
 ]

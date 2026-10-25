@@ -150,6 +150,8 @@ export interface RulesDef {
   deepAt: number;
   bustAt: number;
   bustKeep: number;
+  /** When a deep species is in season, the chance a deep find is the zone's cache of coins instead. */
+  deepCoinChance: number;
   /** Discarded specimens on the compost pile that rot into one Compost tile overnight. */
   scrapsPerCompost: number;
   /** Coins a Compost tile from the shed sells for at the market. */
