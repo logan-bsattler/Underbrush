@@ -5,10 +5,8 @@ import type { Store } from './store';
 import { name } from './text';
 
 export function Market({ g, store, onClose, onPantry }: { g: GameState; store: Store; onClose: () => void; onPantry: () => void }) {
-  const close = () => {
-    if (g.market) store.act({ type: 'leaveMarket' });
-    onClose();
-  };
+  // Closing the sheet keeps the visit open: it ends when you next spend an action, so coming back to trade is free.
+  const close = onClose;
   const stored = content.speciesOrder.filter((id) => (g.storage[id] ?? 0) > 0);
   const compost = g.shed.filter((x) => x === 'compost').length;
   const canTrade = !!g.market || (g.finale ? !g.finale.marketed : g.actionsLeft > 0);
@@ -21,7 +19,7 @@ export function Market({ g, store, onClose, onPantry }: { g: GameState; store: S
     <SheetFrame title="Village market" onClose={close} tall>
       <p class={`market-visit ${g.market ? 'on' : ''}`}>
         {g.market
-          ? `You're at the market. Trade as much as you like${g.market.orderFilled ? '' : ', and fill one order'}.`
+          ? `You're at the market. Trade as much as you like${g.market.orderFilled ? '' : ', and fill one order'}. Your visit lasts until you spend another action.`
           : g.finale
             ? g.finale.marketed
               ? "You've had your last market visit. The festival is next."
@@ -204,7 +202,7 @@ export function Market({ g, store, onClose, onPantry }: { g: GameState; store: S
         </>
       )}
       <button class="btn wide" onClick={close}>
-        {g.market ? 'Head home' : 'Close'}
+        Close
       </button>
     </SheetFrame>
   );

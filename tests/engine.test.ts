@@ -565,6 +565,21 @@ describe('market and orders', () => {
     expect(s.actionsLeft).toBe(2);
   });
 
+  it('keeps a market visit open through free actions and ends it on the next spent action', () => {
+    let s = blank('mv');
+    s.storage = { oyster: 5 };
+    s.shed = ['log'];
+    s = run(s, { type: 'sell', species: 'oyster', count: 1 });
+    expect(s.actionsLeft).toBe(3);
+    const empty = s.grid.findIndex((sq) => !sq.tree && sq.substrate === null);
+    s = run(s, { type: 'placeSubstrate', index: 0, square: empty }, { type: 'sell', species: 'oyster', count: 1 });
+    expect(s.actionsLeft).toBe(3);
+    s = run(s, { type: 'water' });
+    expect(s.market).toBeNull();
+    s = run(s, { type: 'sell', species: 'oyster', count: 1 });
+    expect(s.actionsLeft).toBe(1);
+  });
+
   it('market day adds a coin per sale', () => {
     let s = blank('md');
     s.weather = 'marketday';

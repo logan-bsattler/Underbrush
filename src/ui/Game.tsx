@@ -969,6 +969,7 @@ export function Game({
         <button class="act" onClick={() => setSheet({ kind: 'market' })}>
           <Icon name="market" size={26} />
           <span>Market</span>
+          {g.market && <span class="badge open">open</span>}
         </button>
         <button
           class={`act end ${finale ? 'festival' : ''} ${(finale ? !finaleUnused : g.actionsLeft === 0) ? 'glow' : ''} ${confirmEnd ? 'confirm' : ''}`}

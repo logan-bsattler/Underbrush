@@ -792,6 +792,11 @@ button.chip {
 .badge.warn {
   background: var(--rust);
 }
+.badge.open {
+  background: var(--moss);
+  font-size: 10px;
+  font-weight: 700;
+}
 
 /* ── Sheets ──────────────────────────────────────────────────────────── */
 .sheet-wrap {

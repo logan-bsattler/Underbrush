@@ -36,6 +36,8 @@ Interpretations where the kit left room:
 - **Dry marks** are erased when a bed grows (kit wording), so they mainly build up on beds that
   are out of season, unshaded, blighted, or sitting at Fruiting.
 - **Market** costs 1 action per visit, charged on the first trade, so opening the sheet to look is free.
+  The visit lasts until you next spend an action, so closing the sheet and coming back to trade
+  (to lay a tile, say, or cook) is still the same visit.
 - **Substrate finds and compost** go to a shed; laying a tile on empty ground is free.
 - **Selling compost** (not in the kit): Compost tiles in the shed sell at the market for 1 coin
   each (`rules.compostValue`, +1 on Market day), so a pile with no room on the farm still pays a

@@ -187,7 +187,7 @@ export function HowTo({ onBack }: { onBack: () => void }) {
           </li>
           <li>
             <b>Market:</b> sell mushrooms and spare Compost tiles, deliver one festival order, buy gear and spawn, as much as you like in one
-            visit. Spawn of any cultivated species you've identified is ready to plant. Swap an order you can't fill for the next one for{' '}
+            visit. The visit lasts until you spend another action, so you can close the market and come back. Spawn of any cultivated species you've identified is ready to plant. Swap an order you can't fill for the next one for{' '}
             {r.swapCost} coins, a coin more for each swap that year.
           </li>
         </ul>
