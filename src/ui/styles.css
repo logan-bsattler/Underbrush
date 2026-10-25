@@ -1420,6 +1420,17 @@ button.chip {
 .deck.dragging .deck-card.d1 {
   animation: none;
 }
+.deck.empty {
+  cursor: default;
+}
+.deck.empty .deck-card.d1 {
+  animation: none;
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--ink-faint);
+  color: var(--ink-soft);
+  box-shadow: none;
+}
 @keyframes nudge {
   0%,
   70%,

@@ -67,11 +67,13 @@ keeps the deck and the kit's rules but adds a small deduction game on top:
 - The kit's limits are unchanged: a second hazard busts the trip and you keep your first two
   specimens, the Knife ignores the first hazard, the basket caps what you carry, and you can head
   home at any time.
-- Swipe the deck up (at the bottom of the screen, by your thumb) to go deeper: unturned cards go
-  back under the deck and a fresh patch deals upward. Hazards you've met carry over, so going
-  deeper is the push-your-luck choice.
-- Unturned cards always return under the deck, so each deck keeps its printed mix across the year.
-  When a trip ends, the cards you passed are shown faded.
+- Swipe the deck up (at the bottom of the screen, by your thumb) to go deeper: unturned cards stay
+  behind and a fresh patch deals upward. Hazards you've met carry over, so going deeper is the
+  push-your-luck choice.
+- A trip is one pass through the zone's deck, with no reshuffle: a 24-card deck deals patches of
+  9, 9 and its last 6 (plus the deep find), and then the deck reads "End of the zone". When the trip
+  ends, every card goes back and the deck is shuffled, so each trip walks the whole printed deck
+  and the deck shows how many cards are left. When a trip ends, the cards you passed are shown faded.
 
 The numbers give the player real information without making a patch solvable at a glance: the
 first card is always a blind pick, and later picks are informed guesses. The baseline bot reads

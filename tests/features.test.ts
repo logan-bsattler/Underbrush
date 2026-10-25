@@ -283,7 +283,8 @@ describe('going deeper', () => {
     expect(two.forage!.patch.some((p) => p.deep)).toBe(false);
     const three = walk(s, 'meadow', 3);
     expect(three.forage!.patch.filter((p) => p.deep)).toHaveLength(1);
-    expect(three.forage!.patch).toHaveLength(9);
+    // The last of the deck's 24 cards, plus the deep find.
+    expect(three.forage!.patch).toHaveLength(24 - 18 + 1);
   });
 
   it('only offers deep species in season, falling back to a cache of coins', () => {
@@ -303,8 +304,8 @@ describe('going deeper', () => {
     const total = (g: GameState) => g.decks.meadow.draw.length + g.decks.meadow.discard.length;
     let t = walk(s, 'meadow', 3);
     const at = t.forage!.patch.findIndex((p) => p.deep);
-    t = run(t, { type: 'flip', index: at }, { type: 'deeper' }, { type: 'stopForage' });
-    // Turned cards are in the discards and unturned ones back under the deck: the printed deck, and nothing more.
+    t = run(t, { type: 'flip', index: at }, { type: 'stopForage' });
+    // Heading home shuffles every card back in: the printed deck, and nothing more.
     expect(total(t)).toBe(content.zones[0].deck.reduce((n, e) => n + e.copies, 0));
   });
 

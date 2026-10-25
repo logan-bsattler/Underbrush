@@ -365,19 +365,22 @@ function guardFinale(s: GameState) {
   if (s.finale) fail('It is festival morning: there is time for one last harvest and a market visit, nothing more.');
 }
 
-/** Takes the top card of a zone deck, reshuffling the discards when it runs out. Null if every card is out. */
-function takeCard(s: GameState, zone: string, rng: Rng): Card | null {
-  const deck = s.decks[zone];
-  if (deck.draw.length === 0) {
-    deck.draw = rng.shuffle(deck.discard);
-    deck.discard = [];
-  }
-  return deck.draw.shift() ?? null;
+/** Takes the top card of a zone deck. A trip is one pass through it, so null once it runs out. */
+function takeCard(s: GameState, zone: string): Card | null {
+  return s.decks[zone].draw.shift() ?? null;
 }
 
-/** Unturned cards go back under the deck, so the deck keeps its mix of finds and hazards. Deep finds were never in it. */
-function returnHidden(s: GameState, trip: ForageTrip) {
-  for (const p of trip.patch) if (!p.flipped && !p.deep) s.decks[trip.zone].draw.push(p.card);
+/** Going deeper leaves the unturned cards behind for the rest of the trip. Deep finds were never in the deck. */
+function leaveHidden(s: GameState, trip: ForageTrip) {
+  for (const p of trip.patch) if (!p.flipped && !p.deep) s.decks[trip.zone].discard.push(p.card);
+}
+
+/** When a trip ends, every card goes back and the deck is shuffled, so the next trip walks the whole zone again. */
+function restockDeck(s: GameState, trip: ForageTrip, rng: Rng) {
+  const deck = s.decks[trip.zone];
+  const unturned = trip.patch.filter((p) => !p.flipped && !p.deep).map((p) => p.card);
+  deck.draw = rng.shuffle([...deck.draw, ...deck.discard, ...unturned]);
+  deck.discard = [];
 }
 
 /** A rare find for a patch this deep: a wild species that is in season now, or a forager's cache of coins. */
@@ -393,7 +396,7 @@ function dealPatch(s: GameState, trip: ForageTrip, rng: Rng, c: Content) {
   const deep = trip.depth >= c.rules.deepAt ? deepFind(s, zone, rng, c) : null;
   trip.patch = [];
   for (let i = 0; i < (deep ? n - 1 : n); i++) {
-    const card = takeCard(s, trip.zone, rng);
+    const card = takeCard(s, trip.zone);
     if (!card) break;
     trip.patch.push({ card, flipped: false, outcome: null });
   }
@@ -440,6 +443,12 @@ export function dispatch(
       if (!status.open) fail(status.reason);
       spendAction(s);
       s.market = null;
+      // Saves from before trips were a single pass can still hold discards: shuffle them back in first.
+      const deck = s.decks[zone.id];
+      if (deck.discard.length) {
+        deck.draw = rng.shuffle([...deck.draw, ...deck.discard]);
+        deck.discard = [];
+      }
       s.tripCount += 1;
       s.stats.trips += 1;
       s.forage = {
@@ -461,7 +470,8 @@ export function dispatch(
     case 'deeper': {
       const trip = s.forage;
       if (!trip || trip.status !== 'open') fail('You are not out foraging.');
-      returnHidden(s, trip);
+      if (!s.decks[trip.zone].draw.length) fail("You've walked the whole zone. Time to head home.");
+      leaveHidden(s, trip);
       trip.depth += 1;
       dealPatch(s, trip, rng, c);
       break;
@@ -517,7 +527,7 @@ export function dispatch(
             s.stats.busts += 1;
             trip.lost = trip.picked.slice(c.rules.bustKeep);
             s.basket = s.basket.filter((b) => !trip.lost.includes(b.uid));
-            returnHidden(s, trip);
+            restockDeck(s, trip, rng);
           }
         }
       }
@@ -529,7 +539,7 @@ export function dispatch(
 
     case 'stopForage': {
       if (!s.forage || s.forage.status !== 'open') fail('You are not out foraging.');
-      returnHidden(s, s.forage);
+      restockDeck(s, s.forage, rng);
       s.forage.status = 'stopped';
       break;
     }

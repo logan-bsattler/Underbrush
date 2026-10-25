@@ -168,7 +168,8 @@ export function HowTo({ onBack }: { onBack: () => void }) {
           <li>
             <b>Forage.</b> Pick a zone and a {r.patchSize}×{r.patchSize} patch of forest floor is dealt face down from its deck. Turn cards one
             at a time: each turned card shows how many hazards lie beside it (up, down, left, right). Swipe the deck up to go deeper into a
-            fresh patch; unturned cards go back under the deck. From the {r.deepAt === 3 ? 'third' : `${r.deepAt}th`} patch in, every patch
+            fresh patch; unturned cards stay behind. Each trip is one pass through the zone's deck, so going deeper ends where the deck
+            runs out; the next trip starts with the whole deck again. From the {r.deepAt === 3 ? 'third' : `${r.deepAt}th`} patch in, every patch
             hides one glinting rare find: a deep-woods mushroom in season, or a forager's cache of coins. Head home whenever you like. A
             second hazard busts the trip and you keep only your first {r.bustKeep} specimens.
           </li>

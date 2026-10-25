@@ -155,7 +155,7 @@ describe('foraging', () => {
     expect([0, 1, 2, 3, 4, 5, 6, 7, 8].map((i) => hazardsNear(s.forage!, i))).toEqual([0, 2, 0, 1, 1, 1, 1, 0, 1]);
   });
 
-  it('going deeper returns unturned cards under the deck and deals a fresh patch; hazards carry over', () => {
+  it('going deeper leaves unturned cards behind and deals a fresh patch; hazards carry over', () => {
     let s = newGame({ seed: 'deep' });
     s.weather = 'clear';
     stackDeck(s, 'meadow', [{ type: 'hazard', name: 'Ticks' }]);
@@ -166,11 +166,22 @@ describe('foraging', () => {
     s = run(s, { type: 'deeper' });
     expect(s.forage).toMatchObject({ depth: 2, hazards: 1, status: 'open' });
     expect(s.forage!.patch.map((p) => p.card)).toEqual(next);
-    expect(s.decks.meadow.draw.slice(-8)).toEqual(unturned);
-    const total = (x: GameState) => x.decks.meadow.draw.length + x.decks.meadow.discard.length + x.forage!.patch.length;
-    expect(total(s)).toBe(cards);
+    expect(s.decks.meadow.draw).toHaveLength(cards - 18);
+    expect(s.decks.meadow.discard.slice(-8)).toEqual(unturned);
+    // Heading home puts every card back and shuffles, so the next trip walks the whole zone.
     s = run(s, { type: 'stopForage' });
-    expect(s.decks.meadow.draw.length + s.decks.meadow.discard.length).toBe(cards);
+    expect(s.decks.meadow.draw).toHaveLength(cards);
+    expect(s.decks.meadow.discard).toHaveLength(0);
+  });
+
+  it('a trip is one pass through the deck: no going deeper once it runs out', () => {
+    let s = newGame({ seed: 'pass' });
+    s.weather = 'clear';
+    const cards = s.decks.meadow.draw.length;
+    s = run(s, { type: 'forage', zone: 'meadow' });
+    while (s.decks.meadow.draw.length) s = run(s, { type: 'deeper' });
+    expect(s.forage!.depth).toBe(Math.ceil(cards / 9));
+    expect(() => dispatch(s, { type: 'deeper' })).toThrow(/whole zone/);
   });
 
   it('respects locks, seasons and fog', () => {

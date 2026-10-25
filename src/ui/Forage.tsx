@@ -39,8 +39,8 @@ function ZonePicker({ g, store, onClose }: { g: GameState; store: Store; onClose
     <SheetFrame title="Where to forage?" onClose={onClose} tall>
       <p class="small muted">
         A trip takes 1 action. Turn cards on the forest floor as long as you dare; each one tells you how many hazards lie beside it. A second
-        hazard busts the trip and you keep only your first two finds. From the {ordinal(content.rules.deepAt)} patch in, every patch hides
-        one rare find.
+        hazard busts the trip and you keep only your first two finds. Each trip walks a zone's deck once, so you can only go so deep. From
+        the {ordinal(content.rules.deepAt)} patch in, every patch hides one rare find.
       </p>
       <div class="zones">
         {content.zones.map((z) => {
@@ -88,15 +88,15 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
       else if (r.outcome === 'hazard') buzz(40);
     }
   };
-  const deeper = () => open && store.act({ type: 'deeper' });
+  // A trip is one pass through the zone's deck: once it is dealt out, there is nothing deeper.
+  const left = g.decks[trip.zone].draw.length;
+  const end = left === 0;
+  const deeper = () => open && !end && store.act({ type: 'deeper' });
 
   const kept = g.basket.filter((b) => trip.picked.includes(b.uid));
   const coins = trip.drawn.filter((d) => d.card.type === 'coins').reduce((sum, d) => sum + (d.card as { amount: number }).amount, 0);
   const subs = trip.drawn.filter((d) => d.card.type === 'substrate').length;
   const hidden = trip.patch.filter((p) => !p.flipped).length;
-  // Cards the next patch deals from: the draw pile plus the unturned cards that go back under it.
-  // Once they run short, the cards turned so far are shuffled back in.
-  const left = g.decks[trip.zone].draw.length + trip.patch.filter((p) => !p.flipped && !p.deep).length;
   const turnedHere = trip.patch.some((p) => p.flipped);
   const limit = bustAt(g);
   const deepHere = trip.patch.find((p) => p.deep);
@@ -114,7 +114,9 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
         : !open
           ? 'The faded cards are what you walked past.'
           : deepHere
-            ? 'Deep in the woods. Something rare glints on this patch.'
+            ? `Deep in the woods. Something rare glints on this ${end ? 'last patch' : 'patch'}.`
+            : end && trip.depth > 1
+              ? 'The far edge of the zone. This is the last patch.'
             : trip.depth > 1
               ? `Deeper in. The hazards you already met still count.${trip.depth < deepAt ? ' One patch further and rare finds start to turn up.' : ''}`
               : 'Tap a card to turn it. Each one you turn shows how many hazards lie beside it.';
@@ -194,10 +196,15 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
       {open ? (
         <footer class="forage-foot">
           <div
-            class={`deck ${dragging ? 'dragging' : ''}`}
+            class={`deck ${dragging ? 'dragging' : ''} ${end ? 'empty' : ''}`}
             role="button"
             tabIndex={0}
-            aria-label={`Go deeper: deal a fresh patch. ${hidden} unturned card${hidden === 1 ? '' : 's'} go back under the deck.`}
+            aria-disabled={end}
+            aria-label={
+              end
+                ? 'End of the zone: the whole deck is dealt.'
+                : `Go deeper: deal a fresh patch from the ${left} cards left. ${hidden} unturned card${hidden === 1 ? '' : 's'} stay behind.`
+            }
             onPointerDown={(e) => {
               // Keep receiving this pointer after it leaves the deck, so a mouse drag works like a touch swipe.
               (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
@@ -216,21 +223,32 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             }}
             onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && deeper()}
           >
-            <div class="deck-card d3" />
-            <div class="deck-card d2" />
+            {left > 1 && <div class="deck-card d3" />}
+            {left > 0 && <div class="deck-card d2" />}
             <div class="deck-card d1">
-              <span>Swipe up</span>
-              <small>{trip.depth + 1 >= deepAt ? 'rare finds ahead' : 'to go deeper'}</small>
-              <small>{left >= n * n - (trip.depth + 1 >= deepAt ? 1 : 0) ? `${left} cards left` : 'deck reshuffles'}</small>
+              {end ? (
+                <>
+                  <span>End of the zone</span>
+                  <small>nothing deeper</small>
+                </>
+              ) : (
+                <>
+                  <span>Swipe up</span>
+                  <small>{trip.depth + 1 >= deepAt ? 'rare finds ahead' : 'to go deeper'}</small>
+                  <small>{left <= n * n - (trip.depth + 1 >= deepAt ? 1 : 0) ? `last ${left} card${left === 1 ? '' : 's'}` : `${left} cards left`}</small>
+                </>
+              )}
             </div>
           </div>
           <div class="foot-actions">
             <button class="btn big" onClick={() => store.act({ type: 'stopForage' })}>
               Head home
             </button>
-            <button class="btn small ghost" onClick={deeper}>
-              Go deeper{hidden ? ` (${hidden} unturned go back)` : ''}
-            </button>
+            {!end && (
+              <button class="btn small ghost" onClick={deeper}>
+                Go deeper{hidden ? ` (${hidden} unturned left behind)` : ''}
+              </button>
+            )}
           </div>
         </footer>
       ) : (
