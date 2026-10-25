@@ -111,8 +111,8 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   const message =
     last && lastWasDeep
       ? last.card.type === 'coins'
-        ? `A forager's cache, tucked under a root: ${last.card.amount} coins.`
-        : `${outcomeText(last.outcome, last.card)} A rare find, this deep in.`
+        ? `Rare find! A forager's cache, tucked under a root: ${last.card.amount} coins.`
+        : `Rare find! ${outcomeText(last.outcome, last.card)}`
       : last && (turnedHere || trip.status === 'busted')
         ? last.outcome === 'hazard' && limit - trip.hazards > 1
           ? `A hazard. ${limit - trip.hazards} more this trip and you bust.`
@@ -120,7 +120,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
         : !open
           ? 'The faded cards are what you walked past.'
           : deepHere
-            ? `Deep in the woods. Something rare glints on this ${end ? 'last patch' : 'patch'}.`
+            ? `Deep in the woods. One card on this ${end ? 'last patch' : 'patch'} hides a rare find.`
             : end && trip.depth > 1
               ? 'The far edge of the zone. This is the last patch.'
             : trip.depth > 1
@@ -154,7 +154,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
         </div>
       </header>
 
-      <p class={`floor-msg ${last?.outcome ?? ''}`} aria-live="polite">
+      <p class={`floor-msg ${last?.outcome ?? ''} ${lastWasDeep ? 'rare' : ''}`} aria-live="polite">
         {message}
       </p>
 
@@ -167,12 +167,14 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             const label = p.flipped
               ? `${cardLabel(p.card, p.outcome)}${p.card.type === 'hazard' ? '' : `, ${near} hazard${near === 1 ? '' : 's'} beside it`}`
               : open
-                ? `${p.deep ? 'Glinting rare find' : 'Face-down card'}, row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}`
-                : `Passed by: ${cardLabel(p.card, null)}`;
+                ? `Face-down card, row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}`
+                : `Passed by: ${p.deep ? 'a rare find, ' : ''}${cardLabel(p.card, null)}`;
+            // The rare find looks like any other card until it's turned (or the trip ends), then it shines.
+            const rare = p.deep && shown;
             return (
               <button
                 key={`${trip.depth}-${i}`}
-                class={`fc ${p.card.type} ${p.outcome ?? ''} ${shown ? 'up' : ''} ${!p.flipped && !open ? 'passed' : ''} ${p.deep ? 'deep' : ''}`}
+                class={`fc ${p.card.type} ${p.outcome ?? ''} ${shown ? 'up' : ''} ${!p.flipped && !open ? 'passed' : ''} ${rare ? 'deep' : ''} ${rare && p.flipped ? 'found' : ''}`}
                 style={{ '--i': i } as any}
                 disabled={!open || p.flipped}
                 onClick={() => flip(i)}
@@ -180,9 +182,14 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
               >
                 <span class="fc-inner">
                   <span class="fc-back" aria-hidden="true">
-                    <Icon name={p.deep ? 'spark' : 'leaf'} size={22} />
+                    <Icon name="leaf" size={22} />
                   </span>
                   <span class="fc-front" aria-hidden="true">
+                    {rare && (
+                      <span class="rare-tag">
+                        <Icon name="spark" size={11} /> Rare
+                      </span>
+                    )}
                     <CardArt card={p.card} outcome={p.outcome} />
                     <span class="fc-title">{cardLabel(p.card, p.outcome)}</span>
                     {p.flipped && p.card.type !== 'hazard' && (

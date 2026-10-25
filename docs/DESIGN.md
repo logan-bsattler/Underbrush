@@ -186,7 +186,7 @@ the valuable species, and something to aim for after level 7. All of it is data 
   swaps and spawn give them somewhere to go besides the 1-per-5 festival points. Orders that need a
   zone the shop can't open (`requires` in `orders.json`) aren't dealt.
 - **Going deeper.** From the third patch of a trip (`rules.deepAt`), every patch holds one
-  glinting deep find, dealt from the zone's `deep` list and never part of its deck: the zone's
+  deep find, dealt from the zone's `deep` list and never part of its deck: the zone's
   rare mushroom for the season, or, one time in four (`rules.deepCoinChance`), a cache of coins.
   Every zone has exactly one rare mushroom for each season it's open:
 
@@ -202,6 +202,12 @@ the valuable species, and something to aim for after level 7. All of it is data 
   Black Morel, Matsutake) are wild species found only this way, valued 4 to 7 like the other wild
   finds. Before them, a zone with nothing in season always dealt coins, so most deep finds were
   coins. The zone picker shows the rare find in season now.
+
+  Face down, the deep find looks like any other card; the message only says one card on the patch
+  hides it. (When it glinted, going deeper was free and the glint marked the card, so a trip could
+  swipe to each deep patch and take its rare find with no risk.) Turned over, it bursts with gold
+  light, keeps a gold glow and a Rare tag, and the message reads "Rare find!". When a trip ends,
+  a rare find you walked past shows with the other faded cards.
 - **The Hollow** (Compass, 7 coins, level 8; fall and winter): Blewit, Truffle, Hen of the Woods
   and Black Trumpet, with 10 hazards in 32 cards. Truffle (value 7, winter) gives winter something
   to forage for.

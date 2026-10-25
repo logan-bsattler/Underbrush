@@ -213,6 +213,15 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   s.meal ??= null;
   s.feastPoints ??= 0;
   for (const z of c.zones) s.decks[z.id] ??= { draw: new Rng(hashSeed(`${s.seed}:${z.id}`)).shuffle(buildDeck(z)), discard: [] };
+  // A deck printed at another size (the 24-card decks before they grew to 32) is dealt afresh, unless a trip there is under way.
+  for (const z of c.zones) {
+    const deck = s.decks[z.id];
+    const printed = buildDeck(z);
+    const out = s.forage?.status === 'open' && s.forage.zone === z.id;
+    if (!out && deck.draw.length + deck.discard.length !== printed.length) {
+      s.decks[z.id] = { draw: new Rng(hashSeed(`${s.seed}:${z.id}:${printed.length}`)).shuffle(printed), discard: [] };
+    }
+  }
   if (!s.stats.identified) s.stats.identified = {};
   s.compostPile ??= [];
   s.finale ??= null;

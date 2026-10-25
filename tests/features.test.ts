@@ -348,4 +348,15 @@ describe('old saves', () => {
     expect(m.grid.filter((q: { damp: boolean }) => q.damp)).toHaveLength(4);
     expect(m.decks.hollow.draw.length).toBeGreaterThan(0);
   });
+
+  it('deals a deck afresh when its printed size has changed, but not during a trip there', () => {
+    const s = newGame({ seed: 'resize' });
+    s.decks.meadow = { draw: s.decks.meadow.draw.slice(0, 20), discard: s.decks.meadow.draw.slice(20, 24) };
+    s.decks.mixedwoods = { draw: s.decks.mixedwoods.draw.slice(0, 24), discard: [] };
+    s.forage = { zone: 'mixedwoods', status: 'open', patch: [], depth: 1 } as any;
+    const m = migrateState(structuredClone(s));
+    expect(m.decks.meadow.draw).toHaveLength(32);
+    expect(m.decks.meadow.discard).toHaveLength(0);
+    expect(m.decks.mixedwoods.draw).toHaveLength(24);
+  });
 });
