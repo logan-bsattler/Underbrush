@@ -697,6 +697,14 @@ describe('the year', () => {
     expect(() => dispatch(s, { type: 'water' })).toThrow(/over/);
   });
 
+  it('caps the points leftover coins can score', () => {
+    const s = blank('cap');
+    s.coins = 49;
+    expect(score(s).coins).toBe(9);
+    s.coins = 104;
+    expect(score(s).coins).toBe(10);
+  });
+
   describe('festival morning', () => {
     /** The morning after month 12, with a fruiting bed and an order the harvest can fill. */
     function morning() {

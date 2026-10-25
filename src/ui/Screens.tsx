@@ -159,7 +159,7 @@ export function HowTo({ onBack }: { onBack: () => void }) {
           {r.actionsPerRound} actions, then you sleep and the farm grows on its own. After the last night you get a festival morning: one last harvest and one
           market visit, free of actions. Then the village Harvest Festival scores your
           delivered orders, +{r.hybridPoints} for every kind of hybrid you made, +{r.plantedPoints} for every species you planted and +1 for
-          every {r.coinsPerPoint} coins you have left.
+          every {r.coinsPerPoint} coins you have left, up to {r.maxCoinPoints}.
         </p>
       </section>
       <section>

@@ -183,7 +183,7 @@ the valuable species, and something to aim for after level 7. All of it is data 
   somewhere new.
 - **Swapping orders.** At the market, swap a festival order for the next one for 2 coins, a coin
   more for each swap that year (`rules.swapCost`). A human playtest ended with 171 leftover coins;
-  swaps and spawn give them somewhere to go besides the 1-per-5 festival points. Orders that need a
+  swaps and spawn give them somewhere to go besides the festival's coin points, which stop at 10. Orders that need a
   zone the shop can't open (`requires` in `orders.json`) aren't dealt.
 - **Going deeper.** From the third patch of a trip (`rules.deepAt`), every patch holds one
   deep find, dealt from the zone's `deep` list and never part of its deck: the zone's
@@ -268,6 +268,14 @@ The bot, which hoards far less than a person, averages 16.4 (from 18.7) over 500
 47%, Silver 9%, Gold 1%, and no tier 43% (from 29%). Its ten-year campaign median now goes from
 about 17 to 18 rather than 20 to 24, so if later years feel flat in play, the next lever is the
 tier thresholds or what higher levels unlock, not the coin rate.
+
+**Then capped at 10 points** (`maxCoinPoints`). After the rare finds arrived, a human daily year
+on the standard kit reached Golden Chanterelle (49) with 20 points from 104 leftover coins against
+18 from three orders: deep finds sell for 4 to 7 coins each, so selling everything still kept pace
+with orders. A rate change would hit weak players as hard as hoarders; a cap only touches the
+hoard. The bot ends a year with a median of 19 coins (p90 36) and reaches 50 in 2% of years, so it
+averages 15.5 (from 15.6) with the same tier spread, while that human year scores 39 (Gold). Coins
+past 50 are now for spending: swaps to chase orders that fit the farm, and spawn.
 
 ## Not in this build
 

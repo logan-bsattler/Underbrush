@@ -60,7 +60,7 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
           </tr>
           <tr>
             <td>
-              Coins left over ({g.coins}, 1 point per {content.rules.coinsPerPoint})
+              Coins left over ({g.coins}, 1 point per {content.rules.coinsPerPoint}, up to {content.rules.maxCoinPoints})
             </td>
             <td>{sc.coins}</td>
           </tr>

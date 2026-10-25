@@ -29,6 +29,7 @@
   "hybridPoints": 3,
   "plantedPoints": 1,
   "coinsPerPoint": 5,
+  "maxCoinPoints": 10,
   "tiers": [
     {
       "id": "bronze",

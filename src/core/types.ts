@@ -164,6 +164,8 @@ export interface RulesDef {
   plantedPoints: number;
   /** Coins left over at the festival score 1 point per this many, rounded down. */
   coinsPerPoint: number;
+  /** The most festival points leftover coins can score. */
+  maxCoinPoints: number;
   tiers: TierDef[];
 }
 
