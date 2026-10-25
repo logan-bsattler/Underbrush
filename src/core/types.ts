@@ -234,6 +234,8 @@ export interface Specimen {
   identified: boolean;
   /** Round it was picked, so a bust can tell this trip's finds from older ones. */
   trip: number;
+  /** A deep find. */
+  rare?: boolean;
 }
 
 /** One face-down card on the forest floor. */
@@ -252,8 +254,8 @@ export interface ForageTrip {
   patch: PatchCard[];
   /** How many patches deep into the zone you've walked this trip (1 on arrival). */
   depth: number;
-  /** Every card turned this trip, in order. */
-  drawn: { card: Card; outcome: DrawOutcome }[];
+  /** Every card turned this trip, in order, with what a find bumped out of a full basket. */
+  drawn: { card: Card; outcome: DrawOutcome; dropped?: Specimen }[];
   hazards: number;
   knifeUsed: boolean;
   /** uids of specimens picked on this trip, in draw order. */
@@ -266,6 +268,7 @@ export type DrawOutcome =
   | 'basket'
   | 'known'
   | 'basketFull'
+  | 'swapped'
   | 'emptyPatch'
   | 'coins'
   | 'substrate'
@@ -436,7 +439,7 @@ export interface IdentifyResult {
 export type ActionResult =
   | { kind: 'none' }
   | { kind: 'identify'; results: IdentifyResult[] }
-  | { kind: 'draw'; index: number; card: Card; outcome: DrawOutcome }
+  | { kind: 'draw'; index: number; card: Card; outcome: DrawOutcome; dropped?: Specimen }
   | { kind: 'harvest'; gained: Record<string, number> }
   | { kind: 'sell'; coins: number }
   | { kind: 'order'; points: number }

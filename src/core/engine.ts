@@ -16,6 +16,7 @@ import type {
   OrderDef,
   Perks,
   RecipeDef,
+  Specimen,
   Square,
   Substrate,
   ZoneDef,
@@ -130,6 +131,19 @@ export function plantableSquares(s: GameState, speciesId: string, c: Content = d
 
 export function emptyGround(s: GameState): number[] {
   return s.grid.map((_, i) => i).filter((i) => !s.grid[i].tree && s.grid[i].substrate === null);
+}
+
+/**
+ * With the basket full, a rare find or a wild one bumps out a lesser specimen: rare outranks wild,
+ * and wild outranks cultivated. It takes the lowest-ranked, then the cheapest. Null if nothing ranks lower.
+ */
+export function bumpFor(s: GameState, wild: boolean, rare: boolean, c: Content = defaultContent): Specimen | null {
+  const rank = (isWild: boolean, isRare: boolean) => (isRare ? 2 : isWild ? 1 : 0);
+  const mine = rank(wild, rare);
+  const rankOf = (b: Specimen) => rank(c.species[b.species].kind === 'wild', !!b.rare);
+  const lesser = s.basket.filter((b) => rankOf(b) < mine);
+  lesser.sort((a, b) => rankOf(a) - rankOf(b) || c.species[a.species].value - c.species[b.species].value);
+  return lesser[0] ?? null;
 }
 
 /** Which stored mushrooms an order would take, picking the cheapest that fit; null if it can't be filled. */
@@ -499,24 +513,32 @@ export function dispatch(
       let outcome: ActionResult & { kind: 'draw' } = { kind: 'draw', index: action.index, card, outcome: 'basket' };
       if (card.type === 'specimen') {
         const sp = c.species[card.species];
+        const bump = s.basket.length >= basketCapacity(s, c) ? bumpFor(s, sp.kind === 'wild', !!spot.deep, c) : null;
         if (sp.kind === 'wild' && !inSeason(sp.id, seasonOf(s.round, c), c)) {
           outcome.outcome = 'emptyPatch';
-        } else if (s.basket.length >= basketCapacity(s, c)) {
-          outcome.outcome = 'basketFull';
         } else if (masteryOf(s, sp.id) >= 2 && sp.kind === 'wild') {
-          // An Expert recognizes it on sight; wild finds go straight to storage.
+          // An Expert recognizes it on sight; wild finds go straight to storage, full basket or not.
           addStorage(s, sp.id);
           s.stats.identified[sp.id] = (s.stats.identified[sp.id] ?? 0) + 1;
           outcome.outcome = 'known';
+        } else if (s.basket.length >= basketCapacity(s, c) && !bump) {
+          outcome.outcome = 'basketFull';
         } else {
+          if (bump) {
+            // The lesser find is left on the forest floor to make room.
+            s.basket = s.basket.filter((b) => b !== bump);
+            trip.picked = trip.picked.filter((u) => u !== bump.uid);
+            outcome.dropped = bump;
+          }
           const uid = s.nextUid++;
           const known = masteryOf(s, sp.id) >= 2;
-          s.basket.push({ uid, species: card.species, identified: known, trip: trip.id });
+          s.basket.push({ uid, species: card.species, identified: known, trip: trip.id, ...(spot.deep ? { rare: true } : {}) });
           trip.picked.push(uid);
           if (known) {
             s.stats.identified[sp.id] = (s.stats.identified[sp.id] ?? 0) + 1;
             outcome.outcome = 'known';
           }
+          if (bump) outcome.outcome = 'swapped';
         }
       } else if (card.type === 'coins') {
         s.coins += card.amount;
@@ -543,7 +565,7 @@ export function dispatch(
         }
       }
       spot.outcome = outcome.outcome;
-      trip.drawn.push({ card, outcome: outcome.outcome });
+      trip.drawn.push({ card, outcome: outcome.outcome, ...(outcome.dropped ? { dropped: outcome.dropped } : {}) });
       result = outcome;
       break;
     }

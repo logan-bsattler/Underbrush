@@ -67,6 +67,11 @@ keeps the deck and the kit's rules but adds a small deduction game on top:
 - The kit's limits are unchanged: a second hazard busts the trip and you keep your first two
   specimens, the Knife ignores the first hazard, the basket caps what you carry, and you can head
   home at any time.
+- **A full basket makes room for better finds** (not the kit's): a wild specimen bumps out a
+  cultivated one, and a rare find (a deep find) bumps out anything that isn't rare, taking the
+  lowest-ranked and then the cheapest. The bumped specimen stays on the forest floor and no longer
+  counts as picked this trip. Cultivated finds and ties are still left behind. An Expert's wild
+  find goes straight to storage, so a full basket never costs it.
 - Swipe the deck up (at the bottom of the screen, by your thumb) to go deeper: unturned cards stay
   behind and a fresh patch deals upward. Hazards you've met carry over, so going deeper is the
   push-your-luck choice.

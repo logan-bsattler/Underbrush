@@ -112,11 +112,11 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
     last && lastWasDeep
       ? last.card.type === 'coins'
         ? `Rare find! A forager's cache, tucked under a root: ${last.card.amount} coins.`
-        : `Rare find! ${outcomeText(last.outcome, last.card)}`
+        : `Rare find! ${outcomeText(last.outcome, last.card, last.dropped)}`
       : last && (turnedHere || trip.status === 'busted')
         ? last.outcome === 'hazard' && limit - trip.hazards > 1
           ? `A hazard. ${limit - trip.hazards} more this trip and you bust.`
-          : outcomeText(last.outcome, last.card)
+          : outcomeText(last.outcome, last.card, last.dropped)
         : !open
           ? 'The faded cards are what you walked past.'
           : deepHere

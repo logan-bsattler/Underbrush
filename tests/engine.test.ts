@@ -7,6 +7,7 @@ import {
   newGame,
   orderPayment,
   score,
+  standardPerks,
   seasonOf,
   type Action,
   type Card,
@@ -129,6 +130,55 @@ describe('foraging', () => {
       outcomes.push(r.result.kind === 'draw' ? r.result.outcome : '');
     }
     expect(outcomes).toEqual(['emptyPatch', 'basket', 'basket', 'basket', 'basket', 'basketFull']);
+  });
+
+  it('lets a wild find bump a cultivated one out of a full basket, and a rare find bump a wild one', () => {
+    let s = newGame({ seed: 'bump' });
+    s.round = 4; // summer, when Chanterelle fruits
+    s.weather = 'clear';
+    stackDeck(s, 'mixedwoods', [
+      { type: 'specimen', species: 'shiitake' },
+      ...Array.from({ length: 3 }, (): Card => ({ type: 'specimen', species: 'chanterelle' })),
+      { type: 'specimen', species: 'chanterelle' },
+      { type: 'specimen', species: 'chanterelle' },
+      { type: 'specimen', species: 'chicken' },
+    ]);
+    s = run(s, { type: 'forage', zone: 'mixedwoods' });
+    s.forage!.patch[6].deep = true;
+    const flip = (i: number) => {
+      const r = dispatch(s, { type: 'flip', index: i });
+      s = r.state;
+      return r.result.kind === 'draw' ? r.result : null;
+    };
+    for (let i = 0; i < 4; i++) flip(i);
+    const wild = flip(4)!;
+    expect(wild.outcome).toBe('swapped');
+    expect(wild.dropped?.species).toBe('shiitake');
+    expect(s.forage!.drawn.at(-1)?.dropped?.species).toBe('shiitake');
+    expect(s.basket.map((b) => b.species)).toEqual(Array(4).fill('chanterelle'));
+    expect(s.forage!.picked).toHaveLength(4);
+    // Nothing in the basket ranks below a wild find now.
+    expect(flip(5)!.outcome).toBe('basketFull');
+    const rare = flip(6)!;
+    expect(rare.outcome).toBe('swapped');
+    expect(s.basket.filter((b) => b.rare).map((b) => b.species)).toEqual(['chicken']);
+    expect(s.basket).toHaveLength(4);
+  });
+
+  it('sends an Expert wild find to storage even when the basket is full', () => {
+    let s = newGame({ seed: 'expert-full', perks: { ...standardPerks(), mastery: { chanterelle: 2 } } });
+    s.round = 4;
+    s.weather = 'clear';
+    stackDeck(s, 'mixedwoods', [
+      ...Array.from({ length: 4 }, (): Card => ({ type: 'specimen', species: 'oyster' })),
+      { type: 'specimen', species: 'chanterelle' },
+    ]);
+    s = run(s, { type: 'forage', zone: 'mixedwoods' });
+    for (let i = 0; i < 4; i++) s = run(s, { type: 'flip', index: i });
+    const r = dispatch(s, { type: 'flip', index: 4 });
+    expect(r.result).toMatchObject({ outcome: 'known' });
+    expect(r.state.storage.chanterelle).toBe(1);
+    expect(r.state.basket.map((b) => b.species)).toEqual(Array(4).fill('oyster'));
   });
 
   it('deals a 3×3 patch from the top of the zone deck', () => {

@@ -1,4 +1,4 @@
-import { content, seasonOf, monthOfSeason, type Card, type DrawOutcome, type NightEvent, type Season, type Stage, type Substrate } from '../core';
+import { content, seasonOf, monthOfSeason, type Card, type DrawOutcome, type NightEvent, type Season, type Specimen, type Stage, type Substrate } from '../core';
 
 export const seasonName: Record<Season, string> = { spring: 'Spring', summer: 'Summer', fall: 'Fall', winter: 'Winter' };
 export const stageName: Record<Stage, string> = { S: 'Spawn', C: 'Colonized', P: 'Pinning', F: 'Fruiting' };
@@ -38,14 +38,18 @@ export function cardTitle(card: Card) {
   }
 }
 
-export function outcomeText(o: DrawOutcome, card: Card) {
+export function outcomeText(o: DrawOutcome, card: Card, dropped?: Specimen) {
   switch (o) {
+    case 'swapped': {
+      const left = dropped ? (dropped.identified ? name(dropped.species) : (content.species[dropped.species].group ?? name(dropped.species))) : 'something';
+      return `Your basket is full, so you leave the ${left} behind to make room. Identify it at home.`;
+    }
     case 'basket':
       return 'Into the basket. What is it really? Identify it at home.';
     case 'known':
       return `You'd know ${card.type === 'specimen' ? name(card.species) : 'it'} anywhere. It comes home already identified.`;
     case 'basketFull':
-      return 'Your basket is full, so you leave it be.';
+      return 'Your basket is full, so you leave it be. Only a wild or rare find bumps something out.';
     case 'emptyPatch':
       return `An empty patch: ${card.type === 'specimen' ? name(card.species) : 'it'} isn't fruiting this season.`;
     case 'coins':
