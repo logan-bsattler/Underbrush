@@ -1,0 +1,48 @@
+[
+  {
+    "id": "streamside", "name": "Streamside",
+    "blurb": "The kit's homestead: a stream down one side, two old trees, and an Oyster bed already running.",
+    "stream": true, "springs": [], "trees": [2, 9], "extraTrees": [[4, 3]],
+    "start": [
+      { "index": 4, "substrate": "straw", "species": "oyster", "stage": "C" },
+      { "index": 8, "substrate": "straw" },
+      { "index": 5, "substrate": "log" },
+      { "index": 6, "substrate": "log" }
+    ]
+  },
+  {
+    "id": "meadowedge", "name": "Meadow Edge",
+    "blurb": "Open pasture by the brook. Plenty of sun and straw, a Wine Cap patch, and one old ash for shade.",
+    "stream": true, "springs": [], "trees": [7], "extraTrees": [[4, 2]],
+    "start": [
+      { "index": 4, "substrate": "straw", "species": "oyster", "stage": "S" },
+      { "index": 8, "substrate": "straw" },
+      { "index": 9, "substrate": "woodchip", "species": "winecap", "stage": "C" },
+      { "index": 10, "substrate": "woodchip" },
+      { "index": 13, "substrate": "straw" }
+    ]
+  },
+  {
+    "id": "woodlot", "name": "Woodlot",
+    "blurb": "A clearing among hardwoods: shade and seasoned logs, a Shiitake log already spawned, but only a spring for water.",
+    "stream": false, "springs": [12, 13], "trees": [1, 6, 11], "extraTrees": [[4, 4]],
+    "start": [
+      { "index": 5, "substrate": "log", "species": "shiitake", "stage": "S" },
+      { "index": 2, "substrate": "log" },
+      { "index": 10, "substrate": "log" },
+      { "index": 12, "substrate": "straw", "species": "oyster", "stage": "C" }
+    ]
+  },
+  {
+    "id": "oldorchard", "name": "Old Orchard",
+    "blurb": "The orchard behind the old mill: gnarled trees, a stream, and Reishi and Shiitake logs someone left behind.",
+    "stream": true, "springs": [], "trees": [5, 11], "extraTrees": [[4, 1]],
+    "start": [
+      { "index": 6, "substrate": "log", "species": "reishi", "stage": "S" },
+      { "index": 7, "substrate": "log", "species": "shiitake", "stage": "S" },
+      { "index": 9, "substrate": "log" },
+      { "index": 4, "substrate": "straw", "species": "oyster", "stage": "C" },
+      { "index": 14, "substrate": "compost" }
+    ]
+  }
+]

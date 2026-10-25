@@ -12,44 +12,11 @@
   "biggerBasketSize": 6,
   "startCoins": 3,
   "gridSize": 4,
-  "trees": [
-    2,
-    9
-  ],
-  "streamColumn": 0,
-  "largeFarm": {
-    "size": 5,
-    "extraTrees": [
-      [
-        4,
-        3
-      ]
-    ]
-  },
-  "start": {
-    "squares": [
-      {
-        "index": 4,
-        "substrate": "straw",
-        "species": "oyster",
-        "stage": "C"
-      },
-      {
-        "index": 8,
-        "substrate": "straw"
-      },
-      {
-        "index": 5,
-        "substrate": "log"
-      },
-      {
-        "index": 6,
-        "substrate": "log"
-      }
-    ]
-  },
   "ordersVisible": 3,
+  "swapCost": 2,
+  "spawnMarkup": 2,
   "patchSize": 3,
+  "deepAt": 3,
   "bustAt": 2,
   "bustKeep": 2,
   "scrapsPerCompost": 3,

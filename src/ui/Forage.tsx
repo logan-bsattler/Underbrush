@@ -1,5 +1,5 @@
 import { useRef, useState } from 'preact/hooks';
-import { basketCapacity, content, gearUnlockLevel, hazardsNear, zoneStatus, type Card, type DrawOutcome, type GameState } from '../core';
+import { basketCapacity, bustAt, content, gearUnlockLevel, hazardsNear, zoneStatus, type Card, type DrawOutcome, type GameState } from '../core';
 import { Icon, Mushroom, SubstrateArt, Unknown } from './art';
 import { SheetFrame } from './Game';
 import type { Store } from './store';
@@ -32,17 +32,21 @@ function lockedText(unlock: string | null, st: { reason: string; notStocked?: bo
   return `The ${gear.name} that opens it is stocked once your homestead reaches ${at.title} (level ${at.level}).`;
 }
 
+const ordinal = (n: number) => ['first', 'second', 'third', 'fourth', 'fifth'][n - 1] ?? `${n}th`;
+
 function ZonePicker({ g, store, onClose }: { g: GameState; store: Store; onClose: () => void }) {
   return (
     <SheetFrame title="Where to forage?" onClose={onClose} tall>
       <p class="small muted">
         A trip takes 1 action. Turn cards on the forest floor as long as you dare; each one tells you how many hazards lie beside it. A second
-        hazard busts the trip and you keep only your first two finds.
+        hazard busts the trip and you keep only your first two finds. From the {ordinal(content.rules.deepAt)} patch in, every patch hides
+        one rare find.
       </p>
       <div class="zones">
         {content.zones.map((z) => {
           const st = zoneStatus(g, z);
           const finds = Array.from(new Set(z.deck.filter((e) => e.card.type === 'specimen').map((e) => (e.card as { species: string }).species)));
+          const deep = z.deep.flatMap((card) => (card.type === 'specimen' && !finds.includes(card.species) ? [card.species] : []));
           return (
             <button
               class={`zone ${st.open ? '' : 'locked'}`}
@@ -57,6 +61,7 @@ function ZonePicker({ g, store, onClose }: { g: GameState; store: Store; onClose
                 <span>Hazard: {z.hazard}</span>
                 <span>{finds.map((id) => content.species[id].group).join(' · ')}</span>
               </span>
+              {deep.length > 0 && <span class="zone-deep">Deep in: {deep.map((id) => content.species[id].group).join(' · ')}</span>}
             </button>
           );
         })}
@@ -91,14 +96,26 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   const hidden = trip.patch.filter((p) => !p.flipped).length;
   const left = g.decks[trip.zone].draw.length + g.decks[trip.zone].discard.length;
   const turnedHere = trip.patch.some((p) => p.flipped);
+  const limit = bustAt(g);
+  const deepHere = trip.patch.find((p) => p.deep);
+  const lastWasDeep = !!deepHere?.flipped && last?.card === deepHere.card;
+  const deepAt = content.rules.deepAt;
   const message =
-    last && (turnedHere || trip.status === 'busted')
-      ? outcomeText(last.outcome, last.card)
-      : !open
-        ? 'The faded cards are what you walked past.'
-        : trip.depth > 1
-          ? 'Deeper in. The hazards you already met still count.'
-          : 'Tap a card to turn it. Each one you turn shows how many hazards lie beside it.';
+    last && lastWasDeep
+      ? last.card.type === 'coins'
+        ? `A forager's cache, tucked under a root: ${last.card.amount} coins.`
+        : `${outcomeText(last.outcome, last.card)} A rare find, this deep in.`
+      : last && (turnedHere || trip.status === 'busted')
+        ? last.outcome === 'hazard' && limit - trip.hazards > 1
+          ? `A hazard. ${limit - trip.hazards} more this trip and you bust.`
+          : outcomeText(last.outcome, last.card)
+        : !open
+          ? 'The faded cards are what you walked past.'
+          : deepHere
+            ? 'Deep in the woods. Something rare glints on this patch.'
+            : trip.depth > 1
+              ? `Deeper in. The hazards you already met still count.${trip.depth < deepAt ? ' One patch further and rare finds start to turn up.' : ''}`
+              : 'Tap a card to turn it. Each one you turn shows how many hazards lie beside it.';
 
   return (
     <div class="overlay forage-screen" style={{ '--zone': zone.color } as any}>
@@ -109,13 +126,13 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
           <h2>{zone.name}</h2>
         </div>
         <div class="forage-stats">
-          <span class="hazards" aria-label={`${trip.hazards} of ${content.rules.bustAt} hazards`}>
+          <span class="hazards" aria-label={`${trip.hazards} of ${limit} hazards`}>
             {knife && (
               <span class={`knife ${trip.knifeUsed ? 'used' : ''}`} title="Mushroom Knife">
                 <Icon name="knife" size={20} />
               </span>
             )}
-            {Array.from({ length: content.rules.bustAt }, (_, i) => (
+            {Array.from({ length: limit }, (_, i) => (
               <span class={`hz ${i < trip.hazards ? 'on' : ''}`}>
                 <Icon name="hazard" size={20} />
               </span>
@@ -140,12 +157,12 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             const label = p.flipped
               ? `${cardLabel(p.card, p.outcome)}${p.card.type === 'hazard' ? '' : `, ${near} hazard${near === 1 ? '' : 's'} beside it`}`
               : open
-                ? `Face-down card, row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}`
+                ? `${p.deep ? 'Glinting rare find' : 'Face-down card'}, row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}`
                 : `Passed by: ${cardLabel(p.card, null)}`;
             return (
               <button
                 key={`${trip.depth}-${i}`}
-                class={`fc ${p.card.type} ${p.outcome ?? ''} ${shown ? 'up' : ''} ${!p.flipped && !open ? 'passed' : ''}`}
+                class={`fc ${p.card.type} ${p.outcome ?? ''} ${shown ? 'up' : ''} ${!p.flipped && !open ? 'passed' : ''} ${p.deep ? 'deep' : ''}`}
                 style={{ '--i': i } as any}
                 disabled={!open || p.flipped}
                 onClick={() => flip(i)}
@@ -153,7 +170,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
               >
                 <span class="fc-inner">
                   <span class="fc-back" aria-hidden="true">
-                    <Icon name="leaf" size={22} />
+                    <Icon name={p.deep ? 'spark' : 'leaf'} size={22} />
                   </span>
                   <span class="fc-front" aria-hidden="true">
                     <CardArt card={p.card} outcome={p.outcome} />
@@ -201,7 +218,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             <div class="deck-card d2" />
             <div class="deck-card d1">
               <span>Swipe up</span>
-              <small>to go deeper</small>
+              <small>{trip.depth + 1 >= deepAt ? 'rare finds ahead' : 'to go deeper'}</small>
               <small>{left} cards</small>
             </div>
           </div>

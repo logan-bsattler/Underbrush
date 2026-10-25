@@ -1,6 +1,6 @@
 import type { JSX } from 'preact';
 import { content } from '../core';
-import type { SpeciesArt, Stage, Substrate } from '../core';
+import type { Season, SpeciesArt, Stage, Substrate } from '../core';
 
 const INK = '#1F2A1C';
 
@@ -225,20 +225,37 @@ export const substrateColors: Record<Substrate, string> = {
   compost: '#5E4632',
 };
 
-export function SubstrateArt({ substrate, size = 100 }: { substrate: Substrate | null; size?: number }) {
+/** Grass on empty ground through the year: fresh with flowers in spring, gold in fall, under snow in winter. */
+const grass: Record<Season, string> = { spring: '#7EA35A', summer: '#6E8B4E', fall: '#B08A3E', winter: '#9AA79A' };
+
+export function SubstrateArt({ substrate, size = 100, season }: { substrate: Substrate | null; size?: number; season?: Season }) {
+  const tufts = [
+    [20, 30],
+    [70, 22],
+    [40, 70],
+    [80, 76],
+    [14, 82],
+  ];
   return (
     <svg class="sub-art" width={size} height={size} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
       {substrate === null && (
         <g opacity="0.8">
-          {[
-            [20, 30],
-            [70, 22],
-            [40, 70],
-            [80, 76],
-            [14, 82],
-          ].map(([x, y]) => (
-            <path d={`M${x} ${y} l-3 -7 M${x} ${y} l0 -9 M${x} ${y} l3 -7`} stroke="#7E9A5E" strokeWidth="1.6" strokeLinecap="round" />
+          {tufts.map(([x, y]) => (
+            <path d={`M${x} ${y} l-3 -7 M${x} ${y} l0 -9 M${x} ${y} l3 -7`} stroke={grass[season ?? 'summer']} strokeWidth="1.6" strokeLinecap="round" />
           ))}
+          {season === 'spring' &&
+            [
+              [30, 46],
+              [62, 52],
+              [52, 30],
+            ].map(([x, y]) => <circle cx={x} cy={y} r="2.4" fill="#F4F0E2" stroke="#E2B8C4" strokeWidth="1.2" />)}
+          {season === 'fall' &&
+            [
+              [32, 48, 20],
+              [60, 56, -35],
+              [50, 34, 60],
+            ].map(([x, y, r]) => <ellipse cx={x} cy={y} rx="4" ry="2" fill="#C2662E" opacity="0.8" transform={`rotate(${r} ${x} ${y})`} />)}
+          {season === 'winter' && <path d="M8 92 Q30 80 52 88 T96 86 L96 100 L4 100 Z" fill="#FBFCFA" opacity="0.9" />}
         </g>
       )}
       {substrate === 'log' && (
@@ -294,14 +311,43 @@ export function SubstrateArt({ substrate, size = 100 }: { substrate: Substrate |
   );
 }
 
-export function TreeArt() {
+/** Canopy and shadow colors for the tree through the year. */
+const canopy: Record<Season, { leaf: string; shade: string }> = {
+  spring: { leaf: '#8FB866', shade: '#5E8A3E' },
+  summer: { leaf: '#6E8B4E', shade: '#3E6B35' },
+  fall: { leaf: '#D08A3A', shade: '#A2542A' },
+  winter: { leaf: '#E9EEF0', shade: '#B9C6CC' },
+};
+
+export function TreeArt({ season = 'summer' }: { season?: Season }) {
+  const c = canopy[season];
   return (
     <svg class="tree-art" viewBox="0 0 100 100" aria-hidden="true">
       <ellipse cx="50" cy="92" rx="30" ry="5" fill="#3E6B35" opacity="0.2" filter="url(#wash)" />
       <g filter="url(#wc)">
         <path d="M44 92 L46 58 L54 58 L56 92 Z" fill="#7A5A3C" {...line} />
-        <path d="M50 8 Q76 14 80 38 Q88 50 76 62 Q62 72 50 66 Q36 72 24 62 Q12 50 20 38 Q24 14 50 8 Z" fill="#6E8B4E" {...line} />
-        <path d="M58 16 Q76 22 78 40 Q84 52 74 60 Q66 64 60 62 Q72 44 58 16 Z" fill="#3E6B35" opacity="0.45" />
+        {season === 'winter' ? (
+          <>
+            {/* Bare branches with snow along the tops. */}
+            <path d="M50 60 L50 20 M50 44 L30 26 M50 36 L70 20 M50 52 L72 40 M50 50 L26 44 M38 34 L34 18 M62 28 L66 12" {...line} stroke="#5E4632" strokeOpacity="0.9" strokeWidth="3" />
+            <path d="M30 24 Q40 28 48 40 M70 18 Q60 26 52 34 M24 42 Q36 44 48 48" fill="none" stroke="#FBFCFA" strokeWidth="2.4" strokeLinecap="round" />
+          </>
+        ) : (
+          <>
+            <path d="M50 8 Q76 14 80 38 Q88 50 76 62 Q62 72 50 66 Q36 72 24 62 Q12 50 20 38 Q24 14 50 8 Z" fill={c.leaf} {...line} />
+            <path d="M58 16 Q76 22 78 40 Q84 52 74 60 Q66 64 60 62 Q72 44 58 16 Z" fill={c.shade} opacity="0.45" />
+          </>
+        )}
+        {season === 'spring' &&
+          [
+            [34, 30],
+            [52, 20],
+            [64, 40],
+            [40, 52],
+            [70, 28],
+            [28, 46],
+          ].map(([x, y]) => <circle cx={x} cy={y} r="3.2" fill="#F6D6DE" stroke="#D99AAE" strokeWidth="0.8" />)}
+        {season === 'fall' && <ellipse cx="72" cy="90" rx="10" ry="3" fill="#C2662E" opacity="0.7" />}
       </g>
     </svg>
   );
@@ -530,6 +576,29 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
           <path d="M3 19 Q6 10 12 9 Q18 10 21 19 Z" fill="#6E5236" stroke="#3E2C1C" strokeWidth="1.4" strokeLinejoin="round" />
           <path d="M8 14 l1 -1 M13 12 l1 1 M15 16 l1 -1 M10 17 l1 0" {...s} stroke="#C9A77E" strokeWidth="1.4" />
           <path d="M11 9 Q10 5 13 4" {...s} stroke="#6E8B4E" strokeWidth="1.6" />
+        </svg>
+      );
+    case 'pantry':
+      return (
+        <svg {...p}>
+          <path d="M7 4 H17 V7 H7 Z" fill="#8C6A4A" stroke="#4F3A26" strokeWidth="1.3" strokeLinejoin="round" />
+          <path d="M6 8 Q6 7 7 7 H17 Q18 7 18 8 V19 Q18 21 16 21 H8 Q6 21 6 19 Z" fill="#E7DCC2" stroke="#4F3A26" strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="M9 15 Q9 11 12 11 Q15 11 15 15 Z" fill="#C27A1C" stroke="#4F3A26" strokeWidth="1.1" />
+          <path d="M11.4 15 L11.2 18 H12.8 L12.6 15" fill="#F2E6CC" stroke="#4F3A26" strokeWidth="1" />
+        </svg>
+      );
+    case 'bowl':
+      return (
+        <svg {...p}>
+          <path d="M3 11 H21 Q20 19 12 19 Q4 19 3 11 Z" fill="#D9C7A0" stroke="#5E4632" strokeWidth="1.5" strokeLinejoin="round" />
+          <path d="M9 8 Q8 6 10 4 M13 8 Q12 6 14 4" {...s} stroke="#8A9385" />
+        </svg>
+      );
+    case 'share':
+      return (
+        <svg {...p}>
+          <path d="M12 3 V15 M7 8 L12 3 L17 8" {...s} />
+          <path d="M5 12 V19 Q5 21 7 21 H17 Q19 21 19 19 V12" {...s} />
         </svg>
       );
     case 'shed':

@@ -21,6 +21,14 @@
         {
           "type": "gear",
           "id": "dehydrator"
+        },
+        {
+          "type": "board",
+          "id": "streamside"
+        },
+        {
+          "type": "board",
+          "id": "meadowedge"
         }
       ]
     },
@@ -43,11 +51,15 @@
       "level": 3,
       "title": "Forager",
       "renown": 40,
-      "blurb": "The chandler starts stocking lanterns for you.",
+      "blurb": "The chandler starts stocking lanterns and blight spray for you.",
       "unlocks": [
         {
           "type": "gear",
           "id": "lantern"
+        },
+        {
+          "type": "gear",
+          "id": "blightspray"
         }
       ]
     },
@@ -55,7 +67,7 @@
       "level": 4,
       "title": "Grower",
       "renown": 70,
-      "blurb": "You clear the brambles behind the shed, and the first year's profits come back to you.",
+      "blurb": "You clear the brambles behind the shed and run a drip line to it, and the first year's profits come back to you.",
       "unlocks": [
         {
           "type": "farmSize",
@@ -64,6 +76,10 @@
         {
           "type": "startCoins",
           "amount": 2
+        },
+        {
+          "type": "gear",
+          "id": "dripline"
         }
       ]
     },
@@ -86,11 +102,15 @@
       "level": 6,
       "title": "Steward",
       "renown": 150,
-      "blurb": "A neighbor's kid starts helping out on the farm.",
+      "blurb": "A neighbor's kid starts helping out on the farm, and the woodlot up the lane is yours to farm if you like.",
       "unlocks": [
         {
           "type": "actions",
           "amount": 1
+        },
+        {
+          "type": "board",
+          "id": "woodlot"
         }
       ]
     },
@@ -102,6 +122,44 @@
       "unlocks": [
         {
           "type": "heirloomSlot"
+        }
+      ]
+    },
+    {
+      "level": 8,
+      "title": "Pathfinder",
+      "renown": 280,
+      "blurb": "A charcoal burner shows you the path into the Hollow.",
+      "unlocks": [
+        {
+          "type": "gear",
+          "id": "compass"
+        }
+      ]
+    },
+    {
+      "level": 9,
+      "title": "Lorekeeper",
+      "renown": 370,
+      "blurb": "Your apprentice picks every ripe bed at first light.",
+      "unlocks": [
+        {
+          "type": "autoHarvest"
+        }
+      ]
+    },
+    {
+      "level": 10,
+      "title": "Legend of the Valley",
+      "renown": 480,
+      "blurb": "The miller's family offers you the old orchard, and the village sings about your festivals.",
+      "unlocks": [
+        {
+          "type": "heirloomSlot"
+        },
+        {
+          "type": "board",
+          "id": "oldorchard"
         }
       ]
     }

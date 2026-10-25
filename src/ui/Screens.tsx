@@ -1,4 +1,4 @@
-import { content, masteryLevel, score } from '../core';
+import { content, dailyBoard, masteryLevel, score } from '../core';
 import { Icon, Mushroom, Unknown } from './art';
 import { HomesteadCard } from './Progress';
 import type { Store } from './store';
@@ -21,7 +21,8 @@ export function Title({
   onHelp: () => void;
 }) {
   const save = store.game;
-  const dailyPlayed = store.journal.years.some((y) => y.seed === dailySeed());
+  const today = store.journal.years.find((y) => y.seed === dailySeed());
+  const todayBoard = content.boards.find((b) => b.id === dailyBoard(dailySeed()))?.name;
   return (
     <div class="screen title">
       <div class="title-art" aria-hidden="true">
@@ -49,8 +50,8 @@ export function Title({
           <small>Your homestead's unlocks and heirlooms come with you</small>
         </button>
         <button class="btn big" onClick={() => onStart('daily')}>
-          Daily year {dailyPlayed ? '· played' : ''}
-          <small>Everyone gets today's weather and decks, with the standard kit</small>
+          Daily year {today ? `· played, ${today.score} points` : ''}
+          <small>Everyone gets today's farm ({todayBoard}), weather and decks, with the standard kit</small>
         </button>
         <div class="row">
           <button class="btn grow" onClick={onJournal}>
@@ -167,8 +168,9 @@ export function HowTo({ onBack }: { onBack: () => void }) {
           <li>
             <b>Forage.</b> Pick a zone and a {r.patchSize}×{r.patchSize} patch of forest floor is dealt face down from its deck. Turn cards one
             at a time: each turned card shows how many hazards lie beside it (up, down, left, right). Swipe the deck up to go deeper into a
-            fresh patch; unturned cards go back under the deck. Head home whenever you like. A second hazard busts the trip and you keep
-            only your first {r.bustKeep} specimens.
+            fresh patch; unturned cards go back under the deck. From the {r.deepAt === 3 ? 'third' : `${r.deepAt}th`} patch in, every patch
+            hides one glinting rare find: a deep-woods mushroom in season, or a forager's cache of coins. Head home whenever you like. A
+            second hazard busts the trip and you keep only your first {r.bustKeep} specimens.
           </li>
           <li>
             <b>Identify</b> everything unknown in your basket at once. A lookalike becomes a Compost tile; wild finds go straight to storage.
@@ -184,17 +186,23 @@ export function HowTo({ onBack }: { onBack: () => void }) {
             <b>Harvest</b> every fruiting bed into storage.
           </li>
           <li>
-            <b>Market:</b> sell mushrooms and spare Compost tiles, deliver one festival order and buy gear, as much as you like in one visit.
+            <b>Market:</b> sell mushrooms and spare Compost tiles, deliver one festival order, buy gear and spawn, as much as you like in one
+            visit. Spawn of any cultivated species you've identified is ready to plant. Swap an order you can't fill for the next one for{' '}
+            {r.swapCost} coins, a coin more for each swap that year.
           </li>
         </ul>
         <p class="small muted">Free any time: lay substrate from your shed on empty ground, and compost specimens you don't want (one at a time, or the whole basket with Compost all). Composted specimens, overripe fruit and spoiled stock all go on the compost pile, and every{' '}
           {r.scrapsPerCompost} scraps rot into a Compost tile overnight.</p>
+        <p class="small muted">
+          Also free, in the pantry: cook one dish a month from stored mushrooms (Reishi Tea is an extra action, Oyster Fry a bigger basket,
+          and so on), or save a grown mushroom as spawn to plant again. Hybrids can be replanted this way too.
+        </p>
       </section>
       <section>
         <h2>Overnight</h2>
         <ol>
           <li>
-            <b>Dry.</b> Unless you watered or it rained, beds away from the stream take a dry mark. {r.dryMarksToBlight} marks: blight.
+            <b>Dry.</b> Unless you watered or it rained, beds away from the stream or a spring take a dry mark. {r.dryMarksToBlight} marks: blight.
           </li>
           <li>
             <b>Crowding.</b> A bed touching {r.crowdingAt}+ beds of its own species catches blight.
@@ -225,12 +233,14 @@ export function HowTo({ onBack }: { onBack: () => void }) {
         <h2>Your homestead</h2>
         <p>
           Every festival score becomes renown, and renown raises your homestead's level. Levels stock new gear (the Lantern and Trail Map
-          open new zones), give you heirloom slots for carrying gear into the next year, grow the farm to 5×5 and, eventually, bring in a
-          farmhand for a fifth monthly action.
+          open new zones), give you heirloom slots for carrying gear into the next year, grow the farm to 5×5, bring in a farmhand for a fifth
+          monthly action, open new farms to start the year on, and at the top, the Hollow and an apprentice who picks ripe beds every
+          morning.
         </p>
         <p>
           Identifying the same species again and again builds mastery: Familiar species fool you less often, you recognize Expert species on
-          sight, and Master species sell for more. Daily years use the standard kit, so everyone plays the same game, but still earn renown.
+          sight, and Master species sell for more. Daily years use the standard kit on the day's farm, so everyone plays the same game, but
+          still earn renown. Share your result from the festival screen.
         </p>
       </section>
       <section>

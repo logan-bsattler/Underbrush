@@ -1946,10 +1946,13 @@ button.chip {
   }
 }
 
-@media (max-width: 380px) {
+/* The pantry chip shares the HUD row, so the weather keeps only its icon on most phones. */
+@media (max-width: 440px) {
   .weather-name {
     display: none;
   }
+}
+@media (max-width: 380px) {
   .slot {
     width: 40px;
     height: 40px;
@@ -2403,4 +2406,291 @@ button.chip {
 .compost-all.sure {
   background: var(--rust);
   color: #fff;
+}
+
+/* ── Pantry, swaps and spawn ─────────────────────────────────────────── */
+.chip.pantry {
+  color: var(--ink);
+}
+.chip.pantry.fed {
+  border-color: var(--gold);
+  background: #fbf1d8;
+}
+.order-card-actions {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+}
+.order-card .order-card-actions .btn {
+  grid-row: auto;
+  grid-column: auto;
+}
+.order-card-actions .btn.ghost {
+  font-size: 12px;
+  padding-inline: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+h3 .inline-link {
+  margin-left: auto;
+  font-family: var(--sans);
+  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.sheet h3:has(.inline-link) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.recipes {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.recipe {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1.5px dashed var(--line);
+  border-radius: 12px;
+  background: transparent;
+}
+.recipe.ready {
+  border-style: solid;
+  border-color: var(--gold);
+  background: var(--card);
+}
+.recipe.eaten {
+  border-style: solid;
+  border-color: var(--moss);
+  background: var(--moss-wash);
+}
+.recipe-art {
+  display: flex;
+  flex: none;
+  width: 44px;
+  justify-content: center;
+}
+.recipe-art > * + * {
+  margin-left: -16px;
+}
+.recipe-art .q {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink-faint);
+}
+.recipe .grow {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+/* ── Boards ──────────────────────────────────────────────────────────── */
+.boards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.board-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  cursor: pointer;
+}
+.board-card.on {
+  border-color: var(--moss);
+  background: var(--moss-wash);
+  box-shadow: 0 0 0 2px var(--moss);
+}
+.board-card.locked {
+  border-style: dashed;
+  background: transparent;
+  opacity: 0.6;
+  cursor: default;
+}
+.board-card small {
+  color: var(--ink-soft);
+  line-height: 1.25;
+}
+.board-card:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+.board-preview {
+  display: block;
+  pointer-events: none;
+}
+.board-preview .farm.small {
+  width: 100%;
+}
+.sq.spring {
+  background:
+    radial-gradient(ellipse 38% 22% at 72% 80%, rgba(127, 169, 194, 0.85), rgba(127, 169, 194, 0.85) 60%, transparent 62%),
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.45), transparent 60%),
+    #dcdcc6;
+}
+
+/* ── Going deeper ────────────────────────────────────────────────────── */
+.zone-deep {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--gold);
+  margin-top: 2px;
+}
+.zone.locked .zone-deep {
+  color: inherit;
+}
+.fc.deep .fc-back {
+  border-color: var(--gold);
+  color: #fbe7a8;
+  box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.55), 0 0 18px 2px rgba(233, 185, 73, 0.55);
+  animation: glint 2.4s ease-in-out infinite;
+}
+.fc.deep .fc-front {
+  border-color: var(--gold);
+}
+@keyframes glint {
+  50% {
+    box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.85), 0 0 26px 6px rgba(233, 185, 73, 0.75);
+  }
+}
+
+/* ── Seasons ─────────────────────────────────────────────────────────── */
+.game {
+  position: relative;
+  transition: background-color 0.8s;
+}
+.game.season-spring {
+  background: #f4f3e2;
+}
+.game.season-summer {
+  background: var(--paper);
+}
+.game.season-fall {
+  background: #f6ecdb;
+}
+.game.season-winter {
+  background: #eef1ef;
+}
+.farm.season-spring .sq:not(.tree):not(.damp) {
+  --soil: #e3ddbd;
+}
+.farm.season-fall .sq:not(.tree):not(.damp) {
+  --soil: #ead6b2;
+}
+.farm.season-winter .sq:not(.tree):not(.damp) {
+  --soil: #e6e7e0;
+}
+.farm.season-spring .sq.tree {
+  background: #e4eed6;
+}
+.farm.season-fall .sq.tree {
+  background: #efe0c6;
+}
+.farm.season-winter .sq.tree {
+  background: #eef2f2;
+}
+.farm.season-winter .stream {
+  background: linear-gradient(180deg, #d4e3ea, #b3cbd8 60%, #d4e3ea);
+}
+/* The game is its own stacking context, so the drifting weather sits behind everything in it. */
+.game {
+  z-index: 0;
+}
+.weathering {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+.weathering span {
+  position: absolute;
+  top: -20px;
+  left: calc(6% + var(--i) * 14%);
+  width: 9px;
+  height: 6px;
+  border-radius: 60% 40% 60% 40%;
+  opacity: 0;
+  animation: drift calc(11s + var(--i) * 1.7s) linear calc(var(--i) * -2.3s) infinite;
+}
+.weathering.spring span {
+  background: #f2c9d4;
+}
+.weathering.fall span {
+  background: #c9762e;
+  width: 11px;
+  height: 7px;
+}
+.weathering.fall span:nth-child(2n) {
+  background: #d9a23c;
+}
+.weathering.winter span {
+  background: #fff;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  box-shadow: 0 0 2px rgba(110, 139, 154, 0.6);
+}
+@keyframes drift {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate(28px, 50dvh) rotate(160deg);
+  }
+  90% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(-12px, 104dvh) rotate(320deg);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .weathering {
+    display: none;
+  }
+}
+
+/* ── Sharing ─────────────────────────────────────────────────────────── */
+.share {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 10px;
+  margin: 4px 0 6px;
+}
+.share .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.share-text {
+  width: 100%;
+  font: 13px/1.4 var(--sans);
+  padding: 8px;
+  border-radius: 10px;
+  border: 1.5px solid var(--line);
+  background: var(--card);
 }

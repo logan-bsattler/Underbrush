@@ -3,14 +3,16 @@ import { useEffect, useState } from 'preact/hooks';
 import {
   actionsPerMonth,
   basketCapacity,
+  boardDef,
   canPlantOn,
   content,
   emptyGround,
   inSeason,
-  inStream,
+  isDamp,
   isShaded,
   lookalikeOn,
   masteryOf,
+  mealEffect,
   orderPayment,
   plantableSquares,
   seasonOf,
@@ -23,6 +25,7 @@ import { BedArt, Icon, Mushroom, SubstrateArt, TreeArt, Unknown } from './art';
 import { Forage } from './Forage';
 import { Market } from './Market';
 import { Night } from './Night';
+import { Pantry } from './Pantry';
 import { YearEnd } from './YearEnd';
 import type { Store } from './store';
 import { growthName, masteryName, name, seasonsText, squareName, stageName, substrateName, monthLabel } from './text';
@@ -41,6 +44,7 @@ type Sheet =
   | { kind: 'market' }
   | { kind: 'forage' }
   | { kind: 'weather' }
+  | { kind: 'pantry' }
   | { kind: 'menu' };
 
 export function SheetFrame({ title, onClose, children, tall }: { title: string; onClose: () => void; children: ComponentChildren; tall?: boolean }) {
@@ -76,8 +80,10 @@ export function ActionsPips({ left, total }: { left: number; total: number }) {
   );
 }
 
-function Hud({ g, onWeather, onMenu }: { g: GameState; onWeather: () => void; onMenu: () => void }) {
+function Hud({ g, onWeather, onPantry, onMenu }: { g: GameState; onWeather: () => void; onPantry: () => void; onMenu: () => void }) {
   const weather = content.weather.find((w) => w.id === g.weather)!;
+  const stored = Object.values(g.storage).reduce((a, b) => a + b, 0);
+  const meal = g.meal ? content.recipes.find((r) => r.id === g.meal) : null;
   return (
     <header class="hud">
       <div class="hud-month">
@@ -97,6 +103,14 @@ function Hud({ g, onWeather, onMenu }: { g: GameState; onWeather: () => void; on
           <span class="weather-name">{weather.name}</span>
         </button>
       )}
+      <button
+        class={`chip pantry ${meal ? 'fed' : ''}`}
+        onClick={onPantry}
+        aria-label={`Pantry: ${stored} stored mushroom${stored === 1 ? '' : 's'}${meal ? `. ${meal.name} this month` : ''}`}
+      >
+        <Icon name={meal ? 'bowl' : 'pantry'} size={18} />
+        {stored}
+      </button>
       <span class="chip coins" aria-label={`${g.coins} coins`}>
         <Icon name="coin" size={18} />
         {g.coins}
@@ -149,22 +163,26 @@ export function Farm({
   else if (mode?.kind === 'cross') [mode.a, mode.b].forEach((i) => targets.add(i));
   const cross = mode?.kind === 'cross' ? mode : null;
   const choosing = mode && mode.kind !== 'none';
+  const stream = boardDef(g.board).stream;
+  const season = g.finale ? 'winter' : seasonOf(g.round);
 
   return (
-    <div class={`farm ${small ? 'small' : ''} size-${g.size}`} style={{ '--cols': g.size } as any}>
-      <div class="stream" aria-hidden="true">
-        <svg viewBox="0 0 20 100" preserveAspectRatio="none">
-          <path d="M10 0 Q4 12 10 25 T10 50 T10 75 T10 100" stroke="#FFFFFF" strokeOpacity="0.7" strokeWidth="1.4" fill="none" />
-        </svg>
-        {!small && <span>stream</span>}
-      </div>
+    <div class={`farm ${small ? 'small' : ''} size-${g.size} season-${season}`} style={{ '--cols': g.size } as any}>
+      {stream && (
+        <div class="stream" aria-hidden="true">
+          <svg viewBox="0 0 20 100" preserveAspectRatio="none">
+            <path d="M10 0 Q4 12 10 25 T10 50 T10 75 T10 100" stroke="#FFFFFF" strokeOpacity="0.7" strokeWidth="1.4" fill="none" />
+          </svg>
+          {!small && <span>stream</span>}
+        </div>
+      )}
       <div class="grid">
         {g.grid.map((sq, i) => {
           const isTarget = targets.has(i);
           const cls = [
             'sq',
             sq.tree ? 'tree' : '',
-            inStream(i, g.size) ? 'damp' : '',
+            isDamp(g, i) ? (stream && i % g.size === 0 ? 'damp' : 'damp spring') : '',
             sq.blight ? 'blighted' : '',
             sq.stage === 'F' && !sq.blight ? 'ready' : '',
             choosing ? (isTarget ? 'target' : 'dim') : '',
@@ -188,10 +206,10 @@ export function Farm({
               onClick={() => onSquare?.(i)}
             >
               {sq.tree ? (
-                <TreeArt />
+                <TreeArt season={season} />
               ) : (
                 <>
-                  <SubstrateArt substrate={sq.substrate} />
+                  <SubstrateArt substrate={sq.substrate} season={season} />
                   {sq.species && sq.stage && <BedArt key={`${sq.species}-${sq.stage}`} species={sq.species} stage={sq.stage} />}
                   {sq.blight && <span class="mold" aria-hidden="true" />}
                   {!small && (
@@ -364,7 +382,7 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
     return (
       <SheetFrame title="Empty ground" onClose={onClose}>
         <p>Lay substrate here from your shed. Foraging trips turn up straw, logs and woodchip; a lookalike you identify turns into compost.</p>
-        {inStream(i, g.size) && <p class="note">Beside the stream: beds here never dry out.</p>}
+        {isDamp(g, i) && <p class="note">Damp ground by the water: beds here never dry out.</p>}
       </SheetFrame>
     );
   if (!sq.species) {
@@ -372,7 +390,7 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
     return (
       <SheetFrame title={`Empty ${substrateName[sq.substrate!]}`} onClose={onClose}>
         <p>Ready to inoculate. Grows here: {fits.map(name).join(', ') || 'nothing yet'}.</p>
-        {inStream(i, g.size) && <p class="note">Beside the stream: beds here never dry out.</p>}
+        {isDamp(g, i) && <p class="note">Damp ground by the water: beds here never dry out.</p>}
         {isShaded(g.grid, i, g.size) && <p class="note">In the shade of a tree.</p>}
         {sq.tent && <p class="note">Under the grow tent: ignores season and cold snaps.</p>}
         <MoveTent g={g} i={i} store={store} onClose={onClose} />
@@ -414,7 +432,7 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
             </dd>
             <dt>Dry marks</dt>
             <dd>
-              {inStream(i, g.size) ? 'Never (stream)' : `${sq.dry} of ${dryLimit}`}
+              {isDamp(g, i) ? 'Never (damp ground)' : g.gear.includes('dripline') ? 'Never (drip line)' : `${sq.dry} of ${dryLimit}`}
             </dd>
           </dl>
         </div>
@@ -432,7 +450,9 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
             disabled={g.actionsLeft < 1 || !!g.finale}
             onClick={() => store.act({ type: 'clearBlight', square: i }) && onClose()}
           >
-            Clear blight · 1 action
+            {g.gear.includes('blightspray') && g.grid.filter((x) => x.blight).length > 1
+              ? `Spray all ${g.grid.filter((x) => x.blight).length} blighted beds · 1 action`
+              : 'Clear blight · 1 action'}
           </button>
         </>
       ) : sq.stage === 'F' ? (
@@ -634,7 +654,7 @@ function Reveal({ r, g, onDone, onPlant }: { r: ActionResult & { kind: 'identify
 
 function TendSheet({ g, store, onClose, onBed }: { g: GameState; store: Store; onClose: () => void; onBed: (i: number) => void }) {
   const blighted = g.grid.map((_, i) => i).filter((i) => g.grid[i].blight);
-  const dry = g.grid.filter((sq, i) => sq.species && !inStream(i, g.size)).length;
+  const dry = g.grid.filter((sq, i) => sq.species && !isDamp(g, i)).length;
   // Beds whose season won't come round again before the festival.
   const spent = g.grid
     .map((_, i) => i)
@@ -653,19 +673,37 @@ function TendSheet({ g, store, onClose, onBed }: { g: GameState; store: Store; o
     });
   return (
     <SheetFrame title="Tend the farm" onClose={onClose}>
-      <button class="btn primary wide" disabled={g.watered || g.actionsLeft < 1} onClick={() => store.act({ type: 'water' }) && onClose()}>
-        <Icon name="water" /> {g.watered ? 'Watered this month' : 'Water every bed · 1 action'}
-      </button>
-      <p class="small muted">
-        {g.weather === 'rain'
-          ? 'Rain is watering everything this month already.'
-          : g.weather === 'dryspell'
-            ? 'Dry spell: nothing grows this month unless you water.'
-            : `${dry} bed${dry === 1 ? '' : 's'} away from the stream will take a dry mark tonight if you don't water.`}
-      </p>
+      {g.gear.includes('dripline') ? (
+        <p class="note">
+          <Icon name="water" size={16} /> Your Drip Line waters every bed each night, dry spell or not.
+        </p>
+      ) : (
+        <button class="btn primary wide" disabled={g.watered || g.actionsLeft < 1} onClick={() => store.act({ type: 'water' }) && onClose()}>
+          <Icon name="water" /> {g.watered ? 'Watered this month' : 'Water every bed · 1 action'}
+        </button>
+      )}
+      {!g.gear.includes('dripline') && (
+        <p class="small muted">
+          {mealEffect(g)?.type === 'water'
+            ? 'The neighbors will water the beds on their way home from supper.'
+            : g.weather === 'rain'
+              ? 'Rain is watering everything this month already.'
+              : g.weather === 'dryspell'
+                ? 'Dry spell: nothing grows this month unless you water.'
+                : `${dry} bed${dry === 1 ? '' : 's'} away from water will take a dry mark tonight if you don't water.`}
+        </p>
+      )}
       <h3>Blight</h3>
       {blighted.length === 0 ? (
         <p class="muted">No blight. The farm looks healthy.</p>
+      ) : g.gear.includes('blightspray') && blighted.length > 1 ? (
+        <button
+          class="btn primary wide"
+          disabled={g.actionsLeft < 1}
+          onClick={() => store.act({ type: 'clearBlight', square: blighted[0] }) && onClose()}
+        >
+          <Icon name="blight" /> Spray all {blighted.length} blighted beds · 1 action
+        </button>
       ) : (
         <ul class="list">
           {blighted.map((i) => (
@@ -744,6 +782,18 @@ function Menu({
       </div>
       <p class="disclaimer">Underbrush is a game, not a foraging guide. Never eat a wild mushroom because of anything you saw here.</p>
     </SheetFrame>
+  );
+}
+
+/** A few petals, leaves or snowflakes drifting over the farm, by season. Summer stays still. */
+function Weathering({ season }: { season: string }) {
+  if (season === 'summer') return null;
+  return (
+    <div class={`weathering ${season}`} aria-hidden="true">
+      {Array.from({ length: 7 }, (_, i) => (
+        <span style={{ '--i': i } as any} />
+      ))}
+    </div>
   );
 }
 
@@ -834,8 +884,14 @@ export function Game({
           : null;
 
   return (
-    <div class="game">
-      <Hud g={g} onWeather={() => setSheet({ kind: 'weather' })} onMenu={() => setSheet({ kind: 'menu' })} />
+    <div class={`game season-${g.finale ? 'winter' : seasonOf(g.round)}`}>
+      <Weathering season={g.finale ? 'winter' : seasonOf(g.round)} />
+      <Hud
+        g={g}
+        onWeather={() => setSheet({ kind: 'weather' })}
+        onPantry={() => setSheet({ kind: 'pantry' })}
+        onMenu={() => setSheet({ kind: 'menu' })}
+      />
       <Orders g={g} onOpen={() => setSheet({ kind: 'market' })} />
 
       <main class="farm-area">
@@ -939,7 +995,8 @@ export function Game({
         </SheetFrame>
       )}
       {sheet?.kind === 'menu' && <Menu g={g} onClose={() => setSheet(null)} onHelp={onHelp} onTitle={onTitle} onAlmanac={onAlmanac} />}
-      {sheet?.kind === 'market' && <Market g={g} store={store} onClose={() => setSheet(null)} />}
+      {sheet?.kind === 'market' && <Market g={g} store={store} onClose={() => setSheet(null)} onPantry={() => setSheet({ kind: 'pantry' })} />}
+      {sheet?.kind === 'pantry' && <Pantry g={g} store={store} onClose={() => setSheet(null)} />}
       {(sheet?.kind === 'forage' || g.forage) && <Forage g={g} store={store} onClose={() => setSheet(null)} />}
       {reveal && <Reveal r={reveal} g={g} onDone={() => setReveal(null)} onPlant={startPlant} />}
       {busy && <Night g={g} store={store} />}

@@ -350,14 +350,14 @@ describe('compost pile', () => {
     expect(s.compostPile).toEqual(['straw']);
     expect(s.stats.scraps).toBe(1);
     expect(() => dispatch(s, { type: 'compostSquare', square: 1 })).toThrow(/nothing to compost/);
-    expect(() => dispatch(s, { type: 'compostSquare', square: content.rules.trees[0] })).toThrow(/nothing to compost/);
+    expect(() => dispatch(s, { type: 'compostSquare', square: s.grid.findIndex((sq) => sq.tree) })).toThrow(/nothing to compost/);
     s.grid[1].substrate = 'straw';
     expect(() => dispatch({ ...s, finale: { harvested: false, marketed: false } }, { type: 'compostSquare', square: 1 })).toThrow(/festival/);
   });
 });
 
 describe('growth phase', () => {
-  it('grows fast, medium, slow and very slow species at their own pace', () => {
+  it('grows fast, medium and slow species at their own pace', () => {
     const s = blank();
     s.round = 4; // summer
     s.watered = true;
@@ -373,22 +373,24 @@ describe('growth phase', () => {
       grow(s);
       s.watered = true;
       for (const sq of s.grid) if (sq.stage === 'F') sq.stage = 'C'; // harvest each month
-      stages.push([1, 3, 12].map((n) => s.grid[n].stage!));
+      stages.push([1, 3, 12, 4].map((n) => s.grid[n].stage!));
     }
-    // shiitake: S→C, C (slow), P, F; lion's mane: S→C→P→F; oyster: S→C→F
-    expect(stages.slice(0, 3).map((r) => r[0])).toEqual(['C', 'C', 'P']);
+    // shiitake and lion's mane: S→C→P→F; oyster: S→C→F; reishi: S→C, C (slow), P, F
+    expect(stages.slice(0, 2).map((r) => r[0])).toEqual(['C', 'P']);
     expect(stages.slice(0, 2).map((r) => r[1])).toEqual(['C', 'P']);
     expect(stages[0][2]).toBe('C');
+    expect(stages.slice(0, 3).map((r) => r[3])).toEqual(['C', 'C', 'P']);
   });
 
-  it('holds very slow Reishi two phases at C and two at P', () => {
+  it('holds a very slow bed two phases at C and two at P', () => {
     const s = blank();
     s.round = 4;
     bed(s, 0, 'reishi', 'C', 'log');
+    const c = { ...content, species: { ...content.species, reishi: { ...content.species.reishi, growth: 'verySlow' as const } } };
     const seen = [];
     for (let i = 0; i < 5; i++) {
       s.watered = true;
-      grow(s);
+      runGrowth(s, new Rng(1), c);
       seen.push(s.grid[0].stage);
     }
     expect(seen).toEqual(['C', 'P', 'P', 'F', 'C']);
@@ -428,7 +430,7 @@ describe('growth phase', () => {
     expect(s.actionsLeft).toBe(3);
     expect(s.stats.tendActions[0]).toBe(1);
     expect(() => dispatch(s, { type: 'moveTent', square: 5 })).toThrow(/already there/);
-    expect(() => dispatch(s, { type: 'moveTent', square: content.rules.trees[0] })).toThrow(/Pick a square/);
+    expect(() => dispatch(s, { type: 'moveTent', square: s.grid.findIndex((sq) => sq.tree) })).toThrow(/Pick a square/);
     s.finale = { harvested: false, marketed: false };
     expect(() => dispatch(s, { type: 'moveTent', square: 4 })).toThrow(/festival morning/);
   });

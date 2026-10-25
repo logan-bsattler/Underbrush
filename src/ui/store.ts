@@ -58,8 +58,8 @@ export interface Store {
   error: string | null;
   last: ActionResult | null;
   act: (a: Action) => ActionResult | null;
-  /** Starts a year. Story years bring the homestead's progression and the packed heirlooms; daily years use the standard kit. */
-  start: (mode: GameState['mode'], heirlooms?: string[]) => void;
+  /** Starts a year. Story years bring the homestead's progression, the packed heirlooms and the chosen board; daily years use the standard kit on the day's board. */
+  start: (mode: GameState['mode'], heirlooms?: string[], board?: string) => void;
   clearError: () => void;
 }
 
@@ -111,11 +111,11 @@ export function useStore(): Store {
   );
 
   const start = useCallback(
-    (mode: GameState['mode'], heirlooms: string[] = []) => {
+    (mode: GameState['mode'], heirlooms: string[] = [], board?: string) => {
       const g =
         mode === 'daily'
           ? newGame({ mode, seed: dailySeed(), perks: standardPerks() })
-          : newGame({ mode, perks: perksFor(journalRef.current, heirlooms) });
+          : newGame({ mode, board, perks: perksFor(journalRef.current, heirlooms) });
       setFresh([]);
       setLast(null);
       commit(g);

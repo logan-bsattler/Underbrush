@@ -55,10 +55,12 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
   let size = c.rules.gridSize;
   let bonusCoins = 0;
   let bonusActions = 0;
+  let autoHarvest = false;
   for (const u of unlocks) {
     if (u.type === 'farmSize') size = Math.max(size, u.size);
     if (u.type === 'startCoins') bonusCoins += u.amount;
     if (u.type === 'actions') bonusActions += u.amount;
+    if (u.type === 'autoHarvest') autoHarvest = true;
   }
   return {
     shop,
@@ -67,5 +69,18 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
     bonusCoins,
     bonusActions,
     size,
+    autoHarvest,
+    spawn: j.discovered.filter((id) => c.species[id]?.kind === 'cultivated'),
   };
+}
+
+/** Farm layouts the homestead can start a story year on. */
+export function boardsFor(j: Journal, c: Content = defaultContent): string[] {
+  const unlocks = unlocksThrough(levelFor(j.renown, c).level, c);
+  return c.boards.map((b) => b.id).filter((id) => unlocks.some((u) => u.type === 'board' && u.id === id));
+}
+
+/** The level whose unlock first opens this board, or null if no level does. */
+export function boardUnlockLevel(boardId: string, c: Content = defaultContent): LevelDef | null {
+  return c.progression.levels.find((l) => l.unlocks.some((u) => u.type === 'board' && u.id === boardId)) ?? null;
 }

@@ -28,16 +28,16 @@
   },
   {
     "id": "shiitake", "name": "Shiitake", "latin": "Lentinula edodes", "kind": "cultivated", "value": 3,
-    "substrates": ["log"], "seasons": ["spring", "fall"], "growth": "slow",
+    "substrates": ["log"], "seasons": ["spring", "fall"], "growth": "medium",
     "group": "Brown log cap", "lookalike": { "name": "Sulphur Tuft", "on": 1 },
     "traits": {},
-    "rule": "Slow. Stays two growth phases at C before it pins. A steady earner once it's going.",
+    "rule": "A steady earner on logs in spring and fall: plant it early in the season and it fruits before the season ends.",
     "blurb": "Speckled brown caps that crack like bread crust.",
     "art": { "shape": "cap", "cap": "#7A4A2B", "shade": "#4F2E1A", "gill": "#EDE2CC", "stem": "#D8C7A8" }
   },
   {
     "id": "lionsmane", "name": "Lion's Mane", "latin": "Hericium erinaceus", "kind": "cultivated", "value": 2,
-    "substrates": ["log"], "seasons": ["fall"], "growth": "medium",
+    "substrates": ["log"], "seasons": ["summer", "fall"], "growth": "medium",
     "group": "Icicle tooth", "lookalike": { "name": "Coral Tooth", "on": 1 },
     "traits": { "needsShade": true },
     "rule": "Needs shade. Only grows on a square beside a Tree.",
@@ -46,19 +46,19 @@
   },
   {
     "id": "reishi", "name": "Reishi", "latin": "Ganoderma lucidum", "kind": "cultivated", "value": 4,
-    "substrates": ["log"], "seasons": ["summer"], "growth": "verySlow",
+    "substrates": ["log"], "seasons": ["summer", "fall"], "growth": "slow",
     "group": "Lacquered shelf", "lookalike": { "name": "Artist's Conk", "on": 1 },
     "traits": {},
-    "rule": "Very slow. Two growth phases at C and two at P. Plant it early or not at all.",
+    "rule": "Slow. Two growth phases at C. Plant it by midsummer and it fruits by fall.",
     "blurb": "A glossy kidney of red-brown lacquer.",
     "art": { "shape": "kidney", "cap": "#9B3A1E", "shade": "#5C1E10", "gill": "#E9C47A", "stem": "#6E2A15" }
   },
   {
     "id": "enoki", "name": "Enoki", "latin": "Flammulina velutipes", "kind": "cultivated", "value": 2,
-    "substrates": ["log"], "seasons": ["winter"], "growth": "medium",
+    "substrates": ["log"], "seasons": ["fall", "winter"], "growth": "medium",
     "group": "Velvet stem", "lookalike": { "name": "Funeral Bell", "on": 1 },
     "traits": { "coldHardy": true },
-    "rule": "The only species that grows in winter, and it ignores Cold Snap.",
+    "rule": "Grows through fall and winter, and ignores Cold Snap.",
     "blurb": "Wild velvet shank: honey caps on dark velvet stems in the snow.",
     "art": { "shape": "cluster", "cap": "#D9963C", "shade": "#A9661F", "gill": "#F3E1BC", "stem": "#5A3A24" }
   },
@@ -88,5 +88,41 @@
     "rule": "Can't be planted. Old-growth only, fall only. The most valuable thing in the forest.",
     "blurb": "A bread-bun cap on a barrel stem, deep under the old pines.",
     "art": { "shape": "bolete", "cap": "#8A5A2E", "shade": "#5E3A1B", "gill": "#E8D9A8", "stem": "#EADFC6" }
+  },
+  {
+    "id": "blacktrumpet", "name": "Black Trumpet", "latin": "Craterellus cornucopioides", "kind": "wild", "value": 5,
+    "substrates": [], "seasons": ["summer", "fall"], "growth": "none",
+    "group": "Black horn", "lookalike": { "name": "Devil's Urn", "on": 1 },
+    "traits": {},
+    "rule": "Can't be planted. A deep find in the Old-growth, and in the Hollow. Summer and fall.",
+    "blurb": "Ash-grey trumpets that vanish into the leaf litter.",
+    "art": { "shape": "funnel", "cap": "#3B3533", "shade": "#1E1A19", "gill": "#6B625C", "stem": "#4A423E" }
+  },
+  {
+    "id": "hen", "name": "Hen of the Woods", "latin": "Grifola frondosa", "kind": "wild", "value": 5,
+    "substrates": [], "seasons": ["fall"], "growth": "none",
+    "group": "Grey rosette", "lookalike": { "name": "Black-staining Polypore", "on": 1 },
+    "traits": {},
+    "rule": "Can't be planted. A deep find in the Mixed Woods, and in the Hollow. Fall only.",
+    "blurb": "A ruffled grey hen roosting at the foot of an oak.",
+    "art": { "shape": "shelf", "cap": "#8E8270", "shade": "#5F5546", "gill": "#E6DDCB", "stem": "#CFC3AA", "fringe": true }
+  },
+  {
+    "id": "blewit", "name": "Blewit", "latin": "Clitocybe nuda", "kind": "wild", "value": 4,
+    "substrates": [], "seasons": ["fall", "winter"], "growth": "none",
+    "group": "Lilac cap", "lookalike": { "name": "Lilac Fibrecap", "on": 2 },
+    "traits": {},
+    "rule": "Can't be planted. A deep find in the Meadow, and in the Hollow. Fall and winter.",
+    "blurb": "A cold-weather cap in lilac and violet, smelling of orange juice.",
+    "art": { "shape": "cap", "cap": "#9B86B4", "shade": "#6A5486", "gill": "#C9B8DC", "stem": "#B9A8CF" }
+  },
+  {
+    "id": "truffle", "name": "Truffle", "latin": "Tuber melanosporum", "kind": "wild", "value": 7,
+    "substrates": [], "seasons": ["winter"], "growth": "none",
+    "group": "Buried knob", "lookalike": { "name": "Deer Truffle", "on": 2 },
+    "traits": {},
+    "rule": "Can't be planted. Only in the Hollow, only in winter. Worth more than anything else you can find.",
+    "blurb": "A warty black knob under the roots, and a smell you can't forget.",
+    "art": { "shape": "ball", "cap": "#3A2C26", "shade": "#1F1612", "gill": "#3A2C26", "stem": "#3A2C26" }
   }
 ]

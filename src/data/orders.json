@@ -8,5 +8,11 @@
   { "id": "o-chant2", "label": "2 Chanterelle", "points": 6, "need": { "kind": "species", "items": { "chanterelle": 2 } } },
   { "id": "o-hyb2", "label": "Any 2 hybrid mushrooms", "points": 6, "need": { "kind": "hybrids", "count": 2 } },
   { "id": "o-four", "label": "4 different species, 1 each", "points": 7, "need": { "kind": "distinct", "count": 4 } },
-  { "id": "o-lacquer", "label": "1 Lacquer Cap", "points": 7, "need": { "kind": "species", "items": { "lacquercap": 1 } } }
+  { "id": "o-lacquer", "label": "1 Lacquer Cap", "points": 7, "need": { "kind": "species", "items": { "lacquercap": 1 } } },
+  { "id": "o-frost2", "label": "2 Frost Oyster", "points": 6, "need": { "kind": "species", "items": { "frostoyster": 2 } } },
+  { "id": "o-porcini2", "label": "2 Porcini", "points": 7, "need": { "kind": "species", "items": { "porcini": 2 } }, "requires": "lantern" },
+  { "id": "o-morel2", "label": "2 Morel", "points": 6, "need": { "kind": "species", "items": { "morel": 2 } }, "requires": "trailmap" },
+  { "id": "o-trumpet", "label": "1 Black Trumpet + 1 Lion's Mane", "points": 7, "need": { "kind": "species", "items": { "blacktrumpet": 1, "lionsmane": 1 } }, "requires": "lantern" },
+  { "id": "o-hen", "label": "1 Hen of the Woods + 1 Shiitake", "points": 7, "need": { "kind": "species", "items": { "hen": 1, "shiitake": 1 } } },
+  { "id": "o-truffle", "label": "1 Truffle + 1 Blewit", "points": 9, "need": { "kind": "species", "items": { "truffle": 1, "blewit": 1 } }, "requires": "compass" }
 ]

@@ -1,4 +1,4 @@
-import { crossKey, hybridFor, inSeason, inStream, isShaded, neighbors, seasonOf } from './board';
+import { crossKey, hybridFor, inSeason, isShaded, neighbors, seasonOf } from './board';
 import type { Rng } from './rng';
 import type { Content, GameState, GrowthRate, NightEvent, NightReport, Square, Stage } from './types';
 
@@ -39,11 +39,12 @@ function advance(sq: Square, rate: GrowthRate): Stage | null {
  */
 export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
   const events: NightEvent[] = [];
+  const mealWater = !!s.meal && c.recipes.find((r) => r.id === s.meal)?.effect.type === 'water';
   const grid = s.grid;
   const season = seasonOf(s.round, c);
   const rain = s.weather === 'rain';
-  const watered = s.watered || rain;
-  const stalled = s.weather === 'dryspell' && !s.watered;
+  const watered = s.watered || rain || s.gear.includes('dripline') || mealWater;
+  const stalled = s.weather === 'dryspell' && !watered;
   const cold = s.weather === 'coldsnap';
   const beds = () => grid.map((_, i) => i).filter((i) => grid[i].species);
   const def = (i: number) => c.species[grid[i].species!];
@@ -51,7 +52,7 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
   // 1. Dry
   if (!watered) {
     for (const i of beds()) {
-      if (inStream(i, s.size, c)) continue;
+      if (grid[i].damp) continue;
       const sq = grid[i];
       sq.dry += 1;
       events.push({ type: 'dry', square: i });

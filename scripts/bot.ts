@@ -4,7 +4,8 @@ import {
   emptyGround,
   heirloomChoices,
   heirloomSlots,
-  inStream,
+  isDamp,
+  isWatered,
   levelFor,
   newGame,
   orderPayment,
@@ -93,8 +94,8 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
         act({ type: 'harvest' });
         continue;
       }
-      const thirsty = s.grid.filter((sq, i) => sq.species && !inStream(i, s.size)).length;
-      if (!s.watered && s.weather !== 'rain' && (s.weather === 'dryspell' ? s.grid.some((q) => q.species) : thirsty >= 2)) {
+      const thirsty = s.grid.filter((sq, i) => sq.species && !isDamp(s, i)).length;
+      if (!isWatered(s) && (s.weather === 'dryspell' ? s.grid.some((q) => q.species) : thirsty >= 2)) {
         act({ type: 'water' });
         continue;
       }
@@ -109,7 +110,7 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
         continue;
       }
       const fillable = s.orders.visible.find((o) => orderPayment(s.storage, content.orders.find((x) => x.id === o)!));
-      const wanted = ['biggerbasket', 'knife', 'lantern', 'dehydrator', 'fieldguide', 'growtent', 'trailmap'];
+      const wanted = ['biggerbasket', 'knife', 'lantern', 'dehydrator', 'fieldguide', 'growtent', 'trailmap', 'blightspray', 'dripline', 'compass'];
       const affordable = wanted.find(
         (g) => !s.gear.includes(g) && s.perks.shop.includes(g) && s.coins >= content.gear.find((x) => x.id === g)!.cost,
       );
@@ -154,7 +155,7 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
   return s;
 }
 
-const HEIRLOOM_PREFERENCE = ['biggerbasket', 'knife', 'lantern', 'fieldguide', 'dehydrator', 'growtent', 'trailmap'];
+const HEIRLOOM_PREFERENCE = ['biggerbasket', 'knife', 'lantern', 'dripline', 'fieldguide', 'dehydrator', 'growtent', 'trailmap', 'blightspray', 'compass'];
 
 /** Plays a story campaign of several years, carrying the journal (and so the progression) forward. */
 export function playCampaign(years: number, seed: string, journal: Journal): { journal: Journal; games: GameState[] } {

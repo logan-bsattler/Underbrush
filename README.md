@@ -36,7 +36,7 @@ npm run sim -- 100 campaign  # ten-year campaigns with progression: level and sc
 
 | Path | What lives there |
 | --- | --- |
-| `src/data/*.json` | All content and balance: species, hybrids, zones and their decks, gear, weather, orders, rules and tiers |
+| `src/data/*.json` | All content and balance: species, hybrids, zones with their decks and deep finds, gear, weather, orders, recipes, starting boards, rules and tiers |
 | `src/data/progression.json` | Homestead levels, their unlocks, and species mastery thresholds |
 | `src/core/` | The rules engine. Pure, deterministic (seeded RNG stored in the save), no DOM. `progression.ts` turns the journal into a year's perks |
 | `src/ui/` | Preact UI: farm, forage trip, identify reveal, market, overnight report, journal |

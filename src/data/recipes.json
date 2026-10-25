@@ -1,0 +1,9 @@
+[
+  { "id": "reishitea", "name": "Reishi Tea", "needs": { "reishi": 1 }, "effect": { "type": "actions", "amount": 1 }, "rule": "A bitter, bracing cup: 1 more action this month." },
+  { "id": "lionsbroth", "name": "Lion's Mane Broth", "needs": { "lionsmane": 1 }, "effect": { "type": "identify" }, "rule": "A clear head: this month, lookalikes fool you on one fewer number." },
+  { "id": "trailtoast", "name": "Chanterelle Toast", "needs": { "chanterelle": 1 }, "effect": { "type": "hazards", "amount": 1 }, "rule": "Trail food: this month a trip only busts on its third hazard." },
+  { "id": "oysterfry", "name": "Oyster Fry", "needs": { "oyster": 2 }, "effect": { "type": "basket", "amount": 2 }, "rule": "A packed lunch frees up room: your basket holds 2 more this month." },
+  { "id": "risotto", "name": "Wine Cap Risotto", "needs": { "winecap": 2 }, "effect": { "type": "market", "amount": 1 }, "rule": "The village can't stop talking about it: every sale is worth 1 more coin this month." },
+  { "id": "supper", "name": "Puffball Supper", "needs": { "puffball": 2 }, "effect": { "type": "water" }, "rule": "The neighbors come to eat and water your beds on the way out: every bed counts as watered tonight." },
+  { "id": "truffle", "name": "Truffle Shavings", "needs": { "truffle": 1 }, "effect": { "type": "points", "amount": 3 }, "rule": "The festival judges hear about it: 3 festival points." }
+]

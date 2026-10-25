@@ -57,7 +57,7 @@ export function outcomeText(o: DrawOutcome, card: Card) {
     case 'hazardIgnored':
       return 'Your knife gets you through it. No harm done.';
     case 'bust':
-      return 'Bust! You scramble home with only your first two finds.';
+      return `Bust! You scramble home with only your first ${content.rules.bustKeep} finds.`;
   }
 }
 
@@ -93,6 +93,10 @@ export function eventText(e: NightEvent, grid: { species: string | null }[]): st
       return 'A windfall log landed in your shed.';
     case 'compost':
       return `The compost pile rotted down into ${e.tiles === 1 ? 'a Compost tile' : `${e.tiles} Compost tiles`} in your shed.`;
+    case 'autoHarvest':
+      return `Your apprentice picked ${Object.entries(e.gained)
+        .map(([id, n]) => `${n} ${name(id)}`)
+        .join(', ')} at first light.`;
     default:
       return null;
   }

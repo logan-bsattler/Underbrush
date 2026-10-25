@@ -1,18 +1,23 @@
-import { useEffect, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import {
+  boardsFor,
+  boardUnlockLevel,
   content,
   heirloomChoices,
   heirloomSlots,
   levelFor,
   masteryLevel,
+  newGame,
   nextLevel,
   perksFor,
+  standardPerks,
   type Journal,
   type LevelDef,
   type Unlock,
   type YearRecord,
 } from '../core';
 import { Icon, Mushroom, Unknown } from './art';
+import { Farm } from './Game';
 import type { Store } from './store';
 import { masteryName, name } from './text';
 
@@ -32,6 +37,10 @@ export function unlockText(u: Unlock): string {
       return `Start each year with ${u.amount} more coins`;
     case 'actions':
       return `${content.rules.actionsPerRound + u.amount} actions a month`;
+    case 'board':
+      return `The ${content.boards.find((b) => b.id === u.id)?.name ?? u.id} farm to start a year on`;
+    case 'autoHarvest':
+      return 'Fruiting beds are picked into storage every morning';
   }
 }
 
@@ -164,12 +173,18 @@ export function Almanac({ store, onBack }: { store: Store; onBack: () => void })
   );
 }
 
-export function Pack({ store, onStart, onBack }: { store: Store; onStart: (heirlooms: string[]) => void; onBack: () => void }) {
+export function Pack({ store, onStart, onBack }: { store: Store; onStart: (heirlooms: string[], board: string) => void; onBack: () => void }) {
   const j = store.journal;
   const st = standing(j);
   const slots = heirloomSlots(st.level.level);
   const choices = heirloomChoices(j);
+  const boards = boardsFor(j);
   const [picked, setPicked] = useState<string[]>(() => choices.slice(0, slots));
+  const [board, setBoard] = useState(() => {
+    // Start on the board of the last story year, if it's still open to you.
+    const last = store.game?.mode === 'story' ? store.game.board : null;
+    return last && boards.includes(last) ? last : boards[0];
+  });
   const perks = perksFor(j, picked);
   const year = j.years.filter((y) => y.mode === 'story').length + 1;
   const toggle = (id: string) =>
@@ -183,41 +198,83 @@ export function Pack({ store, onStart, onBack }: { store: Store; onStart: (heirl
         </button>
         <h1>Year {year}</h1>
       </header>
-      <p>
-        Pack for the year. As a {st.level.title}, you can carry {slots} heirloom{slots === 1 ? '' : 's'} from earlier years; you'll own{' '}
-        {slots === 1 ? 'it' : 'them'} from the first month.
-      </p>
-      <div class="heirlooms" role="group" aria-label="Heirlooms">
-        {choices.map((id) => {
-          const g = content.gear.find((x) => x.id === id)!;
-          const on = picked.includes(id);
+
+      <h2>Choose your land</h2>
+      <div class="boards" role="radiogroup" aria-label="Farm">
+        {content.boards.map((b) => {
+          const open = boards.includes(b.id);
+          const at = open ? null : boardUnlockLevel(b.id);
           return (
-            <button class={`heirloom ${on ? 'on' : ''}`} aria-pressed={on} onClick={() => toggle(id)}>
-              <span class="hl-check" aria-hidden="true">
-                {on ? '✓' : ''}
-              </span>
-              <b>{g.name}</b>
-              <small>{g.rule}</small>
-            </button>
+            // A div, not a button: the preview inside is a farm grid made of buttons.
+            <div
+              class={`board-card ${board === b.id ? 'on' : ''} ${open ? '' : 'locked'}`}
+              role="radio"
+              tabIndex={open ? 0 : -1}
+              aria-checked={board === b.id}
+              aria-disabled={!open}
+              onClick={() => open && setBoard(b.id)}
+              onKeyDown={(e) => open && (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), setBoard(b.id))}
+            >
+              <BoardPreview id={b.id} size={perks.size} />
+              <b>{b.name}</b>
+              <small>{open ? b.blurb : at ? `Opens at ${at.title} (level ${at.level}).` : 'Not open yet.'}</small>
+            </div>
           );
         })}
       </div>
-      <p class="small muted">
-        {picked.length} of {slots} packed
-      </p>
+
+      {slots > 0 && choices.length > 0 && (
+        <>
+          <h2>Pack heirlooms</h2>
+          <p>
+            As a {st.level.title}, you can carry {slots} heirloom{slots === 1 ? '' : 's'} from earlier years; you'll own{' '}
+            {slots === 1 ? 'it' : 'them'} from the first month.
+          </p>
+          <div class="heirlooms" role="group" aria-label="Heirlooms">
+            {choices.map((id) => {
+              const g = content.gear.find((x) => x.id === id)!;
+              const on = picked.includes(id);
+              return (
+                <button class={`heirloom ${on ? 'on' : ''}`} aria-pressed={on} onClick={() => toggle(id)}>
+                  <span class="hl-check" aria-hidden="true">
+                    {on ? '✓' : ''}
+                  </span>
+                  <b>{g.name}</b>
+                  <small>{g.rule}</small>
+                </button>
+              );
+            })}
+          </div>
+          <p class="small muted">
+            {picked.length} of {slots} packed
+          </p>
+        </>
+      )}
       <h2>This year</h2>
       <ul class="this-year">
         <li>
-          {perks.size}×{perks.size} farm
+          {perks.size}×{perks.size} farm on {content.boards.find((b) => b.id === board)?.name}
         </li>
         <li>{content.rules.actionsPerRound + perks.bonusActions} actions a month</li>
         <li>{content.rules.startCoins + perks.bonusCoins} coins to start</li>
         <li>Shop stocks {perks.shop.map(gearName).join(', ')}</li>
+        {perks.spawn.length > 0 && <li>Spawn of {perks.spawn.map(name).join(', ')} at the market</li>}
+        {perks.autoHarvest && <li>Ripe beds are picked every morning</li>}
       </ul>
-      <button class="btn primary big wide" onClick={() => onStart(picked)}>
+      <button class="btn primary big wide" onClick={() => onStart(picked, board)}>
         Start year {year}
       </button>
     </div>
+  );
+}
+
+/** A small picture of a board's starting farm. */
+export function BoardPreview({ id, size = 4 }: { id: string; size?: number }) {
+  const g = useMemo(() => newGame({ seed: `preview-${id}`, board: id, perks: { ...standardPerks(), size } }), [id, size]);
+  return (
+    <span class="board-preview" aria-hidden="true">
+      <Farm g={g} small />
+    </span>
   );
 }
 

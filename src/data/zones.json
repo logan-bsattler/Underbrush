@@ -13,7 +13,8 @@
       { "card": { "type": "hazard", "name": "Ticks" }, "copies": 2 },
       { "card": { "type": "hazard", "name": "Sudden Rain" }, "copies": 2 },
       { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }
-    ]
+    ],
+    "deep": [{ "type": "specimen", "species": "blewit" }, { "type": "coins", "amount": 5 }]
   },
   {
     "id": "mixedwoods", "name": "Mixed Woods", "unlock": null, "hazard": "Medium",
@@ -31,7 +32,8 @@
       { "card": { "type": "hazard", "name": "Ticks" }, "copies": 2 },
       { "card": { "type": "hazard", "name": "Sudden Rain" }, "copies": 2 },
       { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }
-    ]
+    ],
+    "deep": [{ "type": "specimen", "species": "hen" }, { "type": "coins", "amount": 5 }]
   },
   {
     "id": "oldgrowth", "name": "Old-growth", "unlock": "lantern", "hazard": "Medium",
@@ -47,7 +49,8 @@
       { "card": { "type": "hazard", "name": "Ticks" }, "copies": 2 },
       { "card": { "type": "hazard", "name": "Deadfall" }, "copies": 2 },
       { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }
-    ]
+    ],
+    "deep": [{ "type": "specimen", "species": "blacktrumpet" }, { "type": "coins", "amount": 6 }]
   },
   {
     "id": "burnscar", "name": "Burn Scar", "unlock": "trailmap", "seasons": ["spring"], "hazard": "High",
@@ -60,6 +63,24 @@
       { "card": { "type": "hazard", "name": "Ticks" }, "copies": 3 },
       { "card": { "type": "hazard", "name": "Ash Slide" }, "copies": 3 },
       { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 4 }
-    ]
+    ],
+    "deep": [{ "type": "coins", "amount": 6 }]
+  },
+  {
+    "id": "hollow", "name": "The Hollow", "unlock": "compass", "seasons": ["fall", "winter"], "hazard": "High",
+    "blurb": "A fold of ancient forest past the old-growth. Open in fall and winter, when the deep-woods mushrooms come up.",
+    "color": "#4E4A6B",
+    "deck": [
+      { "card": { "type": "specimen", "species": "blewit" }, "copies": 4 },
+      { "card": { "type": "specimen", "species": "truffle" }, "copies": 3 },
+      { "card": { "type": "specimen", "species": "hen" }, "copies": 3 },
+      { "card": { "type": "specimen", "species": "blacktrumpet" }, "copies": 2 },
+      { "card": { "type": "substrate", "substrate": "log" }, "copies": 2 },
+      { "card": { "type": "coins", "amount": 4 }, "copies": 2 },
+      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 2 },
+      { "card": { "type": "hazard", "name": "Bog" }, "copies": 3 },
+      { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }
+    ],
+    "deep": [{ "type": "specimen", "species": "truffle" }, { "type": "coins", "amount": 8 }]
   }
 ]

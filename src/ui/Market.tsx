@@ -1,10 +1,10 @@
-import { compostSaleValue, content, gearUnlockLevel, orderPayment, saleValue, type GameState } from '../core';
+import { basketCapacity, compostSaleValue, content, gearUnlockLevel, orderPayment, saleValue, spawnCost, spawnStock, swapCost, type GameState } from '../core';
 import { Icon, Mushroom, SubstrateArt } from './art';
 import { SheetFrame } from './Game';
 import type { Store } from './store';
 import { name } from './text';
 
-export function Market({ g, store, onClose }: { g: GameState; store: Store; onClose: () => void }) {
+export function Market({ g, store, onClose, onPantry }: { g: GameState; store: Store; onClose: () => void; onPantry: () => void }) {
   const close = () => {
     if (g.market) store.act({ type: 'leaveMarket' });
     onClose();
@@ -13,6 +13,9 @@ export function Market({ g, store, onClose }: { g: GameState; store: Store; onCl
   const compost = g.shed.filter((x) => x === 'compost').length;
   const canTrade = !!g.market || (g.finale ? !g.finale.marketed : g.actionsLeft > 0);
   const lastMonth = g.round % content.rules.roundsPerSeason === 0 && g.round < content.rules.rounds;
+  const swap = swapCost(g);
+  const spawn = spawnStock(g);
+  const roomInBasket = g.basket.length < basketCapacity(g);
 
   return (
     <SheetFrame title="Village market" onClose={close} tall>
@@ -41,18 +44,34 @@ export function Market({ g, store, onClose }: { g: GameState; store: Store; onCl
                 <span class="pts">{o.points} pts</span>
               </div>
               {pay && <div class="small muted">Uses {Object.entries(pay).map(([id, n]) => `${n} ${name(id)}`).join(', ')}</div>}
-              <button class="btn small primary" disabled={!!blocked} onClick={() => store.act({ type: 'fillOrder', order: id })}>
-                Deliver
-              </button>
+              <div class="order-card-actions">
+                <button class="btn small primary" disabled={!!blocked} onClick={() => store.act({ type: 'fillOrder', order: id })}>
+                  Deliver
+                </button>
+                <button
+                  class="btn small ghost"
+                  disabled={!canTrade || g.coins < swap || g.orders.deck.length === 0}
+                  onClick={() => store.act({ type: 'swapOrder', order: id })}
+                  aria-label={`Swap this order for the next one, ${swap} coins`}
+                >
+                  Swap · <Icon name="coin" size={13} /> {swap}
+                </button>
+              </div>
             </div>
           );
         })}
       </div>
       <p class="small muted">
-        {g.orders.filled.length} delivered · {g.orderPoints} points · {g.orders.deck.length} more orders waiting
+        {g.orders.filled.length} delivered · {g.orderPoints} points · {g.orders.deck.length} more orders waiting. Swapping sends an order to
+        the bottom of the pile; each swap this year costs a coin more.
       </p>
 
-      <h3>Your storage</h3>
+      <h3>
+        Your storage
+        <button class="btn small ghost inline-link" onClick={onPantry}>
+          <Icon name="pantry" size={16} /> Cook or save spawn
+        </button>
+      </h3>
       {lastMonth && !g.gear.includes('dehydrator') && stored.length > 0 && (
         <p class="note warn">Last month of the season: anything still in storage spoils tonight.</p>
       )}
@@ -103,6 +122,40 @@ export function Market({ g, store, onClose }: { g: GameState; store: Store; onCl
               )}
             </li>
           </ul>
+        </>
+      )}
+
+      {!g.finale && (
+        <>
+          <h3>Spawn</h3>
+          {spawn.length === 0 ? (
+            <p class="small muted">Identify a cultivated mushroom and the seed merchant will stock its spawn here.</p>
+          ) : (
+            <>
+              <ul class="storage">
+                {spawn.map((id) => {
+                  const cost = spawnCost(id);
+                  return (
+                    <li>
+                      <Mushroom species={id} size={40} />
+                      <span class="grow">
+                        <b>{name(id)} spawn</b>
+                        <small class="muted"> · ready to plant</small>
+                      </span>
+                      <button
+                        class="btn small"
+                        disabled={!canTrade || g.coins < cost || !roomInBasket}
+                        onClick={() => store.act({ type: 'buySpawn', species: id })}
+                      >
+                        <Icon name="coin" size={14} /> {cost}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p class="small muted">{roomInBasket ? 'Spawn goes into your basket, already identified.' : 'Your basket is full.'}</p>
+            </>
+          )}
         </>
       )}
 

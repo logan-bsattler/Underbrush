@@ -1,5 +1,5 @@
 import { content as defaultContent } from './content';
-import type { Content, Season, Square } from './types';
+import type { BoardDef, Content, Season, Square } from './types';
 
 export function seasonOf(round: number, c: Content = defaultContent): Season {
   const r = Math.min(Math.max(round, 1), c.rules.rounds);
@@ -31,18 +31,21 @@ export function isShaded(grid: Square[], index: number, size: number): boolean {
   return neighbors(index, size).some((i) => grid[i].tree);
 }
 
-export function inStream(index: number, size: number, c: Content = defaultContent): boolean {
-  return index % size === c.rules.streamColumn;
+export function boardDef(id: string, c: Content = defaultContent): BoardDef {
+  return c.boards.find((b) => b.id === id) ?? c.boards[0];
 }
 
-/** Tree squares and starting beds for a farm of this size; larger farms extend the 4×4 layout right and down. */
-export function farmLayout(size: number, c: Content = defaultContent) {
+/** Trees, damp squares and starting beds for a board on a farm of this size; larger farms extend the 4×4 layout right and down. */
+export function farmLayout(boardId: string, size: number, c: Content = defaultContent) {
+  const board = boardDef(boardId, c);
   const base = c.rules.gridSize;
   const at = (i: number) => Math.floor(i / base) * size + (i % base);
-  const trees = c.rules.trees.map(at);
-  if (size === c.rules.largeFarm.size) for (const [r, col] of c.rules.largeFarm.extraTrees) trees.push(r * size + col);
-  const start = c.rules.start.squares.map((sq) => ({ ...sq, index: at(sq.index) }));
-  return { trees, start };
+  const trees = board.trees.map(at);
+  if (size > base) for (const [r, col] of board.extraTrees) trees.push(r * size + col);
+  const damp = board.springs.map(at);
+  if (board.stream) for (let r = 0; r < size; r++) damp.push(r * size);
+  const start = board.start.map((sq) => ({ ...sq, index: at(sq.index) }));
+  return { trees, damp, start };
 }
 
 export function hybridFor(a: string, b: string, c: Content = defaultContent): string | null {

@@ -35,7 +35,7 @@ function forageOne(s: GameState, zone: string, card: Card) {
 
 describe('homestead levels', () => {
   it('maps renown to levels', () => {
-    expect([0, 14, 15, 39, 40, 70, 209, 210, 999].map((r) => levelFor(r).level)).toEqual([1, 1, 2, 2, 3, 4, 6, 7, 7]);
+    expect([0, 14, 15, 39, 40, 70, 209, 210, 280, 370, 479, 480, 9999].map((r) => levelFor(r).level)).toEqual([1, 1, 2, 2, 3, 4, 6, 7, 8, 9, 9, 10, 10]);
   });
 
   it('starts a new homestead with the basic kit on a 4×4 farm', () => {
@@ -53,7 +53,11 @@ describe('homestead levels', () => {
     const elder = perksFor(journalAt(210, owned), ['knife', 'biggerbasket', 'lantern', 'dehydrator']);
     expect(elder).toMatchObject({ size: 5, bonusActions: 1 });
     expect(elder.heirlooms).toHaveLength(3);
-    expect(elder.shop).toHaveLength(content.gear.length);
+    expect(elder.shop).toHaveLength(content.gear.length - 1);
+    expect(elder.autoHarvest).toBe(false);
+    const legend = perksFor(journalAt(480, owned), []);
+    expect(legend.shop).toHaveLength(content.gear.length);
+    expect(legend.autoHarvest).toBe(true);
   });
 
   it('only offers heirlooms you have owned that the shop stocks', () => {

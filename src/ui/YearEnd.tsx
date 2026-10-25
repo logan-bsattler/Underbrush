@@ -1,7 +1,9 @@
+import { useState } from 'preact/hooks';
 import { content, score } from '../core';
-import { Mushroom } from './art';
+import { Icon, Mushroom } from './art';
 import { RenownPanel } from './Progress';
 import type { Store } from './store';
+import { shareResult, shareText } from './share';
 import { name } from './text';
 
 export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: () => void; onNewYear: () => void }) {
@@ -12,10 +14,16 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
   const idle = g.stats.idleActions.reduce((a, b) => a + b, 0);
   const fresh = store.freshThisYear;
   const record = store.journal.years.find((y) => y.seed === g.seed);
+  const [shared, setShared] = useState<null | 'shared' | 'copied' | 'failed'>(null);
+  const text = shareText(g, `${location.origin}${location.pathname}`);
+  const share = async () => setShared(await shareResult(text));
 
   return (
     <div class="screen festival paper">
-      <div class="eyebrow">The Harvest Festival · {g.mode === 'daily' ? 'Daily year' : 'Story year'}</div>
+      <div class="eyebrow">
+        The Harvest Festival · {g.mode === 'daily' ? `Daily year ${g.seed.replace(/^daily-/, '')}` : 'Story year'} ·{' '}
+        {content.boards.find((b) => b.id === g.board)?.name}
+      </div>
       <h1>{sc.tier ? sc.tier.name : 'A quiet year'}</h1>
       <div class={`medal ${sc.tier?.id ?? 'none'}`}>
         <Mushroom species="chanterelle" size={120} />
@@ -24,6 +32,15 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
       <p class="center">
         {next ? `${next.min - sc.total} more points would have earned ${next.name}.` : 'The village will talk about this festival for years.'}
       </p>
+
+      <div class="share">
+        <button class={`btn ${g.mode === 'daily' ? 'primary' : ''}`} onClick={share}>
+          <Icon name="share" size={18} /> {g.mode === 'daily' ? "Share today's result" : 'Share this year'}
+        </button>
+        {shared === 'copied' && <span class="small muted">Copied. Paste it anywhere.</span>}
+        {g.mode === 'daily' && !shared && <span class="small muted">Everyone played the same farm, weather and decks today.</span>}
+      </div>
+      {shared === 'failed' && <textarea class="share-text" readOnly rows={8} value={text} onFocus={(e) => (e.target as HTMLTextAreaElement).select()} />}
 
       {record && <RenownPanel record={record} journal={store.journal} />}
 
@@ -47,6 +64,12 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
             </td>
             <td>{sc.coins}</td>
           </tr>
+          {sc.feast > 0 && (
+            <tr>
+              <td>Dishes the judges remember</td>
+              <td>{sc.feast}</td>
+            </tr>
+          )}
           <tr class="total">
             <td>Total</td>
             <td>{sc.total}</td>

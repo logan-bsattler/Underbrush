@@ -12,8 +12,10 @@ import type {
   IdentifyResult,
   Content,
   GameState,
+  MealEffect,
   OrderDef,
   Perks,
+  RecipeDef,
   Square,
   Substrate,
   ZoneDef,
@@ -27,9 +29,30 @@ function fail(message: string): never {
 
 // ── Queries ──────────────────────────────────────────────────────────────
 
+/** The effect of the dish eaten this month, if any. */
+export function mealEffect(s: GameState, c: Content = defaultContent): MealEffect | null {
+  return (s.meal && c.recipes.find((r) => r.id === s.meal)?.effect) || null;
+}
+
+/** How much this month's dish adds to one kind of effect (0 when it's some other dish, or none). */
+function mealBonus(s: GameState, type: 'actions' | 'hazards' | 'basket' | 'market', c: Content): number {
+  const e = mealEffect(s, c);
+  return e && e.type === type ? e.amount : 0;
+}
+
 export function basketCapacity(s: GameState, c: Content = defaultContent): number {
   const base = s.gear.includes('biggerbasket') ? c.rules.biggerBasketSize : c.rules.basketSize;
-  return base + (s.weather === 'goodseason' ? 1 : 0);
+  return base + (s.weather === 'goodseason' ? 1 : 0) + mealBonus(s, 'basket', c);
+}
+
+/** Hazards that bust a forage trip this month. */
+export function bustAt(s: GameState, c: Content = defaultContent): number {
+  return c.rules.bustAt + mealBonus(s, 'hazards', c);
+}
+
+/** Beds count as watered tonight: by hand, by rain, by a Drip Line, or by the neighbors after supper. */
+export function isWatered(s: GameState, c: Content = defaultContent): boolean {
+  return s.watered || s.weather === 'rain' || s.gear.includes('dripline') || mealEffect(s, c)?.type === 'water';
 }
 
 export function masteryOf(s: GameState, speciesId: string): number {
@@ -39,11 +62,31 @@ export function masteryOf(s: GameState, speciesId: string): number {
 /** The highest identification roll that still turns out to be a lookalike; Familiar species fool you on one fewer. */
 export function lookalikeOn(s: GameState, speciesId: string, c: Content = defaultContent): number {
   const on = c.species[speciesId].lookalike?.on ?? 1;
-  return Math.max(0, on - (masteryOf(s, speciesId) >= 1 ? 1 : 0));
+  const sharp = mealEffect(s, c)?.type === 'identify' ? 1 : 0;
+  return Math.max(0, on - (masteryOf(s, speciesId) >= 1 ? 1 : 0) - sharp);
 }
 
 export function saleValue(s: GameState, speciesId: string, c: Content = defaultContent): number {
-  return c.species[speciesId].value + (s.weather === 'marketday' ? 1 : 0) + (masteryOf(s, speciesId) >= 3 ? 1 : 0);
+  return c.species[speciesId].value + (s.weather === 'marketday' ? 1 : 0) + (masteryOf(s, speciesId) >= 3 ? 1 : 0) + mealBonus(s, 'market', c);
+}
+
+/** Coins to swap a festival order off the board: dearer with every swap this year. */
+export function swapCost(s: GameState, c: Content = defaultContent): number {
+  return c.rules.swapCost + s.orderSwaps;
+}
+
+export function spawnCost(speciesId: string, c: Content = defaultContent): number {
+  return c.species[speciesId].value + c.rules.spawnMarkup;
+}
+
+/** Cultivated species the market sells spawn of: any in your field journal, or identified this year. */
+export function spawnStock(s: GameState, c: Content = defaultContent): string[] {
+  return c.speciesOrder.filter((id) => c.species[id].kind === 'cultivated' && (s.perks.spawn.includes(id) || s.discovered.includes(id)));
+}
+
+/** Whether storage holds what a dish needs. */
+export function canCook(s: GameState, recipe: RecipeDef): boolean {
+  return Object.entries(recipe.needs).every(([id, n]) => (s.storage[id] ?? 0) >= n);
 }
 
 export function compostSaleValue(s: GameState, c: Content = defaultContent): number {
@@ -52,6 +95,10 @@ export function compostSaleValue(s: GameState, c: Content = defaultContent): num
 
 export function actionsPerMonth(s: GameState, c: Content = defaultContent): number {
   return c.rules.actionsPerRound + s.perks.bonusActions;
+}
+
+export function isDamp(s: GameState, index: number): boolean {
+  return s.grid[index]?.damp ?? false;
 }
 
 export type ZoneStatus = { open: true } | { open: false; reason: string; notStocked?: boolean };
@@ -117,9 +164,10 @@ export function score(s: GameState, c: Content = defaultContent) {
   const hybrids = s.hybridsMade.length * c.rules.hybridPoints;
   const planted = s.planted.length * c.rules.plantedPoints;
   const coins = Math.floor(s.coins / c.rules.coinsPerPoint);
-  const total = s.orderPoints + hybrids + planted + coins;
+  const feast = s.feastPoints;
+  const total = s.orderPoints + hybrids + planted + coins + feast;
   const tier = [...c.rules.tiers].reverse().find((t) => total >= t.min) ?? null;
-  return { orders: s.orderPoints, hybrids, planted, coins, total, tier };
+  return { orders: s.orderPoints, hybrids, planted, coins, feast, total, tier };
 }
 
 // ── Setup ────────────────────────────────────────────────────────────────
@@ -128,11 +176,27 @@ export interface NewGameOptions {
   seed?: string;
   mode?: GameState['mode'];
   perks?: Perks;
+  /** The farm layout; daily years pick one from the date, story years default to the first. */
+  board?: string;
+}
+
+/** The board a daily year is played on: the same for everyone on the same day. */
+export function dailyBoard(seed: string, c: Content = defaultContent): string {
+  return c.boards[hashSeed(`${seed}:board`) % c.boards.length].id;
 }
 
 /** The kit as printed: every gear in the shop, a 4×4 farm, no mastery. Daily years always use this. */
 export function standardPerks(c: Content = defaultContent): Perks {
-  return { shop: c.gear.map((g) => g.id), heirlooms: [], mastery: {}, bonusCoins: 0, bonusActions: 0, size: c.rules.gridSize };
+  return {
+    shop: c.gear.map((g) => g.id),
+    heirlooms: [],
+    mastery: {},
+    bonusCoins: 0,
+    bonusActions: 0,
+    size: c.rules.gridSize,
+    autoHarvest: false,
+    spawn: [],
+  };
 }
 
 /** Brings a save from an older build up to the current shape. */
@@ -140,6 +204,15 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   if (!s.size) s.size = c.rules.gridSize;
   if (!s.perks) s.perks = standardPerks(c);
   s.perks.bonusActions ??= 0;
+  s.perks.autoHarvest ??= false;
+  s.perks.spawn ??= [];
+  // Saves from before boards were all on Streamside, with the stream down the left column.
+  s.board ??= 'streamside';
+  s.grid.forEach((sq, i) => (sq.damp ??= i % s.size === 0));
+  s.orderSwaps ??= 0;
+  s.meal ??= null;
+  s.feastPoints ??= 0;
+  for (const z of c.zones) s.decks[z.id] ??= { draw: new Rng(hashSeed(`${s.seed}:${z.id}`)).shuffle(buildDeck(z)), discard: [] };
   if (!s.stats.identified) s.stats.identified = {};
   s.compostPile ??= [];
   s.finale ??= null;
@@ -173,7 +246,9 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
   const r = c.rules;
   const perks = opts.perks ?? standardPerks(c);
   const size = perks.size;
-  const layout = farmLayout(size, c);
+  const mode = opts.mode ?? 'story';
+  const board = opts.board ?? (mode === 'daily' ? dailyBoard(seed, c) : c.boards[0].id);
+  const layout = farmLayout(board, size, c);
   const grid: Square[] = Array.from({ length: size * size }, (_, i) => ({
     tree: layout.trees.includes(i),
     substrate: null,
@@ -183,6 +258,7 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     dry: 0,
     blight: false,
     tent: false,
+    damp: layout.damp.includes(i),
   }));
   for (const sq of layout.start) {
     grid[sq.index].substrate = sq.substrate;
@@ -193,13 +269,14 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
   }
   const decks: GameState['decks'] = {};
   for (const z of c.zones) decks[z.id] = { draw: rng.shuffle(buildDeck(z)), discard: [] };
-  const orderDeck = rng.shuffle(c.orders.map((o) => o.id));
+  const orderDeck = rng.shuffle(c.orders.filter((o) => !o.requires || perks.shop.includes(o.requires)).map((o) => o.id));
 
   const s: GameState = {
     version: 1,
-    mode: opts.mode ?? 'story',
+    mode,
     seed,
     size,
+    board,
     perks,
     rng: 0,
     round: 1,
@@ -216,6 +293,9 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     decks,
     orders: { visible: orderDeck.slice(0, r.ordersVisible), deck: orderDeck.slice(r.ordersVisible), filled: [] },
     orderPoints: 0,
+    orderSwaps: 0,
+    meal: null,
+    feastPoints: 0,
     planted: [],
     hybridsMade: [],
     discovered: [],
@@ -295,19 +375,29 @@ function takeCard(s: GameState, zone: string, rng: Rng): Card | null {
   return deck.draw.shift() ?? null;
 }
 
-/** Unturned cards go back under the deck, so the deck keeps its mix of finds and hazards. */
+/** Unturned cards go back under the deck, so the deck keeps its mix of finds and hazards. Deep finds were never in it. */
 function returnHidden(s: GameState, trip: ForageTrip) {
-  for (const p of trip.patch) if (!p.flipped) s.decks[trip.zone].draw.push(p.card);
+  for (const p of trip.patch) if (!p.flipped && !p.deep) s.decks[trip.zone].draw.push(p.card);
+}
+
+/** A rare find for a patch this deep: a wild species that is in season now, or a forager's cache of coins. */
+function deepFind(s: GameState, zone: ZoneDef, rng: Rng, c: Content): Card | null {
+  const season = seasonOf(s.round, c);
+  const options = zone.deep.filter((card) => card.type !== 'specimen' || inSeason(card.species, season, c));
+  return options.length ? { ...rng.pick(options) } : null;
 }
 
 function dealPatch(s: GameState, trip: ForageTrip, rng: Rng, c: Content) {
   const n = c.rules.patchSize * c.rules.patchSize;
+  const zone = c.zones.find((z) => z.id === trip.zone)!;
+  const deep = trip.depth >= c.rules.deepAt ? deepFind(s, zone, rng, c) : null;
   trip.patch = [];
-  for (let i = 0; i < n; i++) {
+  for (let i = 0; i < (deep ? n - 1 : n); i++) {
     const card = takeCard(s, trip.zone, rng);
     if (!card) break;
     trip.patch.push({ card, flipped: false, outcome: null });
   }
+  if (deep) trip.patch.splice(Math.floor(rng.next() * (trip.patch.length + 1)), 0, { card: deep, flipped: false, outcome: null, deep: true });
 }
 
 /** Hazards orthogonally beside a patch card: the rustle you notice once you've turned it. */
@@ -384,7 +474,7 @@ export function dispatch(
       if (spot.flipped) fail('You already turned that one.');
       const card = spot.card;
       spot.flipped = true;
-      s.decks[trip.zone].discard.push(card);
+      if (!spot.deep) s.decks[trip.zone].discard.push(card);
       let outcome: ActionResult & { kind: 'draw' } = { kind: 'draw', index: action.index, card, outcome: 'basket' };
       if (card.type === 'specimen') {
         const sp = c.species[card.species];
@@ -421,7 +511,7 @@ export function dispatch(
         } else {
           trip.hazards += 1;
           outcome.outcome = 'hazard';
-          if (trip.hazards >= c.rules.bustAt) {
+          if (trip.hazards >= bustAt(s, c)) {
             outcome.outcome = 'bust';
             trip.status = 'busted';
             s.stats.busts += 1;
@@ -488,7 +578,7 @@ export function dispatch(
       guardFinale(s);
       const spec = specimenFor(s, action.uid);
       if (!spec.identified) fail('Identify it before you plant it.');
-      if (c.species[spec.species].kind !== 'cultivated') fail("That one can't be planted.");
+      if (c.species[spec.species].kind === 'wild') fail("That one can't be planted.");
       if (!canPlantOn(s, spec.species, action.square, c)) fail('It needs an empty square of the right substrate.');
       spendAction(s);
       s.market = null;
@@ -550,8 +640,11 @@ export function dispatch(
       if (!sq?.blight) fail('That bed has no blight.');
       spendAction(s);
       s.market = null;
-      sq.blight = false;
-      sq.dry = 0;
+      // Blight Spray treats every blighted bed in one pass.
+      for (const bed of s.gear.includes('blightspray') ? s.grid.filter((x) => x.blight) : [sq]) {
+        bed.blight = false;
+        bed.dry = 0;
+      }
       noteTend(s);
       break;
     }
@@ -638,6 +731,60 @@ export function dispatch(
       break;
     }
 
+    case 'swapOrder': {
+      guardIdle(s);
+      if (!s.orders.visible.includes(action.order)) fail('That order is not on the board.');
+      if (!s.orders.deck.length) fail('No other orders are waiting.');
+      const cost = swapCost(s, c);
+      if (s.coins < cost) fail(`Swapping an order costs ${cost} coins.`);
+      openMarketVisit(s);
+      s.coins -= cost;
+      s.orderSwaps += 1;
+      const at = s.orders.visible.indexOf(action.order);
+      s.orders.visible[at] = s.orders.deck.shift()!;
+      s.orders.deck.push(action.order);
+      break;
+    }
+
+    case 'buySpawn': {
+      guardIdle(s);
+      guardFinale(s);
+      const sp = c.species[action.species] ?? fail('Unknown species.');
+      if (!spawnStock(s, c).includes(sp.id)) fail("The market doesn't sell that spawn. Identify one first.");
+      const cost = spawnCost(sp.id, c);
+      if (s.coins < cost) fail(`${sp.name} spawn costs ${cost} coins.`);
+      if (s.basket.length >= basketCapacity(s, c)) fail('Your basket is full.');
+      openMarketVisit(s);
+      s.coins -= cost;
+      s.basket.push({ uid: s.nextUid++, species: sp.id, identified: true, trip: 0 });
+      break;
+    }
+
+    case 'saveSpawn': {
+      if (s.forage && s.forage.status === 'open') fail('Finish your forage trip first.');
+      guardFinale(s);
+      const sp = c.species[action.species] ?? fail('Unknown species.');
+      if (sp.kind === 'wild') fail("Wild mushrooms can't be grown from spawn.");
+      if (!(s.storage[sp.id] > 0)) fail(`No ${sp.name} in storage.`);
+      if (s.basket.length >= basketCapacity(s, c)) fail('Your basket is full.');
+      takeStorage(s, sp.id, 1);
+      s.basket.push({ uid: s.nextUid++, species: sp.id, identified: true, trip: 0 });
+      break;
+    }
+
+    case 'cook': {
+      guardIdle(s);
+      guardFinale(s);
+      const recipe = c.recipes.find((r) => r.id === action.recipe) ?? fail('Unknown dish.');
+      if (s.meal) fail("You've already cooked this month.");
+      if (!canCook(s, recipe)) fail(`${recipe.name} needs ${Object.entries(recipe.needs).map(([id, n]) => `${n} ${c.species[id].name}`).join(' and ')}.`);
+      for (const [id, n] of Object.entries(recipe.needs)) takeStorage(s, id, n);
+      s.meal = recipe.id;
+      if (recipe.effect.type === 'actions') s.actionsLeft += recipe.effect.amount;
+      if (recipe.effect.type === 'points') s.feastPoints += recipe.effect.amount;
+      break;
+    }
+
     case 'buyGear': {
       guardIdle(s);
       const gear = c.gear.find((g) => g.id === action.gear) ?? fail('Unknown gear.');
@@ -714,6 +861,7 @@ export function dispatch(
       s.market = null;
       s.stats.idleActions[s.round - 1] = s.actionsLeft;
       const report = runGrowth(s, rng, c);
+      s.meal = null;
       const final = s.round >= c.rules.rounds;
       const seasonTurns = !final && s.round % c.rules.roundsPerSeason === 0;
       if (seasonTurns && !s.gear.includes('dehydrator') && Object.keys(s.storage).length) {
@@ -729,6 +877,18 @@ export function dispatch(
         for (let i = 0; i < tiles; i++) s.shed.push('compost');
         s.stats.compostTiles += tiles;
         report.events.push({ type: 'compost', tiles });
+      }
+      // Picked at first light, after any spoilage, so the fresh harvest makes it into the new season.
+      if (s.perks.autoHarvest) {
+        const gained: Record<string, number> = {};
+        for (const sq of s.grid) {
+          if (sq.stage !== 'F' || sq.blight || !sq.species) continue;
+          addStorage(s, sq.species);
+          gained[sq.species] = (gained[sq.species] ?? 0) + 1;
+          sq.stage = 'C';
+          sq.hold = 0;
+        }
+        if (Object.keys(gained).length) report.events.push({ type: 'autoHarvest', gained });
       }
       if (final) {
         // No month 13: the morning after is the festival, with time for one last harvest and market visit.

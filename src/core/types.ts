@@ -56,6 +56,41 @@ export interface ZoneDef {
   blurb: string;
   color: string;
   deck: { card: Card; copies: number }[];
+  /** Rare finds dealt into each patch once a trip is rules.deepAt patches deep. Never part of the deck. */
+  deep: Card[];
+}
+
+/** A farm layout to start the year on, written for the 4×4 farm; a 5×5 farm extends it right and down. */
+export interface BoardDef {
+  id: string;
+  name: string;
+  blurb: string;
+  /** The stream runs down the left column: beds there never dry out. */
+  stream: boolean;
+  /** Other damp squares (a spring or pond), as 4×4 indices. */
+  springs: number[];
+  trees: number[];
+  /** Extra trees on a 5×5 farm, as [row, col]. */
+  extraTrees: [number, number][];
+  start: { index: number; substrate: Substrate; species?: string; stage?: Stage }[];
+}
+
+export type MealEffect =
+  | { type: 'actions'; amount: number }
+  | { type: 'identify' }
+  | { type: 'hazards'; amount: number }
+  | { type: 'basket'; amount: number }
+  | { type: 'market'; amount: number }
+  | { type: 'water' }
+  | { type: 'points'; amount: number };
+
+/** A dish cooked from stored mushrooms: one a month, its effect lasts until the month ends. */
+export interface RecipeDef {
+  id: string;
+  name: string;
+  needs: Record<string, number>;
+  effect: MealEffect;
+  rule: string;
 }
 
 export interface GearDef {
@@ -85,6 +120,8 @@ export interface OrderDef {
   label: string;
   points: number;
   need: OrderNeed;
+  /** Gear the shop must stock for this order to be dealt, so orders never ask for a zone you can't reach. */
+  requires?: string;
 }
 
 export interface TierDef {
@@ -102,14 +139,15 @@ export interface RulesDef {
   biggerBasketSize: number;
   startCoins: number;
   gridSize: number;
-  trees: number[];
-  streamColumn: number;
-  /** The farm after the "Grower" unlock: the 4×4 layout plus a row and column, and these extra trees as [row, col]. */
-  largeFarm: { size: number; extraTrees: [number, number][] };
-  start: { squares: { index: number; substrate: Substrate; species?: string; stage?: Stage }[] };
   ordersVisible: number;
+  /** Swapping a festival order costs this many coins, plus 1 for every swap already made this year. */
+  swapCost: number;
+  /** Spawn of a species costs its value plus this many coins at the market. */
+  spawnMarkup: number;
   /** A forage patch is patchSize × patchSize face-down cards dealt from the zone deck. */
   patchSize: number;
+  /** From this many patches deep, every patch dealt holds one of the zone's deep finds. */
+  deepAt: number;
   bustAt: number;
   bustKeep: number;
   /** Discarded specimens on the compost pile that rot into one Compost tile overnight. */
@@ -132,7 +170,9 @@ export type Unlock =
   | { type: 'heirloomSlot' }
   | { type: 'farmSize'; size: number }
   | { type: 'startCoins'; amount: number }
-  | { type: 'actions'; amount: number };
+  | { type: 'actions'; amount: number }
+  | { type: 'board'; id: string }
+  | { type: 'autoHarvest' };
 
 export interface LevelDef {
   level: number;
@@ -164,6 +204,8 @@ export interface Content {
   gear: GearDef[];
   weather: WeatherDef[];
   orders: OrderDef[];
+  boards: BoardDef[];
+  recipes: RecipeDef[];
 }
 
 // ── State ────────────────────────────────────────────────────────────────
@@ -178,6 +220,8 @@ export interface Square {
   dry: number;
   blight: boolean;
   tent: boolean;
+  /** Beside the stream or a spring: never takes dry marks. */
+  damp: boolean;
 }
 
 export interface Specimen {
@@ -193,6 +237,8 @@ export interface PatchCard {
   card: Card;
   flipped: boolean;
   outcome: DrawOutcome | null;
+  /** A deep find: not from the deck, so it never goes back into it. */
+  deep?: boolean;
 }
 
 export interface ForageTrip {
@@ -243,7 +289,8 @@ export type NightEvent =
   | { type: 'spoil'; lost: Record<string, number> }
   | { type: 'season'; season: Season }
   | { type: 'windfall' }
-  | { type: 'compost'; tiles: number };
+  | { type: 'compost'; tiles: number }
+  | { type: 'autoHarvest'; gained: Record<string, number> };
 
 export interface NightReport {
   round: number;
@@ -275,6 +322,10 @@ export interface Perks {
   bonusCoins: number;
   bonusActions: number;
   size: number;
+  /** Fruiting beds are picked into storage each morning. */
+  autoHarvest: boolean;
+  /** Cultivated species the market sells spawn of from the first month: those in the field journal. */
+  spawn: string[];
 }
 
 export interface GameState {
@@ -283,6 +334,8 @@ export interface GameState {
   seed: string;
   /** Farm width and height in squares. */
   size: number;
+  /** The farm layout the year started on. */
+  board: string;
   perks: Perks;
   rng: number;
   round: number;
@@ -300,6 +353,12 @@ export interface GameState {
   decks: Record<string, { draw: Card[]; discard: Card[] }>;
   orders: { visible: string[]; deck: string[]; filled: string[] };
   orderPoints: number;
+  /** Orders swapped off the board this year; each swap costs a coin more than the last. */
+  orderSwaps: number;
+  /** The dish eaten this month, if any; it lasts until the month ends. */
+  meal: string | null;
+  /** Festival points from dishes that the judges remember. */
+  feastPoints: number;
   planted: string[];
   hybridsMade: string[];
   discovered: string[];
@@ -343,6 +402,14 @@ export type Action =
   /** Sells Compost tiles from the shed. */
   | { type: 'sellCompost'; count: number }
   | { type: 'fillOrder'; order: string }
+  /** Sends a festival order to the bottom of the deck and deals the next, for coins. */
+  | { type: 'swapOrder'; order: string }
+  /** Buys spawn of a cultivated species you've identified: an identified specimen for your basket. */
+  | { type: 'buySpawn'; species: string }
+  /** Takes one stored cultivated or hybrid mushroom back out as spawn to plant. Free. */
+  | { type: 'saveSpawn'; species: string }
+  /** Cooks a dish from stored mushrooms. Free, one a month. */
+  | { type: 'cook'; recipe: string }
   | { type: 'buyGear'; gear: string }
   | { type: 'leaveMarket' }
   | { type: 'placeTent'; square: number }
