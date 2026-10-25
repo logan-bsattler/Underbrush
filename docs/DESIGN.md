@@ -70,10 +70,17 @@ keeps the deck and the kit's rules but adds a small deduction game on top:
 - Swipe the deck up (at the bottom of the screen, by your thumb) to go deeper: unturned cards stay
   behind and a fresh patch deals upward. Hazards you've met carry over, so going deeper is the
   push-your-luck choice.
-- A trip is one pass through the zone's deck, with no reshuffle: a 24-card deck deals patches of
-  9, 9 and its last 6 (plus the deep find), and then the deck reads "End of the zone". When the trip
-  ends, every card goes back and the deck is shuffled, so each trip walks the whole printed deck
-  and the deck shows how many cards are left. When a trip ends, the cards you passed are shown faded.
+- A trip is one pass through the zone's deck, with no reshuffle: a 32-card deck deals patches of
+  9 and 9, then 8 and its last 6 (each with a deep find), and then the deck reads "End of the zone".
+  When the trip ends, every card goes back and the deck is shuffled, so each trip walks the whole
+  printed deck, and the deck shows how many cards are left. When a trip ends, the cards you passed
+  are shown faded.
+- **Deck size** (not the kit's): every zone has 32 cards, up from the kit's 24, so a single pass
+  reaches two deep patches instead of one. The decks are the kit's scaled by 4/3, keeping each
+  zone's share of specimens, substrate, coins and hazards; Mixed Woods trades a Chanterelle for a
+  third Enoki so each plantable species has three copies. Holding substrate at the kit's counts
+  instead cost the baseline bot about 1.3 points a year (fewer beds, fewer orders); scaled, it
+  scores the same as on the 24-card decks (15.4 over 2,000 years).
 
 The numbers give the player real information without making a patch solvable at a glance: the
 first card is always a blind pick, and later picks are informed guesses. The baseline bot reads
@@ -183,7 +190,7 @@ the valuable species, and something to aim for after level 7. All of it is data 
   species in season (Blewit in the Meadow, Hen of the Woods in the Mixed Woods, Black Trumpet in
   the Old-growth) or a cache of coins.
 - **The Hollow** (Compass, 7 coins, level 8; fall and winter): Blewit, Truffle, Hen of the Woods
-  and Black Trumpet, with 7 hazards in 23 cards. Truffle (value 7, winter) gives winter something
+  and Black Trumpet, with 10 hazards in 32 cards. Truffle (value 7, winter) gives winter something
   to forage for.
 - **Gear.** Drip Line (7 coins, level 4) waters every bed each night and keeps dry spells from
   stalling. Blight Spray (5 coins, level 3) makes Clear blight treat every blighted bed at once.

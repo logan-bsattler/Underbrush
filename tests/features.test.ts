@@ -283,8 +283,7 @@ describe('going deeper', () => {
     expect(two.forage!.patch.some((p) => p.deep)).toBe(false);
     const three = walk(s, 'meadow', 3);
     expect(three.forage!.patch.filter((p) => p.deep)).toHaveLength(1);
-    // The last of the deck's 24 cards, plus the deep find.
-    expect(three.forage!.patch).toHaveLength(24 - 18 + 1);
+    expect(three.forage!.patch).toHaveLength(9);
   });
 
   it('only offers deep species in season, falling back to a cache of coins', () => {

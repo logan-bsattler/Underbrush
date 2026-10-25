@@ -4,14 +4,14 @@
     "blurb": "Sunny grass and old hay bales. Easy walking.",
     "color": "#C9B458",
     "deck": [
-      { "card": { "type": "specimen", "species": "puffball" }, "copies": 5 },
-      { "card": { "type": "specimen", "species": "winecap" }, "copies": 5 },
-      { "card": { "type": "substrate", "substrate": "straw" }, "copies": 2 },
-      { "card": { "type": "substrate", "substrate": "woodchip" }, "copies": 3 },
+      { "card": { "type": "specimen", "species": "puffball" }, "copies": 6 },
+      { "card": { "type": "specimen", "species": "winecap" }, "copies": 7 },
+      { "card": { "type": "substrate", "substrate": "straw" }, "copies": 3 },
+      { "card": { "type": "substrate", "substrate": "woodchip" }, "copies": 4 },
       { "card": { "type": "substrate", "substrate": "compost" }, "copies": 1 },
-      { "card": { "type": "coins", "amount": 2 }, "copies": 2 },
-      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 2 },
-      { "card": { "type": "hazard", "name": "Sudden Rain" }, "copies": 2 },
+      { "card": { "type": "coins", "amount": 2 }, "copies": 3 },
+      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 3 },
+      { "card": { "type": "hazard", "name": "Sudden Rain" }, "copies": 3 },
       { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }
     ],
     "deep": [{ "type": "specimen", "species": "blewit" }, { "type": "coins", "amount": 5 }]
@@ -21,16 +21,16 @@
     "blurb": "Oak, birch and fallen logs. Most of the farm's species live here.",
     "color": "#6E8B4E",
     "deck": [
-      { "card": { "type": "specimen", "species": "oyster" }, "copies": 3 },
+      { "card": { "type": "specimen", "species": "oyster" }, "copies": 4 },
       { "card": { "type": "specimen", "species": "chanterelle" }, "copies": 3 },
-      { "card": { "type": "specimen", "species": "shiitake" }, "copies": 3 },
-      { "card": { "type": "specimen", "species": "lionsmane" }, "copies": 2 },
-      { "card": { "type": "specimen", "species": "reishi" }, "copies": 2 },
-      { "card": { "type": "specimen", "species": "enoki" }, "copies": 2 },
-      { "card": { "type": "substrate", "substrate": "log" }, "copies": 2 },
+      { "card": { "type": "specimen", "species": "shiitake" }, "copies": 4 },
+      { "card": { "type": "specimen", "species": "lionsmane" }, "copies": 3 },
+      { "card": { "type": "specimen", "species": "reishi" }, "copies": 3 },
+      { "card": { "type": "specimen", "species": "enoki" }, "copies": 3 },
+      { "card": { "type": "substrate", "substrate": "log" }, "copies": 3 },
       { "card": { "type": "coins", "amount": 2 }, "copies": 1 },
-      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 2 },
-      { "card": { "type": "hazard", "name": "Sudden Rain" }, "copies": 2 },
+      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 3 },
+      { "card": { "type": "hazard", "name": "Sudden Rain" }, "copies": 3 },
       { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }
     ],
     "deep": [{ "type": "specimen", "species": "hen" }, { "type": "coins", "amount": 5 }]
@@ -40,14 +40,14 @@
     "blurb": "Dim, mossy and very quiet. Bring a light.",
     "color": "#3F5A44",
     "deck": [
-      { "card": { "type": "specimen", "species": "lionsmane" }, "copies": 4 },
-      { "card": { "type": "specimen", "species": "reishi" }, "copies": 4 },
-      { "card": { "type": "specimen", "species": "porcini" }, "copies": 4 },
+      { "card": { "type": "specimen", "species": "lionsmane" }, "copies": 5 },
+      { "card": { "type": "specimen", "species": "reishi" }, "copies": 5 },
+      { "card": { "type": "specimen", "species": "porcini" }, "copies": 6 },
       { "card": { "type": "specimen", "species": "shiitake" }, "copies": 1 },
-      { "card": { "type": "substrate", "substrate": "log" }, "copies": 3 },
-      { "card": { "type": "coins", "amount": 3 }, "copies": 2 },
-      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 2 },
-      { "card": { "type": "hazard", "name": "Deadfall" }, "copies": 2 },
+      { "card": { "type": "substrate", "substrate": "log" }, "copies": 4 },
+      { "card": { "type": "coins", "amount": 3 }, "copies": 3 },
+      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 3 },
+      { "card": { "type": "hazard", "name": "Deadfall" }, "copies": 3 },
       { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }
     ],
     "deep": [{ "type": "specimen", "species": "blacktrumpet" }, { "type": "coins", "amount": 6 }]
@@ -57,12 +57,12 @@
     "blurb": "Last summer's fire line. Open only in spring, when the morels rise.",
     "color": "#7A5F4E",
     "deck": [
-      { "card": { "type": "specimen", "species": "morel" }, "copies": 8 },
-      { "card": { "type": "substrate", "substrate": "woodchip" }, "copies": 3 },
-      { "card": { "type": "coins", "amount": 3 }, "copies": 3 },
-      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 3 },
-      { "card": { "type": "hazard", "name": "Ash Slide" }, "copies": 3 },
-      { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 4 }
+      { "card": { "type": "specimen", "species": "morel" }, "copies": 11 },
+      { "card": { "type": "substrate", "substrate": "woodchip" }, "copies": 4 },
+      { "card": { "type": "coins", "amount": 3 }, "copies": 4 },
+      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 4 },
+      { "card": { "type": "hazard", "name": "Ash Slide" }, "copies": 4 },
+      { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 5 }
     ],
     "deep": [{ "type": "coins", "amount": 6 }]
   },
@@ -71,15 +71,15 @@
     "blurb": "A fold of ancient forest past the old-growth. Open in fall and winter, when the deep-woods mushrooms come up.",
     "color": "#4E4A6B",
     "deck": [
-      { "card": { "type": "specimen", "species": "blewit" }, "copies": 4 },
-      { "card": { "type": "specimen", "species": "truffle" }, "copies": 3 },
-      { "card": { "type": "specimen", "species": "hen" }, "copies": 3 },
-      { "card": { "type": "specimen", "species": "blacktrumpet" }, "copies": 2 },
-      { "card": { "type": "substrate", "substrate": "log" }, "copies": 2 },
-      { "card": { "type": "coins", "amount": 4 }, "copies": 2 },
-      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 2 },
-      { "card": { "type": "hazard", "name": "Bog" }, "copies": 3 },
-      { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }
+      { "card": { "type": "specimen", "species": "blewit" }, "copies": 5 },
+      { "card": { "type": "specimen", "species": "truffle" }, "copies": 4 },
+      { "card": { "type": "specimen", "species": "hen" }, "copies": 4 },
+      { "card": { "type": "specimen", "species": "blacktrumpet" }, "copies": 3 },
+      { "card": { "type": "substrate", "substrate": "log" }, "copies": 3 },
+      { "card": { "type": "coins", "amount": 4 }, "copies": 3 },
+      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 3 },
+      { "card": { "type": "hazard", "name": "Bog" }, "copies": 4 },
+      { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 3 }
     ],
     "deep": [{ "type": "specimen", "species": "truffle" }, { "type": "coins", "amount": 8 }]
   }

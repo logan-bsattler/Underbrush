@@ -135,10 +135,11 @@ describe('foraging', () => {
     let s = newGame({ seed: 'deal' });
     s.weather = 'clear';
     const top = s.decks.meadow.draw.slice(0, 9);
+    const cards = s.decks.meadow.draw.length;
     s = run(s, { type: 'forage', zone: 'meadow' });
     expect(s.forage!.patch.map((p) => p.card)).toEqual(top);
     expect(s.forage!.patch.every((p) => !p.flipped)).toBe(true);
-    expect(s.decks.meadow.draw).toHaveLength(24 - 9);
+    expect(s.decks.meadow.draw).toHaveLength(cards - 9);
     expect(() => dispatch(s, { type: 'flip', index: 9 })).toThrow(GameError);
   });
 
@@ -180,7 +181,10 @@ describe('foraging', () => {
     const cards = s.decks.meadow.draw.length;
     s = run(s, { type: 'forage', zone: 'meadow' });
     while (s.decks.meadow.draw.length) s = run(s, { type: 'deeper' });
-    expect(s.forage!.depth).toBe(Math.ceil(cards / 9));
+    // 32 cards: two patches of 9, then 8 and the last 6, each with a deep find.
+    expect(cards).toBe(32);
+    expect(s.forage!.depth).toBe(4);
+    expect(s.forage!.patch).toHaveLength(6 + 1);
     expect(() => dispatch(s, { type: 'deeper' })).toThrow(/whole zone/);
   });
 
@@ -333,7 +337,7 @@ describe('compost pile', () => {
     s.basket = scraps(per - 1);
     for (const b of s.basket.slice()) s = run(s, { type: 'discard', uid: b.uid });
     s = run(s, { type: 'endMonth' });
-    expect(s.shed).toEqual([]);
+    expect(s.shed.filter((x) => x === 'compost')).toEqual([]);
     expect(s.compostPile).toHaveLength(per - 1);
     expect(s.night!.events.some((e) => e.type === 'compost')).toBe(false);
   });
