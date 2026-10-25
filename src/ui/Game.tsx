@@ -20,6 +20,7 @@ import {
   type GameState,
   type IdentifyResult,
   type Specimen,
+  type Substrate,
 } from '../core';
 import { BedArt, Icon, Mushroom, SubstrateArt, TreeArt, Unknown } from './art';
 import { Forage } from './Forage';
@@ -258,6 +259,8 @@ function CompostPile({ g }: { g: GameState }) {
   );
 }
 
+const SHED_ORDER: Substrate[] = ['log', 'straw', 'woodchip', 'compost'];
+
 function Tray({
   g,
   mode,
@@ -275,6 +278,7 @@ function Tray({
 }) {
   const cap = basketCapacity(g);
   const unknown = g.basket.filter((b) => !b.identified).length;
+  const shedKinds = SHED_ORDER.map((sub) => [sub, g.shed.filter((x) => x === sub).length] as const).filter(([, n]) => n > 0);
   // Composting the whole basket asks for a second tap; any change to the basket takes the question back.
   const [sure, setSure] = useState(false);
   useEffect(() => setSure(false), [g.basket.length]);
@@ -322,15 +326,17 @@ function Tray({
           <Icon name="shed" size={16} /> Shed
           <CompostPile g={g} />
         </div>
-        <div class="slots">
+        {/* One slot per kind of tile with a count, so a full shed still fits the tray. */}
+        <div class="slots shed-slots" style={{ '--kinds': Math.max(shedKinds.length, 1) }}>
           {g.shed.length === 0 && <span class="muted small">empty</span>}
-          {g.shed.map((sub, i) => (
+          {shedKinds.map(([sub, n]) => (
             <button
-              class={`slot sub ${mode.kind === 'substrate' && mode.index === i ? 'sel' : ''}`}
-              onClick={() => onShed(i)}
-              aria-label={`${substrateName[sub]} tile: tap, then tap empty ground`}
+              class={`slot sub ${mode.kind === 'substrate' && g.shed[mode.index] === sub ? 'sel' : ''}`}
+              onClick={() => onShed(g.shed.indexOf(sub))}
+              aria-label={`${n} ${substrateName[sub]} tile${n === 1 ? '' : 's'}: tap, then tap empty ground`}
             >
               <SubstrateArt substrate={sub} size={40} />
+              {n > 1 && <span class="shed-count">×{n}</span>}
             </button>
           ))}
         </div>
