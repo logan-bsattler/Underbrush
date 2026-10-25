@@ -94,7 +94,9 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   const coins = trip.drawn.filter((d) => d.card.type === 'coins').reduce((sum, d) => sum + (d.card as { amount: number }).amount, 0);
   const subs = trip.drawn.filter((d) => d.card.type === 'substrate').length;
   const hidden = trip.patch.filter((p) => !p.flipped).length;
-  const left = g.decks[trip.zone].draw.length + g.decks[trip.zone].discard.length;
+  // Cards the next patch deals from: the draw pile plus the unturned cards that go back under it.
+  // Once they run short, the cards turned so far are shuffled back in.
+  const left = g.decks[trip.zone].draw.length + trip.patch.filter((p) => !p.flipped && !p.deep).length;
   const turnedHere = trip.patch.some((p) => p.flipped);
   const limit = bustAt(g);
   const deepHere = trip.patch.find((p) => p.deep);
@@ -219,7 +221,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             <div class="deck-card d1">
               <span>Swipe up</span>
               <small>{trip.depth + 1 >= deepAt ? 'rare finds ahead' : 'to go deeper'}</small>
-              <small>{left} cards</small>
+              <small>{left >= n * n - (trip.depth + 1 >= deepAt ? 1 : 0) ? `${left} cards left` : 'deck reshuffles'}</small>
             </div>
           </div>
           <div class="foot-actions">
