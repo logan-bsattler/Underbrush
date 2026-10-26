@@ -2,17 +2,22 @@ import { crossKey, hybridFor, inSeason, isShaded, neighbors, seasonOf } from './
 import type { Rng } from './rng';
 import type { Content, GameState, GrowthRate, NightEvent, NightReport, Square, Stage } from './types';
 
+/** Growing months a bed of this growth rate spends at a stage; 0 for a stage it skips. */
+export function stageLength(stage: Stage, rate: GrowthRate): number {
+  if (stage === 'C') return rate === 'slow' || rate === 'verySlow' ? 2 : 1;
+  if (stage === 'P') return rate === 'fast' ? 0 : rate === 'verySlow' ? 2 : 1;
+  return 1;
+}
+
 /** Moves a bed one growth step. Returns the new stage, or null if a slow bed spent the phase waiting. */
 function advance(sq: Square, rate: GrowthRate): Stage | null {
-  const extraC = rate === 'slow' || rate === 'verySlow' ? 1 : 0;
-  const extraP = rate === 'verySlow' ? 1 : 0;
   switch (sq.stage) {
     case 'S':
       sq.stage = 'C';
       sq.hold = 0;
       return 'C';
     case 'C':
-      if (sq.hold < extraC) {
+      if (sq.hold < stageLength('C', rate) - 1) {
         sq.hold += 1;
         return null;
       }
@@ -20,7 +25,7 @@ function advance(sq: Square, rate: GrowthRate): Stage | null {
       sq.hold = 0;
       return sq.stage;
     case 'P':
-      if (sq.hold < extraP) {
+      if (sq.hold < stageLength('P', rate) - 1) {
         sq.hold += 1;
         return null;
       }

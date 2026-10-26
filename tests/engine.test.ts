@@ -13,7 +13,7 @@ import {
   type Card,
   type GameState,
 } from '../src/core';
-import { runGrowth } from '../src/core/growth';
+import { runGrowth, stageLength } from '../src/core/growth';
 import { Rng } from '../src/core/rng';
 import { emptyJournal, mergeDiscoveries, recordYear } from '../src/core/journal';
 import { playYear } from '../scripts/bot';
@@ -459,6 +459,14 @@ describe('growth phase', () => {
       seen.push(s.grid[0].stage);
     }
     expect(seen).toEqual(['C', 'P', 'P', 'F', 'C']);
+  });
+
+  it('tells the farm how many growing months each stage takes', () => {
+    const months = (rate: 'fast' | 'medium' | 'slow' | 'verySlow') => (['S', 'C', 'P', 'F'] as const).map((st) => stageLength(st, rate));
+    expect(months('fast')).toEqual([1, 1, 0, 1]);
+    expect(months('medium')).toEqual([1, 1, 1, 1]);
+    expect(months('slow')).toEqual([1, 2, 1, 1]);
+    expect(months('verySlow')).toEqual([1, 2, 2, 1]);
   });
 
   it('waits out of season, out of shade and in a cold snap; the tent ignores season and cold', () => {

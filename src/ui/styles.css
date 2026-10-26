@@ -593,6 +593,30 @@ button.chip {
   color: #fff;
   border-color: var(--rust-dark);
 }
+.sq .stage-pips {
+  position: absolute;
+  right: 25px;
+  bottom: 9px;
+  padding: 2px 3px;
+  color: var(--ink);
+  border-radius: 6px;
+  background: var(--card);
+  border: 1px solid var(--ink);
+}
+.stage-pips {
+  display: inline-flex;
+  gap: 2px;
+}
+.stage-pips i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  box-sizing: border-box;
+}
+.stage-pips i.on {
+  background: currentColor;
+}
 .sq.target {
   border-color: var(--moss);
   box-shadow: 0 0 0 3px rgba(62, 107, 53, 0.35);
@@ -885,6 +909,14 @@ button.chip {
 .stage-step.skip {
   opacity: 0.35;
   text-decoration: line-through;
+}
+.stage-step .stage-pips {
+  margin-top: 2px;
+}
+.stage-note {
+  margin: -2px 0 8px;
+  font-size: 13px;
+  color: var(--ink-soft);
 }
 .meta {
   display: grid;

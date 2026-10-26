@@ -16,10 +16,13 @@ import {
   orderPayment,
   plantableSquares,
   seasonOf,
+  stageLength,
   type ActionResult,
   type GameState,
+  type GrowthRate,
   type IdentifyResult,
   type Specimen,
+  type Stage,
   type Substrate,
 } from '../core';
 import { BedArt, Icon, Mushroom, SubstrateArt, TreeArt, Unknown } from './art';
@@ -180,6 +183,7 @@ export function Farm({
       <div class="grid">
         {g.grid.map((sq, i) => {
           const isTarget = targets.has(i);
+          const months = sq.species && sq.stage ? stageLength(sq.stage, content.species[sq.species].growth) : 0;
           const cls = [
             'sq',
             sq.tree ? 'tree' : '',
@@ -193,7 +197,7 @@ export function Farm({
           const label = sq.tree
             ? 'Tree'
             : sq.species
-              ? `${name(sq.species)}, ${stageName[sq.stage!]}${sq.blight ? ', blighted' : ''}, ${squareName(i, g.size)}`
+              ? `${name(sq.species)}, ${stageName[sq.stage!]}${months > 1 ? `, month ${sq.hold + 1} of ${months}` : ''}${sq.blight ? ', blighted' : ''}, ${squareName(i, g.size)}`
               : sq.substrate
                 ? `Empty ${substrateName[sq.substrate]}, ${squareName(i, g.size)}`
                 : `Empty ground, ${squareName(i, g.size)}`;
@@ -222,6 +226,7 @@ export function Farm({
                     </span>
                   )}
                   {sq.species && sq.stage && !small && <span class={`stage-chip st-${sq.stage}`}>{sq.stage}</span>}
+                  {months > 1 && !small && <StagePips months={months} done={sq.hold + 1} />}
                 </>
               )}
               {cross?.pick === i && (
@@ -418,13 +423,18 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
         </div>
         <div>
           <div class="stage-track" aria-label={`Stage: ${stageName[sq.stage!]}`}>
-            {(['S', 'C', 'P', 'F'] as const).map((st) => (
-              <span class={`stage-step ${st === sq.stage ? 'now' : ''} ${sp.growth === 'fast' && st === 'P' ? 'skip' : ''}`}>
-                <b>{st}</b>
-                <small>{stageName[st]}</small>
-              </span>
-            ))}
+            {(['S', 'C', 'P', 'F'] as const).map((st) => {
+              const months = stageLength(st, sp.growth);
+              return (
+                <span class={`stage-step ${st === sq.stage ? 'now' : ''} ${months === 0 ? 'skip' : ''}`}>
+                  <b>{st}</b>
+                  <small>{stageName[st]}</small>
+                  {months > 1 && <StagePips months={months} done={st === sq.stage ? sq.hold + 1 : 0} />}
+                </span>
+              );
+            })}
           </div>
+          {sq.stage !== 'F' && <p class="stage-note">{stageProgress(sq.stage!, sq.hold, sp.growth)}</p>}
           <dl class="meta">
             <dt>Substrate</dt>
             <dd>{substrateName[sq.substrate!]}</dd>
@@ -474,6 +484,25 @@ function BedSheet({ g, i, store, onClose }: { g: GameState; i: number; store: St
       <CompostSquare g={g} i={i} store={store} onClose={onClose} />
     </SheetFrame>
   );
+}
+
+/** One dot per growing month a stage takes, filled up to the month the bed is in. */
+function StagePips({ months, done }: { months: number; done: number }) {
+  return (
+    <span class="stage-pips" aria-hidden="true">
+      {Array.from({ length: months }, (_, k) => (
+        <i class={k < done ? 'on' : ''} />
+      ))}
+    </span>
+  );
+}
+
+function stageProgress(stage: Stage, hold: number, rate: GrowthRate) {
+  const months = stageLength(stage, rate);
+  const left = months - hold;
+  const next = stage === 'S' ? 'Colonizes' : stage === 'C' && rate !== 'fast' ? 'Pins' : 'Fruits';
+  const at = months > 1 ? `Month ${hold + 1} of ${months} ${stage === 'C' ? 'colonizing' : 'pinning'}. ` : '';
+  return `${at}${next} after ${left === 1 ? 'the next growing month' : `${left} more growing months`}.`;
 }
 
 function CompostHint() {
