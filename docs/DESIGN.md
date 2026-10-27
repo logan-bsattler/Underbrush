@@ -296,6 +296,21 @@ hoard. The bot ends a year with a median of 19 coins (p90 36) and reaches 50 in 
 averages 15.5 (from 15.6) with the same tier spread, while that human year scores 39 (Gold). Coins
 past 50 are now for spending: swaps to chase orders that fit the farm, and spawn.
 
+## The end game
+
+Two loops for a homestead that has earned every level, both in `progression.json`:
+
+- **Pass it on** (`legacy`): a Legend of the Valley can hand the homestead down from the Almanac.
+  Renown, levels and gear start over at level 1; the field journal, species mastery and
+  achievements stay. Each generation raises every festival tier by 5 points (`tierStep`) and
+  starts every year with 2 more coins (`startCoins`). The journal keeps the lineage.
+- **Legend challenges** (`challenges`): at Legend, the pack screen offers handicaps for the year,
+  stackable, each worth extra renown on the festival score: Short-handed (one fewer action a
+  month, +25%), Lean Year (no starting coins or heirlooms, +15%), Thin Basket (one fewer basket
+  slot, +15%). Challenges end when you pass the homestead on and return at the next Legend.
+
+Daily years ignore both and stay on the standard kit.
+
 ## Achievements
 
 Feats the field journal remembers across every year, listed in the Almanac and announced with a

@@ -3,7 +3,9 @@ import {
   content,
   dispatch,
   emptyJournal,
+  basketCapacity,
   heirloomChoices,
+  passItOn,
   levelFor,
   masteryLevel,
   migrateState,
@@ -173,5 +175,46 @@ describe('recording a year', () => {
       expect(journal.renown).toBe(games.reduce((n, g) => n + score(g).total, 0));
       expect(journal.years).toHaveLength(4);
     }
+  });
+});
+
+describe('the end game', () => {
+  const legend = () => journalAt(content.progression.levels[content.progression.levels.length - 1].renown);
+
+  it('passes the homestead on: renown and gear start over, the journal and mastery stay', () => {
+    const j = passItOn({ ...legend(), gearOwned: ['knife'], idCounts: { oyster: 20 }, discovered: ['oyster'], achievements: ['clearZone'] });
+    expect(j).toMatchObject({ renown: 0, gearOwned: [], generation: 2, idCounts: { oyster: 20 }, discovered: ['oyster'], achievements: ['clearZone'] });
+    expect(j.lineage).toHaveLength(1);
+    expect(levelFor(j.renown).level).toBe(1);
+    expect(() => passItOn(j)).toThrow(/Legend/);
+  });
+
+  it('raises the festival tiers and the starting coins with each generation', () => {
+    const { tierStep, startCoins } = content.progression.legacy;
+    const perks = perksFor({ ...emptyJournal(), generation: 3 }, []);
+    expect(perks.generation).toBe(3);
+    expect(perks.bonusCoins).toBe(2 * startCoins);
+    const s = newGame({ seed: 'gen', perks });
+    const bronze = content.rules.tiers[0].min + 2 * tierStep;
+    s.coins = 0;
+    s.orderPoints = bronze - 1;
+    expect(score(s).tier).toBeNull();
+    s.orderPoints = bronze;
+    expect(score(s).tier?.id).toBe('bronze');
+  });
+
+  it('applies Legend challenges, only for a Legend, and pays extra renown', () => {
+    expect(perksFor(emptyJournal(), [], undefined, ['shorthanded']).challenges).toEqual([]);
+    const j = { ...legend(), gearOwned: ['knife'] };
+    const plain = newGame({ seed: 'ch', perks: perksFor(j, ['knife']) });
+    const hard = newGame({ seed: 'ch', perks: perksFor(j, ['knife'], undefined, ['shorthanded', 'leanyear', 'thinbasket']) });
+    expect(hard.actionsLeft).toBe(plain.actionsLeft - 1);
+    expect(hard.coins).toBe(0);
+    expect(hard.gear).toEqual([]);
+    expect(basketCapacity(hard)).toBe(basketCapacity(plain) - 1);
+    hard.orderPoints = 40;
+    hard.over = true;
+    const after = recordYear(j, hard);
+    expect(after.years[0].renown).toBe(Math.round(score(hard).total * 1.55));
   });
 });

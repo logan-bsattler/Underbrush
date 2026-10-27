@@ -41,9 +41,23 @@ function mealBonus(s: GameState, type: 'actions' | 'hazards' | 'basket' | 'marke
   return e && e.type === type ? e.amount : 0;
 }
 
+/** How much this year's Legend challenges add to one kind of effect (negative for a handicap). */
+function challengeEffect(perks: Perks, type: 'actions' | 'basket', c: Content): number {
+  let n = 0;
+  for (const id of perks.challenges) {
+    const e = c.progression.challenges.find((x) => x.id === id)?.effect;
+    if (e && e.type === type) n += e.amount;
+  }
+  return n;
+}
+
+function isLean(perks: Perks, c: Content): boolean {
+  return perks.challenges.some((id) => c.progression.challenges.find((x) => x.id === id)?.effect.type === 'lean');
+}
+
 export function basketCapacity(s: GameState, c: Content = defaultContent): number {
   const base = s.gear.includes('biggerbasket') ? c.rules.biggerBasketSize : c.rules.basketSize;
-  return base + (s.weather === 'goodseason' ? 1 : 0) + mealBonus(s, 'basket', c);
+  return base + (s.weather === 'goodseason' ? 1 : 0) + mealBonus(s, 'basket', c) + challengeEffect(s.perks, 'basket', c);
 }
 
 /** Hazards that bust a forage trip this month. */
@@ -106,7 +120,13 @@ export function compostSaleValue(s: GameState, c: Content = defaultContent): num
 }
 
 export function actionsPerMonth(s: GameState, c: Content = defaultContent): number {
-  return c.rules.actionsPerRound + s.perks.bonusActions;
+  return c.rules.actionsPerRound + s.perks.bonusActions + challengeEffect(s.perks, 'actions', c);
+}
+
+/** The festival tiers for this year: every threshold rises with each generation the homestead has been passed on. */
+export function tiersFor(s: GameState, c: Content = defaultContent) {
+  const lift = (s.perks.generation - 1) * c.progression.legacy.tierStep;
+  return c.rules.tiers.map((t) => ({ ...t, min: t.min + lift }));
 }
 
 export function isDamp(s: GameState, index: number): boolean {
@@ -191,7 +211,7 @@ export function score(s: GameState, c: Content = defaultContent) {
   const coins = Math.min(Math.floor(s.coins / c.rules.coinsPerPoint), c.rules.maxCoinPoints);
   const feast = s.feastPoints;
   const total = s.orderPoints + hybrids + planted + coins + feast;
-  const tier = [...c.rules.tiers].reverse().find((t) => total >= t.min) ?? null;
+  const tier = [...tiersFor(s, c)].reverse().find((t) => total >= t.min) ?? null;
   return { orders: s.orderPoints, hybrids, planted, coins, feast, total, tier };
 }
 
@@ -221,6 +241,8 @@ export function standardPerks(c: Content = defaultContent): Perks {
     size: c.rules.gridSize,
     autoHarvest: false,
     spawn: [],
+    generation: 1,
+    challenges: [],
   };
 }
 
@@ -231,6 +253,8 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   s.perks.bonusActions ??= 0;
   s.perks.autoHarvest ??= false;
   s.perks.spawn ??= [];
+  s.perks.generation ??= 1;
+  s.perks.challenges ??= [];
   // Saves from before boards were all on Streamside, with the stream down the left column.
   s.board ??= 'streamside';
   s.grid.forEach((sq, i) => (sq.damp ??= i % s.size === 0));
@@ -291,6 +315,7 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
   const perks = opts.perks ?? standardPerks(c);
   const size = perks.size;
   const mode = opts.mode ?? 'story';
+  const lean = isLean(perks, c);
   const board = opts.board ?? (mode === 'daily' ? dailyBoard(seed, c) : c.boards[0].id);
   const layout = farmLayout(board, size, c);
   const grid: Square[] = Array.from({ length: size * size }, (_, i) => ({
@@ -324,15 +349,15 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     perks,
     rng: 0,
     round: 1,
-    actionsLeft: r.actionsPerRound + perks.bonusActions,
+    actionsLeft: r.actionsPerRound + perks.bonusActions + challengeEffect(perks, 'actions', c),
     weather: 'clear',
-    coins: r.startCoins + perks.bonusCoins,
+    coins: lean ? 0 : r.startCoins + perks.bonusCoins,
     grid,
     basket: [],
     shed: [],
     compostPile: [],
     storage: {},
-    gear: perks.heirlooms.slice(),
+    gear: lean ? [] : perks.heirlooms.slice(),
     tentPlaced: false,
     decks,
     orders: { visible: orderDeck.slice(0, r.ordersVisible), deck: orderDeck.slice(r.ordersVisible), filled: [] },

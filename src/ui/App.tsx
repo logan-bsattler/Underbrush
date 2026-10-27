@@ -1,5 +1,5 @@
 import { useErrorBoundary, useState } from 'preact/hooks';
-import { boardsFor, heirloomChoices, heirloomSlots, levelFor } from '../core';
+import { boardsFor, heirloomChoices, heirloomSlots, isLegend, levelFor } from '../core';
 import { ArtDefs } from './art';
 import { Game } from './Game';
 import { Almanac, Pack } from './Progress';
@@ -57,7 +57,7 @@ function Main() {
   /** A story year starts by choosing a board and packing heirlooms, when there's a choice to make. */
   const beginStory = () => {
     const slots = heirloomSlots(levelFor(store.journal.renown).level);
-    if ((slots > 0 && heirloomChoices(store.journal).length > 0) || boardsFor(store.journal).length > 1) {
+    if ((slots > 0 && heirloomChoices(store.journal).length > 0) || boardsFor(store.journal).length > 1 || isLegend(store.journal)) {
       open('pack');
       return;
     }
@@ -84,8 +84,8 @@ function Main() {
       <Pack
         store={store}
         onBack={() => setView('title')}
-        onStart={(heirlooms, board) => {
-          store.start('story', heirlooms, board);
+        onStart={(heirlooms, board, challenges) => {
+          store.start('story', heirlooms, board, challenges);
           setView('game');
         }}
       />

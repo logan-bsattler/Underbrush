@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { content, score } from '../core';
+import { challengeBonus, content, score, tiersFor } from '../core';
 import { Icon, Mushroom } from './art';
 import { RenownPanel } from './Progress';
 import type { Store } from './store';
@@ -9,7 +9,9 @@ import { name } from './text';
 export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: () => void; onNewYear: () => void }) {
   const g = store.game!;
   const sc = score(g);
-  const next = content.rules.tiers.find((t) => t.min > sc.total);
+  const tiers = tiersFor(g);
+  const next = tiers.find((t) => t.min > sc.total);
+  const bonus = challengeBonus(g.perks.challenges);
   const tend = g.stats.tendActions.reduce((a, b) => a + b, 0);
   const idle = g.stats.idleActions.reduce((a, b) => a + b, 0);
   const fresh = store.freshThisYear.filter((f) => !f.startsWith('achievement:'));
@@ -43,6 +45,12 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
       </div>
       {shared === 'failed' && <textarea class="share-text" readOnly rows={8} value={text} onFocus={(e) => (e.target as HTMLTextAreaElement).select()} />}
 
+      {bonus > 0 && (
+        <p class="center small">
+          Challenges: {g.perks.challenges.map((id) => content.progression.challenges.find((x) => x.id === id)?.name).join(', ')}, +
+          {Math.round(bonus * 100)}% renown.
+        </p>
+      )}
       {record && <RenownPanel record={record} journal={store.journal} />}
 
       <table class="score-table">
@@ -79,7 +87,7 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
       </table>
 
       <div class="tiers">
-        {content.rules.tiers.map((t) => (
+        {tiers.map((t) => (
           <span class={`tier ${sc.tier?.id === t.id ? 'on' : ''}`}>
             <b>{t.name}</b>
             <small>{t.min}+</small>

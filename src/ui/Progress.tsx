@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import {
   boardsFor,
   boardUnlockLevel,
+  challengeBonus,
   content,
   heirloomChoices,
   heirloomSlots,
+  isLegend,
   levelFor,
   masteryLevel,
   newGame,
@@ -73,7 +75,10 @@ export function HomesteadCard({ journal, onAlmanac }: { journal: Journal; onAlma
     <button class="homestead" onClick={onAlmanac} aria-label={`Homestead level ${st.level.level}, ${st.level.title}. Open the almanac`}>
       <span class="hs-level">{st.level.level}</span>
       <span class="hs-body">
-        <span class="hs-title">{st.level.title}</span>
+        <span class="hs-title">
+          {st.level.title}
+          {journal.generation > 1 && <span class="hs-gen"> · generation {journal.generation}</span>}
+        </span>
         <span class="small muted">
           {journal.renown} renown{years ? ` · ${years} year${years === 1 ? '' : 's'} on the homestead` : ''}
         </span>
@@ -138,6 +143,8 @@ export function Almanac({ store, onBack }: { store: Store; onBack: () => void })
         slot{heirloomSlots(st.level.level) === 1 ? '' : 's'}.
       </p>
 
+      {(isLegend(j) || j.generation > 1) && <Legacy store={store} />}
+
       <h2>Species mastery</h2>
       <p class="small muted">Every real identification counts, across all your years.</p>
       <ul class="mastery-steps">
@@ -191,7 +198,61 @@ export function Almanac({ store, onBack }: { store: Store; onBack: () => void })
   );
 }
 
-export function Pack({ store, onStart, onBack }: { store: Store; onStart: (heirlooms: string[], board: string) => void; onBack: () => void }) {
+/** Passing the homestead on: what it costs, what carries down, and the generations so far. */
+function Legacy({ store }: { store: Store }) {
+  const j = store.journal;
+  const { tierStep, startCoins } = content.progression.legacy;
+  const [sure, setSure] = useState(false);
+  useEffect(() => {
+    if (!sure) return;
+    const t = setTimeout(() => setSure(false), 4000);
+    return () => clearTimeout(t);
+  }, [sure]);
+  return (
+    <>
+      <h2>Pass it on</h2>
+      <p class="small">
+        A Legend of the Valley can hand the homestead down. The next generation starts again at level 1 with no renown or gear, and every
+        festival tier sits {tierStep} points higher. Your field journal, species mastery and achievements stay in the family, and each
+        generation starts every year with {startCoins} more coins.
+      </p>
+      {j.lineage.length > 0 && (
+        <ul class="lineage">
+          {j.lineage.map((l) => (
+            <li>
+              Generation {l.generation}: {l.renown} renown over {l.years} story year{l.years === 1 ? '' : 's'}
+            </li>
+          ))}
+          <li>
+            <b>Generation {j.generation}</b>: working the homestead now
+          </li>
+        </ul>
+      )}
+      {isLegend(j) && (
+        <button
+          class={`btn ${sure ? 'primary' : ''} wide`}
+          onClick={() => {
+            if (!sure) return setSure(true);
+            setSure(false);
+            store.passItOn();
+          }}
+        >
+          {sure ? `Tap again: start generation ${j.generation + 1} at level 1` : 'Pass the homestead on'}
+        </button>
+      )}
+    </>
+  );
+}
+
+export function Pack({
+  store,
+  onStart,
+  onBack,
+}: {
+  store: Store;
+  onStart: (heirlooms: string[], board: string, challenges: string[]) => void;
+  onBack: () => void;
+}) {
   const j = store.journal;
   const st = standing(j);
   const slots = heirloomSlots(st.level.level);
@@ -203,7 +264,11 @@ export function Pack({ store, onStart, onBack }: { store: Store; onStart: (heirl
     const last = store.game?.mode === 'story' ? store.game.board : null;
     return last && boards.includes(last) ? last : boards[0];
   });
-  const perks = perksFor(j, picked);
+  const [taken, setTaken] = useState<string[]>([]);
+  const legend = isLegend(j);
+  const perks = perksFor(j, picked, undefined, taken);
+  const lean = perks.challenges.includes('leanyear');
+  const bonus = challengeBonus(perks.challenges);
   const year = j.years.filter((y) => y.mode === 'story').length + 1;
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < slots ? [...p, id] : [...p.slice(1), id]));
@@ -268,18 +333,46 @@ export function Pack({ store, onStart, onBack }: { store: Store; onStart: (heirl
           </p>
         </>
       )}
+      {legend && (
+        <>
+          <h2>Legend challenges</h2>
+          <p>Take on a handicap this year for more renown. Stack as many as you dare.</p>
+          <div class="heirlooms" role="group" aria-label="Challenges">
+            {content.progression.challenges.map((ch) => {
+              const on = taken.includes(ch.id);
+              return (
+                <button
+                  class={`heirloom ${on ? 'on' : ''}`}
+                  aria-pressed={on}
+                  onClick={() => setTaken((t) => (on ? t.filter((x) => x !== ch.id) : [...t, ch.id]))}
+                >
+                  <span class="hl-check" aria-hidden="true">
+                    {on ? '✓' : ''}
+                  </span>
+                  <b>
+                    {ch.name} · +{Math.round(ch.renownBonus * 100)}% renown
+                  </b>
+                  <small>{ch.rule}</small>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
       <h2>This year</h2>
       <ul class="this-year">
         <li>
           {perks.size}×{perks.size} farm on {content.boards.find((b) => b.id === board)?.name}
         </li>
-        <li>{content.rules.actionsPerRound + perks.bonusActions} actions a month</li>
-        <li>{content.rules.startCoins + perks.bonusCoins} coins to start</li>
+        <li>{newGame({ seed: 'pack', perks }).actionsLeft} actions a month</li>
+        <li>{lean ? 'No coins and no heirlooms to start' : `${content.rules.startCoins + perks.bonusCoins} coins to start`}</li>
+        {bonus > 0 && <li>+{Math.round(bonus * 100)}% renown from challenges</li>}
+        {perks.generation > 1 && <li>Generation {perks.generation}: festival tiers {(perks.generation - 1) * content.progression.legacy.tierStep} points higher</li>}
         <li>Shop stocks {perks.shop.map(gearName).join(', ')}</li>
         {perks.spawn.length > 0 && <li>Spawn of {perks.spawn.map(name).join(', ')} at the market</li>}
         {perks.autoHarvest && <li>Ripe beds are picked every morning</li>}
       </ul>
-      <button class="btn primary big wide" onClick={() => onStart(picked, board)}>
+      <button class="btn primary big wide" onClick={() => onStart(picked, board, perks.challenges)}>
         Start year {year}
       </button>
     </div>

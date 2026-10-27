@@ -183,5 +183,32 @@
       "ids": 16,
       "rule": "Sells for 1 coin more."
     }
+  ],
+  "legacy": {
+    "tierStep": 5,
+    "startCoins": 2
+  },
+  "challenges": [
+    {
+      "id": "shorthanded",
+      "name": "Short-handed",
+      "rule": "One fewer action every month.",
+      "renownBonus": 0.25,
+      "effect": { "type": "actions", "amount": -1 }
+    },
+    {
+      "id": "leanyear",
+      "name": "Lean Year",
+      "rule": "Start with no coins and no heirlooms.",
+      "renownBonus": 0.15,
+      "effect": { "type": "lean" }
+    },
+    {
+      "id": "thinbasket",
+      "name": "Thin Basket",
+      "rule": "Your basket holds one fewer specimen.",
+      "renownBonus": 0.15,
+      "effect": { "type": "basket", "amount": -1 }
+    }
   ]
 }

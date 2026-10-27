@@ -1,7 +1,7 @@
 import { achievementsEarned } from './achievements';
 import { content as defaultContent } from './content';
 import { score } from './engine';
-import { levelFor, masteryLevel } from './progression';
+import { challengeBonus, levelFor, masteryLevel } from './progression';
 import type { Content, GameState } from './types';
 
 export interface YearRecord {
@@ -38,10 +38,14 @@ export interface Journal {
   achievements: string[];
   /** Zones ever cleared: every card but the hazards turned on one trip. */
   zonesCleared: string[];
+  /** The generation working the homestead now, from 1. */
+  generation: number;
+  /** Each generation that passed the homestead on: the renown it reached and its story years. */
+  lineage: { generation: number; renown: number; years: number }[];
 }
 
 export function emptyJournal(): Journal {
-  return { version: 1, discovered: [], lookalikes: [], hybrids: [], years: [], best: 0, renown: 0, idCounts: {}, gearOwned: [], achievements: [], zonesCleared: [] };
+  return { version: 1, discovered: [], lookalikes: [], hybrids: [], years: [], best: 0, renown: 0, idCounts: {}, gearOwned: [], achievements: [], zonesCleared: [], generation: 1, lineage: [] };
 }
 
 /** Fills in fields added after a journal was first saved. */
@@ -88,7 +92,9 @@ export function recordYear(j: Journal, s: GameState, c: Content = defaultContent
   if (journal.years.some((y) => y.seed === s.seed)) return journal;
   const sc = score(s, c);
   const levelFrom = levelFor(journal.renown, c).level;
-  const renown = journal.renown + sc.total;
+  // Legend challenges earn extra renown on top of the festival score.
+  const earned = Math.round(sc.total * (1 + challengeBonus(s.perks.challenges ?? [], c)));
+  const renown = journal.renown + earned;
   const idCounts = { ...journal.idCounts };
   const masteryUps: string[] = [];
   for (const [id, n] of Object.entries(s.stats.identified ?? {})) {
@@ -109,7 +115,7 @@ export function recordYear(j: Journal, s: GameState, c: Content = defaultContent
         seed: s.seed,
         score: sc.total,
         tier: sc.tier?.id ?? null,
-        renown: sc.total,
+        renown: earned,
         levelFrom,
         levelTo: levelFor(renown, c).level,
         masteryUps,

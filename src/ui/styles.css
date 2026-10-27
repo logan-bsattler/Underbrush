@@ -2922,3 +2922,13 @@ h3 .inline-link {
     transform: translateY(-110%) scale(0.7);
   }
 }
+
+/* Generations */
+.hs-gen {
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+.lineage {
+  margin: 0 0 12px;
+  padding-left: 18px;
+}

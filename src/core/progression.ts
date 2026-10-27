@@ -27,6 +27,32 @@ export function gearUnlockLevel(gearId: string, c: Content = defaultContent): Le
   return c.progression.levels.find((l) => l.unlocks.some((u) => u.type === 'gear' && u.id === gearId)) ?? null;
 }
 
+/** A Legend has earned every level: they can take on challenges, or pass the homestead on. */
+export function isLegend(j: Journal, c: Content = defaultContent): boolean {
+  return !nextLevel(j.renown, c);
+}
+
+/**
+ * Hands the homestead down to the next generation: renown, levels and gear start over, while the
+ * field journal, species mastery and achievements stay in the family. Each generation starts with
+ * a few more coins and faces higher festival tiers.
+ */
+export function passItOn(j: Journal, c: Content = defaultContent): Journal {
+  if (!isLegend(j, c)) throw new Error('Only a Legend of the Valley can pass the homestead on.');
+  return {
+    ...j,
+    renown: 0,
+    gearOwned: [],
+    generation: j.generation + 1,
+    lineage: [...j.lineage, { generation: j.generation, renown: j.renown, years: j.years.filter((y) => y.mode === 'story').length }],
+  };
+}
+
+/** Extra renown this year's challenges earn, as a fraction of the festival score. */
+export function challengeBonus(challenges: string[], c: Content = defaultContent): number {
+  return challenges.reduce((sum, id) => sum + (c.progression.challenges.find((x) => x.id === id)?.renownBonus ?? 0), 0);
+}
+
 export function heirloomSlots(level: number, c: Content = defaultContent): number {
   return unlocksThrough(level, c).filter((u) => u.type === 'heirloomSlot').length;
 }
@@ -42,7 +68,7 @@ export function heirloomChoices(j: Journal, c: Content = defaultContent): string
 }
 
 /** What a story year starts with, given the journal and the heirlooms the player packed. */
-export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultContent): Perks {
+export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultContent, challenges: string[] = []): Perks {
   const level = levelFor(j.renown, c).level;
   const unlocks = unlocksThrough(level, c);
   const shop = c.gear.map((g) => g.id).filter((id) => unlocks.some((u) => u.type === 'gear' && u.id === id));
@@ -53,7 +79,7 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
     if (m > 0) mastery[id] = m;
   }
   let size = c.rules.gridSize;
-  let bonusCoins = 0;
+  let bonusCoins = (j.generation - 1) * c.progression.legacy.startCoins;
   let bonusActions = 0;
   let autoHarvest = false;
   for (const u of unlocks) {
@@ -71,6 +97,8 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
     size,
     autoHarvest,
     spawn: j.discovered.filter((id) => c.species[id]?.kind === 'cultivated'),
+    generation: j.generation,
+    challenges: isLegend(j, c) ? challenges.filter((id) => c.progression.challenges.some((x) => x.id === id)) : [],
   };
 }
 

@@ -6,6 +6,7 @@ import {
   migrateState,
   newGame,
   normalizeJournal,
+  passItOn as handDown,
   perksFor,
   recordYear,
   standardPerks,
@@ -61,8 +62,10 @@ export interface Store {
   achieved: string[];
   dismissAchieved: () => void;
   act: (a: Action) => ActionResult | null;
-  /** Starts a year. Story years bring the homestead's progression, the packed heirlooms and the chosen board; daily years use the standard kit on the day's board. */
-  start: (mode: GameState['mode'], heirlooms?: string[], board?: string) => void;
+  /** Starts a year. Story years bring the homestead's progression, the packed heirlooms, the chosen board and any Legend challenges; daily years use the standard kit on the day's board. */
+  start: (mode: GameState['mode'], heirlooms?: string[], board?: string, challenges?: string[]) => void;
+  /** Hands the homestead down to the next generation. */
+  passItOn: () => void;
   clearError: () => void;
 }
 
@@ -117,11 +120,11 @@ export function useStore(): Store {
   );
 
   const start = useCallback(
-    (mode: GameState['mode'], heirlooms: string[] = [], board?: string) => {
+    (mode: GameState['mode'], heirlooms: string[] = [], board?: string, challenges: string[] = []) => {
       const g =
         mode === 'daily'
           ? newGame({ mode, seed: dailySeed(), perks: standardPerks() })
-          : newGame({ mode, board, perks: perksFor(journalRef.current, heirlooms) });
+          : newGame({ mode, board, perks: perksFor(journalRef.current, heirlooms, undefined, challenges) });
       setFresh([]);
       setLast(null);
       commit(g);
@@ -134,6 +137,13 @@ export function useStore(): Store {
     const t = setTimeout(() => setError(null), 3200);
     return () => clearTimeout(t);
   }, [error]);
+
+  const passItOn = useCallback(() => {
+    const j = handDown(journalRef.current);
+    journalRef.current = j;
+    setJournal(j);
+    write(JOURNAL_KEY, j);
+  }, []);
 
   useEffect(() => {
     if (!achieved.length) return;
@@ -151,6 +161,7 @@ export function useStore(): Store {
     dismissAchieved: () => setAchieved([]),
     act,
     start,
+    passItOn,
     clearError: () => setError(null),
   };
 }

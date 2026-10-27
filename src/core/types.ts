@@ -215,9 +215,31 @@ export interface MasteryDef {
   rule: string;
 }
 
+export type ChallengeEffect = { type: 'actions'; amount: number } | { type: 'basket'; amount: number } | { type: 'lean' };
+
+/** A handicap a Legend can take on for a story year, for more renown. */
+export interface ChallengeDef {
+  id: string;
+  name: string;
+  rule: string;
+  /** Extra renown, as a fraction of the festival score. */
+  renownBonus: number;
+  effect: ChallengeEffect;
+}
+
+/** What passing the homestead on carries down each generation. */
+export interface LegacyDef {
+  /** Every tier's threshold rises by this much per generation after the first. */
+  tierStep: number;
+  /** Extra starting coins per generation after the first: the family's mark. */
+  startCoins: number;
+}
+
 export interface ProgressionDef {
   levels: LevelDef[];
   mastery: MasteryDef[];
+  legacy: LegacyDef;
+  challenges: ChallengeDef[];
 }
 
 export interface Content {
@@ -360,6 +382,10 @@ export interface Perks {
   autoHarvest: boolean;
   /** Cultivated species the market sells spawn of from the first month: those in the field journal. */
   spawn: string[];
+  /** How many times the homestead has been passed on, plus one. Raises the tier thresholds. */
+  generation: number;
+  /** Legend challenges taken on this year. */
+  challenges: string[];
 }
 
 export interface GameState {
