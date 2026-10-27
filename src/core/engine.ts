@@ -143,7 +143,8 @@ export function zoneStatus(s: GameState, zone: ZoneDef, c: Content = defaultCont
   }
   const season = seasonOf(s.round, c);
   if (zone.seasons && !zone.seasons.includes(season)) {
-    return { open: false, reason: `Only open in ${zone.seasons.join(' and ')}` };
+    const open = zone.seasons.length > 1 ? `${zone.seasons.slice(0, -1).join(', ')} and ${zone.seasons[zone.seasons.length - 1]}` : zone.seasons[0];
+    return { open: false, reason: `Only open in ${open}` };
   }
   const weather = c.weather.find((w) => w.id === s.weather);
   if (weather?.closes?.includes(zone.id)) return { open: false, reason: `Closed by ${weather.name.toLowerCase()}` };

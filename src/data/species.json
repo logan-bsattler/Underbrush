@@ -196,5 +196,50 @@
     "rule": "Can't be planted. A deep find in the Hollow, fall only. Prized almost as much as truffle.",
     "blurb": "A thick-stemmed cap with cinnamon scales, half buried under the pines, smelling of spice.",
     "art": { "shape": "cap", "cap": "#A9734A", "shade": "#764A2B", "gill": "#F2E8D6", "stem": "#EFE5D2" }
+  },
+  {
+    "id": "dryad", "name": "Dryad's Saddle", "latin": "Cerioporus squamosus", "kind": "wild", "value": 3,
+    "substrates": [], "seasons": ["spring"], "growth": "none",
+    "group": "Scaly saddle shelf", "lookalike": { "name": "Tiger Sawgill", "on": 1 },
+    "traits": {},
+    "rule": "Can't be planted. Riverbank only, spring only. Drawn outside spring, it's an empty patch.",
+    "blurb": "A broad tan shelf with brown feathery scales, on dying elms and willows by the water. It smells of watermelon rind.",
+    "art": { "shape": "shelf", "cap": "#C9A66E", "shade": "#8A6337", "gill": "#F0E4C8", "stem": "#D9C49A" }
+  },
+  {
+    "id": "shaggymane", "name": "Shaggy Mane", "latin": "Coprinus comatus", "kind": "wild", "value": 4,
+    "substrates": [], "seasons": ["summer", "fall"], "growth": "none",
+    "group": "Shaggy white column", "lookalike": { "name": "Magpie Inkcap", "on": 1 },
+    "traits": {},
+    "rule": "Can't be planted. Riverbank only, summer and fall. Drawn outside them, it's an empty patch.",
+    "blurb": "A tall white cap in shaggy scales on the gravel bars, which melts into black ink within a day of picking.",
+    "art": { "shape": "cap", "cap": "#F3EEE4", "shade": "#B9A58A", "gill": "#E9D9D3", "stem": "#F5F1E8", "fringe": true }
+  },
+  {
+    "id": "halfmorel", "name": "Half-free Morel", "latin": "Morchella punctipes", "kind": "wild", "value": 5,
+    "substrates": [], "seasons": ["spring"], "growth": "none",
+    "group": "Long-stemmed honeycomb", "lookalike": { "name": "Early False Morel", "on": 2 },
+    "traits": {},
+    "rule": "Can't be planted. A deep find on the Riverbank, spring only.",
+    "blurb": "A small honeycomb cap perched on a long hollow stem, under the cottonwoods on the river bottom.",
+    "art": { "shape": "morel", "cap": "#9A7A52", "shade": "#5E4528", "gill": "#C7AC83", "stem": "#F0E6D2" }
+  },
+  {
+    "id": "lobster", "name": "Lobster Mushroom", "latin": "Hypomyces lactifluorum", "kind": "wild", "value": 6,
+    "substrates": [], "seasons": ["summer"], "growth": "none",
+    "group": "Red-orange crust", "lookalike": { "name": "Scarlet Brittlegill", "on": 1 },
+    "traits": {},
+    "rule": "Can't be planted. A deep find on the Riverbank, summer only.",
+    "blurb": "Not quite a mushroom: a mold that swallows a milk cap whole and turns it the color of a boiled lobster.",
+    "art": { "shape": "funnel", "cap": "#D9572E", "shade": "#9C3517", "gill": "#E8814F", "stem": "#E36E3E" }
+  },
+  {
+    "id": "cauliflower", "name": "Cauliflower Mushroom", "latin": "Sparassis crispa", "kind": "wild", "value": 6,
+    "substrates": [], "seasons": ["fall"], "growth": "none",
+    "group": "Ruffled cream mass", "lookalike": { "name": "Jellied False Coral", "on": 1 },
+    "traits": {},
+    "rule": "Can't be planted. A deep find on the Riverbank, fall only.",
+    "blurb": "A head of cream ribbons the size of a hat at the foot of an old pine on the high bank.",
+    "art": { "shape": "cluster", "cap": "#EFE3C2", "shade": "#C7B07C", "gill": "#F6EED8", "stem": "#E3D3A8" }
   }
 ]

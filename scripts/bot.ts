@@ -110,7 +110,7 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
         continue;
       }
       const fillable = s.orders.visible.find((o) => orderPayment(s.storage, content.orders.find((x) => x.id === o)!));
-      const wanted = ['biggerbasket', 'knife', 'lantern', 'dehydrator', 'fieldguide', 'growtent', 'trailmap', 'blightspray', 'dripline', 'compass'];
+      const wanted = ['biggerbasket', 'knife', 'lantern', 'dehydrator', 'fieldguide', 'growtent', 'trailmap', 'blightspray', 'dripline', 'waders', 'compass'];
       const affordable = wanted.find(
         (g) => !s.gear.includes(g) && s.perks.shop.includes(g) && s.coins >= content.gear.find((x) => x.id === g)!.cost,
       );

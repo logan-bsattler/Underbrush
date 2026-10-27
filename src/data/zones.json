@@ -83,6 +83,24 @@
     "deep": [{ "type": "specimen", "species": "blackmorel" }, { "type": "coins", "amount": 6 }]
   },
   {
+    "id": "riverbank", "name": "Riverbank", "unlock": "waders", "seasons": ["spring", "summer", "fall"], "hazard": "Medium",
+    "blurb": "Willows, cottonwoods and driftwood along the creek. Open spring through fall; in winter the banks ice over.",
+    "color": "#4F8590",
+    "deck": [
+      { "card": { "type": "specimen", "species": "oyster" }, "copies": 4 },
+      { "card": { "type": "specimen", "species": "enoki" }, "copies": 2 },
+      { "card": { "type": "specimen", "species": "dryad" }, "copies": 5 },
+      { "card": { "type": "specimen", "species": "shaggymane" }, "copies": 6 },
+      { "card": { "type": "substrate", "substrate": "log" }, "copies": 3 },
+      { "card": { "type": "substrate", "substrate": "straw" }, "copies": 2 },
+      { "card": { "type": "coins", "amount": 3 }, "copies": 2 },
+      { "card": { "type": "hazard", "name": "Slick Rocks" }, "copies": 3 },
+      { "card": { "type": "hazard", "name": "High Water" }, "copies": 3 },
+      { "card": { "type": "hazard", "name": "Ticks" }, "copies": 2 }
+    ],
+    "deep": [{ "type": "specimen", "species": "halfmorel" }, { "type": "specimen", "species": "lobster" }, { "type": "specimen", "species": "cauliflower" }, { "type": "coins", "amount": 6 }]
+  },
+  {
     "id": "hollow", "name": "The Hollow", "unlock": "compass", "seasons": ["fall", "winter"], "hazard": "High",
     "blurb": "A fold of ancient forest past the old-growth. Open in fall and winter, when the deep-woods mushrooms come up.",
     "color": "#4E4A6B",

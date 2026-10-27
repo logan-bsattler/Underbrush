@@ -14,5 +14,7 @@
   { "id": "o-morel2", "label": "2 Morel", "points": 6, "need": { "kind": "species", "items": { "morel": 2 } }, "requires": "trailmap" },
   { "id": "o-trumpet", "label": "1 Black Trumpet + 1 Lion's Mane", "points": 7, "need": { "kind": "species", "items": { "blacktrumpet": 1, "lionsmane": 1 } }, "requires": "lantern" },
   { "id": "o-hen", "label": "1 Hen of the Woods + 1 Shiitake", "points": 7, "need": { "kind": "species", "items": { "hen": 1, "shiitake": 1 } } },
+  { "id": "o-shaggy2", "label": "2 Shaggy Mane", "points": 6, "need": { "kind": "species", "items": { "shaggymane": 2 } }, "requires": "waders" },
+  { "id": "o-river", "label": "1 Dryad's Saddle + 2 Oyster", "points": 5, "need": { "kind": "species", "items": { "dryad": 1, "oyster": 2 } }, "requires": "waders" },
   { "id": "o-truffle", "label": "1 Truffle + 1 Blewit", "points": 9, "need": { "kind": "species", "items": { "truffle": 1, "blewit": 1 } }, "requires": "compass" }
 ]

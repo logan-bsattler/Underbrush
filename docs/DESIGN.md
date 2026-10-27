@@ -216,6 +216,7 @@ the valuable species, and something to aim for after level 7. All of it is data 
   | Old-growth | Spring King Bolete | Black Trumpet | Black Trumpet | Yellowfoot |
   | Burn Scar | Black Morel | | | |
   | The Hollow | | | Matsutake | Truffle |
+  | Riverbank | Half-free Morel | Lobster Mushroom | Cauliflower Mushroom | |
 
   Eight of them (St. George's, Fairy Ring, Chicken of the Woods, Wood Ear, Spring King, Yellowfoot,
   Black Morel, Matsutake) are wild species found only this way, valued 4 to 7 like the other wild
@@ -230,6 +231,16 @@ the valuable species, and something to aim for after level 7. All of it is data 
 - **The Hollow** (Compass, 7 coins, level 8; fall and winter): Blewit, Truffle, Hen of the Woods
   and Black Trumpet, with 10 hazards in 32 cards. Truffle (value 7, winter) gives winter something
   to forage for.
+- **The Riverbank** (Waders, 6 coins, level 7; spring to fall, closed when the banks ice over):
+  Oyster and Enoki, two wild species found nowhere else, Dryad's Saddle (value 3, spring) and
+  Shaggy Mane (value 4, summer and fall), driftwood logs and reed straw, with 8 hazards (Slick
+  Rocks, High Water, Ticks) in 32 cards. Its rare finds, Half-free Morel (5), Lobster Mushroom (6)
+  and Cauliflower Mushroom (6), are new wild species too. Level 7 had only a heirloom slot, so this
+  gives it a reason to reach for. Two orders come with it, dealt only once the shop stocks Waders:
+  2 Shaggy Mane (6 points) and 1 Dryad's Saddle + 2 Oyster (5). The baseline bot buys Waders after
+  the Drip Line; on the standard kit it averages 14.8 over 500 years (from 15.5), since the coins
+  and trips it spends there would have scored elsewhere. Its ten-year campaigns don't change,
+  because it never reaches level 7 in ten years.
 - **Gear.** Drip Line (7 coins, level 4) waters every bed each night and keeps dry spells from
   stalling. Blight Spray (5 coins, level 3) makes Clear blight treat every blighted bed at once.
 - **Auto harvest** (level 9) picks every fruiting bed into storage each morning, after the season's
@@ -348,6 +359,6 @@ nothing else. It never cooks, goes deep or plans for orders, so those are for pe
 
 ## Not in this build
 
-Monetization and store builds (a natural demo cut is year one, levels 1–2), async co-op, expansion biomes, Riverbank/Waders, Burn Bed,
+Monetization and store builds (a natural demo cut is year one, levels 1–2), async co-op, expansion biomes, Burn Bed,
 endless homestead mode. The spec's engine ("Court's stack") isn't available here; the rules
 core is plain TypeScript with no DOM, so it can be ported or embedded.

@@ -118,10 +118,14 @@
       "level": 7,
       "title": "Elder of the Wood",
       "renown": 210,
-      "blurb": "People bring you mushrooms to identify now.",
+      "blurb": "People bring you mushrooms to identify now, and a fisherman sells you his old waders.",
       "unlocks": [
         {
           "type": "heirloomSlot"
+        },
+        {
+          "type": "gear",
+          "id": "waders"
         }
       ]
     },

@@ -331,6 +331,24 @@ describe('going deeper', () => {
     s.round = 4;
     expect(() => dispatch(s, { type: 'forage', zone: 'hollow' })).toThrow(/Only open in fall and winter/);
   });
+
+  it('opens the Riverbank with Waders, stocked from level 7, spring to fall', () => {
+    const shop = (renown: number) => perksFor({ ...emptyJournal(), renown }, []).shop;
+    expect(shop(150)).not.toContain('waders');
+    expect(shop(210)).toContain('waders');
+    const s = fresh('river');
+    expect(() => dispatch(s, { type: 'forage', zone: 'riverbank' })).toThrow(/Waders/);
+    s.gear.push('waders');
+    for (const round of [1, 4, 7]) expect(run({ ...s, round }, { type: 'forage', zone: 'riverbank' }).forage!.zone).toBe('riverbank');
+    s.round = 10;
+    expect(() => dispatch(s, { type: 'forage', zone: 'riverbank' })).toThrow(/Only open in spring, summer and fall/);
+  });
+
+  it('deals Riverbank orders only once the shop stocks Waders', () => {
+    const dealt = (g: GameState) => [...g.orders.visible, ...g.orders.deck];
+    expect(dealt(newGame({ seed: 'river-orders', perks: perksFor({ ...emptyJournal(), renown: 150 }, []) }))).not.toContain('o-shaggy2');
+    expect(dealt(newGame({ seed: 'river-orders', perks: perksFor({ ...emptyJournal(), renown: 210 }, []) }))).toContain('o-shaggy2');
+  });
 });
 
 describe('achievements: clearing a zone', () => {
