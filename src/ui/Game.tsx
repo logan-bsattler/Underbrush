@@ -150,12 +150,15 @@ export function Farm({
   mode,
   onSquare,
   marks,
+  picked,
   small,
 }: {
   g: GameState;
   mode?: Mode;
   onSquare?: (i: number) => void;
   marks?: Record<number, string>;
+  /** Squares just harvested and the species picked from each, to lift out of the bed in turn. */
+  picked?: { squares: number[]; species: string[]; key: number };
   small?: boolean;
 }) {
   const targets = new Set<number>();
@@ -240,6 +243,12 @@ export function Farm({
                 </span>
               )}
               {marks?.[i] && <span class="mark-dot" aria-hidden="true" />}
+              {picked?.squares.includes(i) && (
+                <span key={`pick-${picked.key}`} class="pick" style={{ '--i': picked.squares.indexOf(i) } as any} aria-hidden="true">
+                  <Mushroom species={picked.species[picked.squares.indexOf(i)]} size={small ? 30 : 46} />
+                  <b>+1</b>
+                </span>
+              )}
             </button>
           );
         })}
@@ -850,6 +859,17 @@ export function Game({
   const [sheet, setSheet] = useState<Sheet>(null);
   const [reveal, setReveal] = useState<(ActionResult & { kind: 'identify' }) | null>(null);
   const [confirmEnd, setConfirmEnd] = useState(false);
+  const [picked, setPicked] = useState<{ squares: number[]; species: string[]; key: number } | null>(null);
+  const harvest = () => {
+    const before = g.grid;
+    const r = store.act({ type: 'harvest' });
+    if (r?.kind === 'harvest') setPicked({ squares: r.squares, species: r.squares.map((i) => before[i].species!), key: Date.now() });
+  };
+  useEffect(() => {
+    if (!picked) return;
+    const t = setTimeout(() => setPicked(null), 1400 + picked.squares.length * 90);
+    return () => clearTimeout(t);
+  }, [picked]);
 
   useEffect(() => {
     if (!confirmEnd) return;
@@ -962,7 +982,7 @@ export function Game({
             </span>
           </div>
         )}
-        <Farm g={g} mode={mode} onSquare={onSquare} />
+        <Farm g={g} mode={mode} onSquare={onSquare} picked={picked ?? undefined} />
       </main>
 
       <Tray
@@ -990,7 +1010,7 @@ export function Game({
           <span>Tend</span>
           {blighted > 0 && <span class="badge warn">{blighted}</span>}
         </button>
-        <button class="act" disabled={!ready || (finale ? finale.harvested : g.actionsLeft < 1)} onClick={() => store.act({ type: 'harvest' })}>
+        <button class="act" disabled={!ready || (finale ? finale.harvested : g.actionsLeft < 1)} onClick={harvest}>
           <Icon name="harvest" size={26} />
           <span>Harvest</span>
           {ready > 0 && <span class="badge">{ready}</span>}
@@ -1041,6 +1061,23 @@ export function Game({
           {store.error}
         </div>
       )}
+      {store.achieved.length > 0 && <AchievementToast ids={store.achieved} onDone={store.dismissAchieved} />}
     </div>
+  );
+}
+
+/** A notice that slides in over whatever is open, the forest floor included, when an achievement is earned. */
+function AchievementToast({ ids, onDone }: { ids: string[]; onDone: () => void }) {
+  return (
+    <button class="achieved" role="status" onClick={onDone}>
+      <Icon name="spark" size={28} />
+      <span>
+        <span class="eyebrow">Achievement earned</span>
+        {ids.map((id) => {
+          const a = content.achievements.find((x) => x.id === id);
+          return a && <b>{a.name}</b>;
+        })}
+      </span>
+    </button>
   );
 }

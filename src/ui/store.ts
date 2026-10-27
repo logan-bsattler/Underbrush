@@ -57,6 +57,9 @@ export interface Store {
   freshThisYear: string[];
   error: string | null;
   last: ActionResult | null;
+  /** Achievement ids earned since the player last dismissed the notice. */
+  achieved: string[];
+  dismissAchieved: () => void;
   act: (a: Action) => ActionResult | null;
   /** Starts a year. Story years bring the homestead's progression, the packed heirlooms and the chosen board; daily years use the standard kit on the day's board. */
   start: (mode: GameState['mode'], heirlooms?: string[], board?: string) => void;
@@ -69,6 +72,7 @@ export function useStore(): Store {
   const [freshThisYear, setFresh] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [last, setLast] = useState<ActionResult | null>(null);
+  const [achieved, setAchieved] = useState<string[]>([]);
   const gameRef = useRef(game);
   gameRef.current = game;
   const journalRef = useRef(journal);
@@ -86,6 +90,8 @@ export function useStore(): Store {
       setJournal(j);
       write(JOURNAL_KEY, j);
       if (merged.fresh.length) setFresh((f) => [...f, ...merged.fresh]);
+      const won = merged.fresh.filter((f) => f.startsWith('achievement:')).map((f) => f.slice('achievement:'.length));
+      if (won.length) setAchieved((a) => [...a, ...won]);
     }
   }, []);
 
@@ -129,5 +135,22 @@ export function useStore(): Store {
     return () => clearTimeout(t);
   }, [error]);
 
-  return { game, journal, freshThisYear, error, last, act, start, clearError: () => setError(null) };
+  useEffect(() => {
+    if (!achieved.length) return;
+    const t = setTimeout(() => setAchieved([]), 5000);
+    return () => clearTimeout(t);
+  }, [achieved]);
+
+  return {
+    game,
+    journal,
+    freshThisYear,
+    error,
+    last,
+    achieved,
+    dismissAchieved: () => setAchieved([]),
+    act,
+    start,
+    clearError: () => setError(null),
+  };
 }

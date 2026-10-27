@@ -188,8 +188,8 @@ export function HowTo({ onBack }: { onBack: () => void }) {
             <b>Harvest</b> every fruiting bed into storage.
           </li>
           <li>
-            <b>Market:</b> sell mushrooms and spare Compost tiles, deliver festival orders (the first each visit is free, each
-            one after it {r.extraDeliveryCost} coins), buy gear, spawn and substrate tiles, as much as you like in one visit. The visit lasts until you spend another action, so you can close the market and come back. Spawn of any cultivated species you've identified is ready to plant. Swap an order you can't fill for the next one for{' '}
+            <b>Market:</b> sell mushrooms and spare Compost tiles, deliver festival orders (the first each visit is free, the
+            second {r.extraDeliveryCost} coins, and each one after that double the last), buy gear, spawn and substrate tiles, as much as you like in one visit. The visit lasts until you spend another action, so you can close the market and come back. Spawn of any cultivated species you've identified is ready to plant. Swap an order you can't fill for the next one for{' '}
             {r.swapCost} coins, a coin more for each swap that year.
           </li>
           <li>

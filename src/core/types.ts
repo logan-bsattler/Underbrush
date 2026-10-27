@@ -147,8 +147,10 @@ export interface RulesDef {
   /** Hiring a hand for +1 action costs this many coins, plus hireStep for every hand already hired this year. */
   hireCost: number;
   hireStep: number;
-  /** Each order past the first delivered on one market visit costs this many coins. */
+  /** The second order delivered on one market visit costs this many coins... */
   extraDeliveryCost: number;
+  /** ...and each one after that costs this many times the one before. */
+  extraDeliveryGrowth: number;
   /** What a substrate tile costs at the market stall. */
   substrateCost: Record<Substrate, number>;
   /** A forage patch is patchSize × patchSize face-down cards dealt from the zone deck. */
@@ -174,6 +176,18 @@ export interface RulesDef {
   /** The most festival points leftover coins can score. */
   maxCoinPoints: number;
   tiers: TierDef[];
+}
+
+export type AchievementCheck =
+  /** Turn every non-hazard card in a zone's deck on one trip: in a given zone, or in any zone when none is named. */
+  { type: 'clearZone'; zone?: string };
+
+/** A feat the field journal remembers across years. Earned once, from any story or daily year. */
+export interface AchievementDef {
+  id: string;
+  name: string;
+  rule: string;
+  check: AchievementCheck;
 }
 
 export type Unlock =
@@ -217,6 +231,7 @@ export interface Content {
   orders: OrderDef[];
   boards: BoardDef[];
   recipes: RecipeDef[];
+  achievements: AchievementDef[];
 }
 
 // ── State ────────────────────────────────────────────────────────────────
@@ -269,6 +284,10 @@ export interface ForageTrip {
   picked: number[];
   status: 'open' | 'stopped' | 'busted';
   lost: number[];
+  /** Non-hazard cards left face down when you went deeper: any at all and the zone can't be cleared this trip. */
+  missed: number;
+  /** Every non-hazard card in the zone's deck has been turned this trip. */
+  cleared: boolean;
 }
 
 export type DrawOutcome =
@@ -304,7 +323,8 @@ export type NightEvent =
   | { type: 'season'; season: Season }
   | { type: 'windfall' }
   | { type: 'compost'; tiles: number }
-  | { type: 'autoHarvest'; gained: Record<string, number> };
+  /** Beds picked at first light, and the squares they were on. */
+  | { type: 'autoHarvest'; gained: Record<string, number>; squares: number[] };
 
 export interface NightReport {
   round: number;
@@ -381,8 +401,11 @@ export interface GameState {
   hybridsMade: string[];
   discovered: string[];
   lookalikesFound: string[];
+  /** Zones cleared this year: every card but the hazards turned on one trip. */
+  zonesCleared: string[];
   watered: boolean;
-  market: { orderFilled: boolean } | null;
+  /** An open market visit and the orders delivered on it so far. */
+  market: { deliveries: number } | null;
   forage: ForageTrip | null;
   pendingCrosses: Cross[];
   declinedCrosses: string[];
@@ -454,8 +477,8 @@ export interface IdentifyResult {
 export type ActionResult =
   | { kind: 'none' }
   | { kind: 'identify'; results: IdentifyResult[] }
-  | { kind: 'draw'; index: number; card: Card; outcome: DrawOutcome; dropped?: Specimen }
-  | { kind: 'harvest'; gained: Record<string, number> }
+  | { kind: 'draw'; index: number; card: Card; outcome: DrawOutcome; dropped?: Specimen; cleared?: boolean }
+  | { kind: 'harvest'; gained: Record<string, number>; squares: number[] }
   | { kind: 'sell'; coins: number }
   | { kind: 'order'; points: number }
   | { kind: 'night'; report: NightReport };

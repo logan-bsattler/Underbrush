@@ -198,6 +198,10 @@ the valuable species, and something to aim for after level 7. All of it is data 
   - *Extra deliveries* (`extraDeliveryCost` 4): the first order on a visit is free as before, and
     each further one that visit costs 4 coins. The one-order limit throttled the part of the score
     meant to carry a year, most of all on festival morning with a full storage.
+    *Then doubling* (`extraDeliveryGrowth` 2): a level-10 playtest year scored 99 (78 from 13
+    orders) with 444 coins earned, so a flat 4 coins was no brake at all. Extra deliveries on one
+    visit now cost 4, 8, 16… The baseline bot rarely makes them, so it scores the same (15.6 over
+    300 years); the playtest log is the signal to watch.
   - *A substrate stall* (`substrateCost`): Straw, Woodchip and Compost tiles for 2 coins, Logs for
     3, into the shed. Beds no longer wait on the forest dealing the right substrate.
 - **Going deeper.** From the third patch of a trip (`rules.deepAt`), every patch holds one
@@ -291,6 +295,17 @@ with orders. A rate change would hit weak players as hard as hoarders; a cap onl
 hoard. The bot ends a year with a median of 19 coins (p90 36) and reaches 50 in 2% of years, so it
 averages 15.5 (from 15.6) with the same tier spread, while that human year scores 39 (Gold). Coins
 past 50 are now for spending: swaps to chase orders that fit the farm, and spawn.
+
+## Achievements
+
+Feats the field journal remembers across every year, listed in the Almanac and announced with a
+banner the moment they're earned. Each one is a check in `src/data/achievements.json` against what
+the engine records about a year, so adding one is data plus, for a new kind of check, a case in
+`src/core/achievements.ts`.
+
+- **Nothing Left Unturned** (`clearZone`): turn every card in a zone's deck except its hazards on
+  one trip. Going deeper with a non-hazard card still face down rules the trip out; rare finds
+  don't count either way. The journal also keeps which zones you've cleared.
 
 ## Not in this build
 

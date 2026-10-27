@@ -1,0 +1,8 @@
+[
+  {
+    "id": "clearZone",
+    "name": "Nothing Left Unturned",
+    "rule": "Turn every card in a forage zone except its hazards, all in one trip.",
+    "check": { "type": "clearZone" }
+  }
+]

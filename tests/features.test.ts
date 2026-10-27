@@ -9,6 +9,7 @@ import {
   emptyJournal,
   farmLayout,
   lookalikeOn,
+  mergeDiscoveries,
   migrateState,
   newGame,
   perksFor,
@@ -133,7 +134,7 @@ describe('auto harvest', () => {
     const auto = run(s, { type: 'endMonth' });
     expect(auto.grid[8].stage).toBe('C');
     expect(auto.storage.oyster).toBe(1);
-    expect(auto.night!.events).toContainEqual({ type: 'autoHarvest', gained: { oyster: 1 } });
+    expect(auto.night!.events).toContainEqual(expect.objectContaining({ type: 'autoHarvest', gained: { oyster: 1 } }));
   });
 
   it('picks after the season turns, so the fresh harvest doesn’t spoil', () => {
@@ -328,6 +329,50 @@ describe('going deeper', () => {
     expect(run(s, { type: 'forage', zone: 'hollow' }).forage!.zone).toBe('hollow');
     s.round = 4;
     expect(() => dispatch(s, { type: 'forage', zone: 'hollow' })).toThrow(/Only open in fall and winter/);
+  });
+});
+
+describe('achievements: clearing a zone', () => {
+  const coin: Card = { type: 'coins', amount: 1 };
+  const hazard: Card = { type: 'hazard', name: 'Nettles' };
+  /** A Meadow trip on a stacked deck: the first nine cards make the first patch. */
+  function stacked(draw: Card[]) {
+    const s = fresh('clear');
+    s.decks.meadow = { draw: draw.map((card) => ({ ...card })), discard: [] };
+    return run(s, { type: 'forage', zone: 'meadow' });
+  }
+
+  it('clears the zone when the last non-hazard card is turned, leaving hazards face down', () => {
+    let s = stacked([...Array(8).fill(coin), hazard, hazard, hazard]);
+    for (let i = 0; i < 7; i++) {
+      const r = dispatch(s, { type: 'flip', index: i });
+      expect(r.result).not.toMatchObject({ cleared: true });
+      s = r.state;
+    }
+    const last = dispatch(s, { type: 'flip', index: 7 });
+    expect(last.result).toMatchObject({ kind: 'draw', cleared: true });
+    expect(last.state.forage!.cleared).toBe(true);
+    expect(last.state.zonesCleared).toEqual(['meadow']);
+  });
+
+  it("can't clear once a non-hazard card is left behind by going deeper", () => {
+    let s = stacked(Array(18).fill(coin));
+    for (let i = 0; i < 8; i++) s = run(s, { type: 'flip', index: i });
+    s = run(s, { type: 'deeper' });
+    expect(s.forage!.missed).toBe(1);
+    for (let i = 0; i < 9; i++) s = run(s, { type: 'flip', index: i });
+    expect(s.forage!.cleared).toBe(false);
+    expect(s.zonesCleared).toEqual([]);
+  });
+
+  it('earns the achievement in the field journal once, with a fresh tag for the year-end screen', () => {
+    let s = stacked([...Array(8).fill(coin), hazard]);
+    for (let i = 0; i < 8; i++) s = run(s, { type: 'flip', index: i });
+    const first = mergeDiscoveries(emptyJournal(), s);
+    expect(first.journal.achievements).toEqual(['clearZone']);
+    expect(first.journal.zonesCleared).toEqual(['meadow']);
+    expect(first.fresh).toContain('achievement:clearZone');
+    expect(mergeDiscoveries(first.journal, s).fresh).toEqual([]);
   });
 });
 

@@ -35,6 +35,9 @@ export function Night({ g, store }: { g: GameState; store: Store }) {
   const grew = report.events.filter((e) => e.type === 'grow').length;
   const dried = report.events.filter((e) => e.type === 'dry').length;
   const weather = content.weather.find((w) => w.id === g.weather)!;
+  // The apprentice's pick plays over the farm: each bed's mushroom lifts out in turn.
+  const auto = report.events.find((e) => e.type === 'autoHarvest');
+  const picked = auto ? { squares: auto.squares ?? [], species: (auto.squares ?? []).map((i) => g.grid[i].species!), key: report.round } : undefined;
 
   return (
     <div class="overlay night">
@@ -46,7 +49,7 @@ export function Night({ g, store }: { g: GameState; store: Store }) {
           <h2>The farm grows while you sleep</h2>
         </div>
       </header>
-      <Farm g={g} marks={marks} small />
+      <Farm g={g} marks={marks} picked={picked} small />
       <ul class="night-log">
         <li style={{ '--i': 0 } as any}>
           {grew ? `${grew} bed${grew === 1 ? '' : 's'} grew a stage.` : 'Nothing grew tonight.'}

@@ -1,3 +1,4 @@
+import { achievementsEarned } from './achievements';
 import { content as defaultContent } from './content';
 import { score } from './engine';
 import { levelFor, masteryLevel } from './progression';
@@ -33,10 +34,14 @@ export interface Journal {
   idCounts: Record<string, number>;
   /** Gear bought in any year; heirlooms are chosen from these. */
   gearOwned: string[];
+  /** Achievement ids earned, in the order they were earned. */
+  achievements: string[];
+  /** Zones ever cleared: every card but the hazards turned on one trip. */
+  zonesCleared: string[];
 }
 
 export function emptyJournal(): Journal {
-  return { version: 1, discovered: [], lookalikes: [], hybrids: [], years: [], best: 0, renown: 0, idCounts: {}, gearOwned: [] };
+  return { version: 1, discovered: [], lookalikes: [], hybrids: [], years: [], best: 0, renown: 0, idCounts: {}, gearOwned: [], achievements: [], zonesCleared: [] };
 }
 
 /** Fills in fields added after a journal was first saved. */
@@ -71,6 +76,8 @@ export function mergeDiscoveries(j: Journal, s: GameState): { journal: Journal; 
     discovered: add(j.discovered, s.discovered),
     hybrids: add(j.hybrids, s.hybridsMade, 'hybrid:'),
     lookalikes: add(j.lookalikes, s.lookalikesFound, 'lookalike:'),
+    achievements: add(j.achievements, achievementsEarned(s), 'achievement:'),
+    zonesCleared: Array.from(new Set([...j.zonesCleared, ...s.zonesCleared])),
   };
   return { journal, fresh };
 }

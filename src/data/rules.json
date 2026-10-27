@@ -18,6 +18,7 @@
   "hireCost": 5,
   "hireStep": 2,
   "extraDeliveryCost": 4,
+  "extraDeliveryGrowth": 2,
   "substrateCost": { "straw": 2, "woodchip": 2, "compost": 2, "log": 3 },
   "patchSize": 3,
   "deepAt": 3,

@@ -12,7 +12,8 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
   const next = content.rules.tiers.find((t) => t.min > sc.total);
   const tend = g.stats.tendActions.reduce((a, b) => a + b, 0);
   const idle = g.stats.idleActions.reduce((a, b) => a + b, 0);
-  const fresh = store.freshThisYear;
+  const fresh = store.freshThisYear.filter((f) => !f.startsWith('achievement:'));
+  const won = store.freshThisYear.flatMap((f) => (f.startsWith('achievement:') ? content.achievements.filter((a) => `achievement:${a.id}` === f) : []));
   const record = store.journal.years.find((y) => y.seed === g.seed);
   const [shared, setShared] = useState<null | 'shared' | 'copied' | 'failed'>(null);
   const text = shareText(g, `${location.origin}${location.pathname}`);
@@ -103,6 +104,23 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
               );
             })}
           </div>
+        </>
+      )}
+
+      {won.length > 0 && (
+        <>
+          <h3>Achievements earned</h3>
+          <ul class="achievements">
+            {won.map((a) => (
+              <li class="earned">
+                <Icon name="spark" size={22} />
+                <span>
+                  <b>{a.name}</b>
+                  <small>{a.rule}</small>
+                </span>
+              </li>
+            ))}
+          </ul>
         </>
       )}
 

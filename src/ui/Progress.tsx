@@ -168,6 +168,24 @@ export function Almanac({ store, onBack }: { store: Store; onBack: () => void })
           );
         })}
       </ul>
+      <h2>Achievements</h2>
+      <ul class="achievements">
+        {content.achievements.map((a) => {
+          const got = j.achievements.includes(a.id);
+          return (
+            <li class={got ? 'earned' : ''}>
+              <Icon name="spark" size={22} />
+              <span>
+                <b>{a.name}</b>
+                <small>{a.rule}</small>
+                {a.check.type === 'clearZone' && j.zonesCleared.length > 0 && (
+                  <small class="muted">Cleared: {content.zones.filter((z) => j.zonesCleared.includes(z.id)).map((z) => z.name).join(', ')}</small>
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
       <p class="disclaimer">In-game knowledge only. Underbrush is not a foraging guide.</p>
     </div>
   );

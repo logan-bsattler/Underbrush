@@ -81,9 +81,10 @@ export function hireCost(s: GameState, c: Content = defaultContent): number {
   return c.rules.hireCost + c.rules.hireStep * s.hires;
 }
 
-/** Coins to deliver an order on this market visit: free for the first, then rules.extraDeliveryCost. */
+/** Coins to deliver an order on this market visit: free for the first, then rules.extraDeliveryCost, growing with each one after. */
 export function deliveryCost(s: GameState, c: Content = defaultContent): number {
-  return s.market?.orderFilled ? c.rules.extraDeliveryCost : 0;
+  const done = s.market?.deliveries ?? 0;
+  return done ? c.rules.extraDeliveryCost * c.rules.extraDeliveryGrowth ** (done - 1) : 0;
 }
 
 export function spawnCost(speciesId: string, c: Content = defaultContent): number {
@@ -251,8 +252,16 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   if (!s.stats.identified) s.stats.identified = {};
   s.compostPile ??= [];
   s.finale ??= null;
+  // Market visits saved before deliveries were counted only knew whether one had been made.
+  if (s.market && s.market.deliveries === undefined) s.market = { deliveries: (s.market as { orderFilled?: boolean }).orderFilled ? 1 : 0 };
   s.stats.scraps ??= s.compostPile.length;
   s.stats.compostTiles ??= 0;
+  s.zonesCleared ??= [];
+  if (s.forage) {
+    // A trip saved before clears were tracked can't say what it walked past, so one already deeper than the first patch can't clear.
+    s.forage.missed ??= s.forage.depth > 1 ? 1 : 0;
+    s.forage.cleared ??= false;
+  }
   // A trip saved by the older draw-one-card build ends where it stood; its finds are already in the basket.
   if (s.forage && !s.forage.patch) {
     s.forage.patch = [];
@@ -337,6 +346,7 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     hybridsMade: [],
     discovered: [],
     lookalikesFound: [],
+    zonesCleared: [],
     watered: false,
     market: null,
     forage: null,
@@ -394,7 +404,7 @@ function openMarketVisit(s: GameState) {
   } else {
     spendAction(s);
   }
-  s.market = { orderFilled: false };
+  s.market = { deliveries: 0 };
 }
 
 /** On festival morning only the last harvest and market visit are open. */
@@ -409,7 +419,20 @@ function takeCard(s: GameState, zone: string): Card | null {
 
 /** Going deeper leaves the unturned cards behind for the rest of the trip. Deep finds were never in the deck. */
 function leaveHidden(s: GameState, trip: ForageTrip) {
-  for (const p of trip.patch) if (!p.flipped && !p.deep) s.decks[trip.zone].discard.push(p.card);
+  for (const p of trip.patch) {
+    if (p.flipped || p.deep) continue;
+    s.decks[trip.zone].discard.push(p.card);
+    if (p.card.type !== 'hazard') trip.missed += 1;
+  }
+}
+
+/** Whether every card in the zone's deck but its hazards has been turned on this trip. Rare finds don't count. */
+export function zoneCleared(s: GameState, trip: ForageTrip): boolean {
+  return (
+    trip.missed === 0 &&
+    s.decks[trip.zone].draw.every((card) => card.type === 'hazard') &&
+    trip.patch.every((p) => p.flipped || p.deep || p.card.type === 'hazard')
+  );
 }
 
 /** When a trip ends, every card goes back and the deck is shuffled, so the next trip walks the whole zone again. */
@@ -501,6 +524,8 @@ export function dispatch(
         picked: [],
         status: 'open',
         lost: [],
+        missed: 0,
+        cleared: false,
       };
       dealPatch(s, s.forage, rng, c);
       break;
@@ -577,6 +602,11 @@ export function dispatch(
             restockDeck(s, trip, rng);
           }
         }
+      }
+      if (trip.status === 'open' && !trip.cleared && zoneCleared(s, trip)) {
+        trip.cleared = true;
+        outcome.cleared = true;
+        if (!s.zonesCleared.includes(trip.zone)) s.zonesCleared.push(trip.zone);
       }
       spot.outcome = outcome.outcome;
       trip.drawn.push({ card, outcome: outcome.outcome, ...(outcome.dropped ? { dropped: outcome.dropped } : {}) });
@@ -731,13 +761,14 @@ export function dispatch(
       else spendAction(s);
       s.market = null;
       const gained: Record<string, number> = {};
+      const squares = ready.map((sq) => s.grid.indexOf(sq));
       for (const sq of ready) {
         addStorage(s, sq.species!);
         gained[sq.species!] = (gained[sq.species!] ?? 0) + 1;
         sq.stage = 'C';
         sq.hold = 0;
       }
-      result = { kind: 'harvest', gained };
+      result = { kind: 'harvest', gained, squares };
       break;
     }
 
@@ -780,7 +811,7 @@ export function dispatch(
       openMarketVisit(s);
       s.coins -= extra;
       for (const [id, n] of Object.entries(pay)) takeStorage(s, id, n);
-      s.market!.orderFilled = true;
+      s.market!.deliveries += 1;
       s.orderPoints += order.points;
       s.orders.filled.push(order.id);
       s.orders.visible = s.orders.visible.filter((o) => o !== order.id);
@@ -964,14 +995,16 @@ export function dispatch(
       // Picked at first light, after any spoilage, so the fresh harvest makes it into the new season.
       if (s.perks.autoHarvest) {
         const gained: Record<string, number> = {};
-        for (const sq of s.grid) {
+        const squares: number[] = [];
+        for (const [i, sq] of s.grid.entries()) {
           if (sq.stage !== 'F' || sq.blight || !sq.species) continue;
+          squares.push(i);
           addStorage(s, sq.species);
           gained[sq.species] = (gained[sq.species] ?? 0) + 1;
           sq.stage = 'C';
           sq.hold = 0;
         }
-        if (Object.keys(gained).length) report.events.push({ type: 'autoHarvest', gained });
+        if (Object.keys(gained).length) report.events.push({ type: 'autoHarvest', gained, squares });
       }
       if (final) {
         // No month 13: the morning after is the festival, with time for one last harvest and market visit.

@@ -108,8 +108,10 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   const deepHere = trip.patch.find((p) => p.deep);
   const lastWasDeep = !!deepHere?.flipped && last?.card === deepHere.card;
   const deepAt = content.rules.deepAt;
-  const message =
-    last && lastWasDeep
+  const justCleared = store.last?.kind === 'draw' && !!store.last.cleared;
+  const message = justCleared
+    ? `Nothing left unturned: every card in the ${zone.name} but its hazards.`
+    : last && lastWasDeep
       ? last.card.type === 'coins'
         ? `Rare find! A forager's cache, tucked under a root: ${last.card.amount} coins.`
         : `Rare find! ${outcomeText(last.outcome, last.card, last.dropped)}`
@@ -154,7 +156,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
         </div>
       </header>
 
-      <p class={`floor-msg ${last?.outcome ?? ''} ${lastWasDeep ? 'rare' : ''}`} aria-live="polite">
+      <p class={`floor-msg ${last?.outcome ?? ''} ${lastWasDeep || justCleared ? 'rare' : ''}`} aria-live="polite">
         {message}
       </p>
 

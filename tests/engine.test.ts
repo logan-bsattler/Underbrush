@@ -4,6 +4,7 @@ import {
   dispatch,
   GameError,
   hazardsNear,
+  migrateState,
   newGame,
   orderPayment,
   score,
@@ -705,6 +706,27 @@ describe('market and orders', () => {
     s.orders.visible = ['o-oyster3'];
     s = run(s, { type: 'leaveMarket' }, { type: 'fillOrder', order: 'o-oyster3' });
     expect(s.coins).toBe(1);
+  });
+
+  it('doubles the price of each extra delivery on the same visit', () => {
+    let s = blank('o2');
+    s.coins = 30;
+    s.orders = { visible: ['o-oyster3', 'o-four', 'o-lion2'], deck: ['o-hyb2'], filled: [] };
+    s.storage = { oyster: 9, puffball: 2, winecap: 2, lionsmane: 3, shiitake: 2 };
+    const fill = (order: string) => (s = run(s, { type: 'fillOrder', order }));
+    fill('o-oyster3');
+    expect(s.coins).toBe(30);
+    fill('o-four');
+    expect(s.coins).toBe(26);
+    fill('o-lion2');
+    expect(s.coins).toBe(18);
+    expect(s.market).toEqual({ deliveries: 3 });
+  });
+
+  it('counts a delivery already made on a market visit saved by an older build', () => {
+    const s = blank('o3');
+    (s as unknown as { market: { orderFilled: boolean } }).market = { orderFilled: true };
+    expect(migrateState(s).market).toEqual({ deliveries: 1 });
   });
 
   it('hires a hand once a month, dearer each time, with no market visit', () => {

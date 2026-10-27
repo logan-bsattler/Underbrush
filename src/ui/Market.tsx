@@ -37,13 +37,13 @@ export function Market({ g, store, onClose, onPantry }: { g: GameState; store: S
     <SheetFrame title="Village market" onClose={close} tall>
       <p class={`market-visit ${g.market ? 'on' : ''}`}>
         {g.market
-          ? `You're at the market. Trade as much as you like${g.market.orderFilled ? `; another delivery costs ${extra} coins` : ''}. Your visit lasts until you spend another action.`
+          ? `You're at the market. Trade as much as you like${g.market.deliveries ? `; another delivery costs ${extra} coins` : ''}. Your visit lasts until you spend another action.`
           : g.finale
             ? g.finale.marketed
               ? "You've had your last market visit. The festival is next."
-              : `Festival morning: one last market visit, no action needed. Deliver an order, more for ${content.rules.extraDeliveryCost} coins each, and sell what you like.`
+              : `Festival morning: one last market visit, no action needed. Deliver an order free, more for ${content.rules.extraDeliveryCost} coins and doubling after that, and sell what you like.`
             : g.actionsLeft > 0
-            ? `A market visit takes 1 action, spent on your first trade. The first order you deliver is free; each one after it that visit costs ${content.rules.extraDeliveryCost} coins.`
+            ? `A market visit takes 1 action, spent on your first trade. The first order you deliver is free; the next that visit costs ${content.rules.extraDeliveryCost} coins, and each one after costs double the last.`
             : 'No actions left to visit the market this month.'}
       </p>
 
