@@ -180,7 +180,29 @@ export interface RulesDef {
 
 export type AchievementCheck =
   /** Turn every non-hazard card in a zone's deck on one trip: in a given zone, or in any zone when none is named. */
-  { type: 'clearZone'; zone?: string };
+  | { type: 'clearZone'; zone?: string }
+  /** Make this many different hybrids in one year. */
+  | { type: 'hybrids'; count: number }
+  /** Deliver this many festival orders in one year. */
+  | { type: 'orders'; count: number }
+  /** Reach this festival tier (or a higher one) at the festival. */
+  | { type: 'tier'; tier: string }
+  /** Pick this many rare mushrooms from deep finds in one year. */
+  | { type: 'rareFinds'; count: number }
+  /** Cook this many different dishes in one year. */
+  | { type: 'dishes'; count: number }
+  /** Finish a year with at least this many forage trips and no busts. */
+  | { type: 'cleanYear'; trips: number }
+  /** Every square of the farm but the trees growing a mushroom at once. */
+  | { type: 'fullFarm' }
+  /** Rot this many Compost tiles from the compost pile in one year. */
+  | { type: 'compost'; count: number }
+  /** Earn this many coins in one year. */
+  | { type: 'coinsEarned'; amount: number }
+  /** Reach a festival tier with at least this many Legend challenges taken on. */
+  | { type: 'challenges'; count: number }
+  /** Work the homestead as this generation or a later one. */
+  | { type: 'generation'; count: number };
 
 /** A feat the field journal remembers across years. Earned once, from any story or daily year. */
 export interface AchievementDef {
@@ -365,6 +387,10 @@ export interface Stats {
   /** Scraps that reached the compost pile, and the Compost tiles they rotted into. */
   scraps: number;
   compostTiles: number;
+  /** Rare mushrooms picked from deep finds. */
+  rareFinds: number;
+  /** Different dishes cooked this year. */
+  dishes: string[];
 }
 
 /** What the homestead's progression brings into a year. Daily years use the standard kit. */

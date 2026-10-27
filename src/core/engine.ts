@@ -280,6 +280,8 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   if (s.market && s.market.deliveries === undefined) s.market = { deliveries: (s.market as { orderFilled?: boolean }).orderFilled ? 1 : 0 };
   s.stats.scraps ??= s.compostPile.length;
   s.stats.compostTiles ??= 0;
+  s.stats.rareFinds ??= 0;
+  s.stats.dishes ??= s.meal ? [s.meal] : [];
   s.zonesCleared ??= [];
   if (s.forage) {
     // A trip saved before clears were tracked can't say what it walked past, so one already deeper than the first patch can't clear.
@@ -392,6 +394,8 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
       coinsEarned: 0,
       scraps: 0,
       compostTiles: 0,
+      rareFinds: 0,
+      dishes: [],
     },
     over: false,
   };
@@ -604,6 +608,7 @@ export function dispatch(
           }
           if (bump) outcome.outcome = 'swapped';
         }
+        if (spot.deep && outcome.outcome !== 'emptyPatch' && outcome.outcome !== 'basketFull') s.stats.rareFinds += 1;
       } else if (card.type === 'coins') {
         s.coins += card.amount;
         s.stats.coinsEarned += card.amount;
@@ -919,6 +924,7 @@ export function dispatch(
       if (!canCook(s, recipe)) fail(`${recipe.name} needs ${Object.entries(recipe.needs).map(([id, n]) => `${n} ${c.species[id].name}`).join(' and ')}.`);
       for (const [id, n] of Object.entries(recipe.needs)) takeStorage(s, id, n);
       s.meal = recipe.id;
+      if (!s.stats.dishes.includes(recipe.id)) s.stats.dishes.push(recipe.id);
       if (recipe.effect.type === 'actions') s.actionsLeft += recipe.effect.amount;
       if (recipe.effect.type === 'points') s.feastPoints += recipe.effect.amount;
       break;

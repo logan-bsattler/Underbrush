@@ -1,8 +1,86 @@
 [
   {
+    "id": "firstRibbon",
+    "name": "First Ribbon",
+    "rule": "Reach Bronze or better at the Harvest Festival.",
+    "check": { "type": "tier", "tier": "bronze" }
+  },
+  {
+    "id": "firstCross",
+    "name": "Cross-Pollinator",
+    "rule": "Grow a hybrid where two beds meet.",
+    "check": { "type": "hybrids", "count": 1 }
+  },
+  {
     "id": "clearZone",
     "name": "Nothing Left Unturned",
     "rule": "Turn every card in a forage zone except its hazards, all in one trip.",
     "check": { "type": "clearZone" }
+  },
+  {
+    "id": "rareHaul",
+    "name": "Into the Deep",
+    "rule": "Pick 5 rare finds in one year.",
+    "check": { "type": "rareFinds", "count": 5 }
+  },
+  {
+    "id": "sureFooted",
+    "name": "Sure-Footed",
+    "rule": "Finish a year with 10 or more forage trips and never bust.",
+    "check": { "type": "cleanYear", "trips": 10 }
+  },
+  {
+    "id": "villageCook",
+    "name": "Village Cook",
+    "rule": "Cook 4 different dishes in one year.",
+    "check": { "type": "dishes", "count": 4 }
+  },
+  {
+    "id": "blackGold",
+    "name": "Black Gold",
+    "rule": "Rot 5 Compost tiles from the compost pile in one year.",
+    "check": { "type": "compost", "count": 5 }
+  },
+  {
+    "id": "fullPurse",
+    "name": "Full Purse",
+    "rule": "Earn 100 coins in one year.",
+    "check": { "type": "coinsEarned", "amount": 100 }
+  },
+  {
+    "id": "orderBook",
+    "name": "Full Order Book",
+    "rule": "Deliver 6 festival orders in one year.",
+    "check": { "type": "orders", "count": 6 }
+  },
+  {
+    "id": "wallToWall",
+    "name": "Wall to Wall",
+    "rule": "Have every square of the farm but the trees growing a mushroom at once.",
+    "check": { "type": "fullFarm" }
+  },
+  {
+    "id": "strangeGardens",
+    "name": "Strange Gardens",
+    "rule": "Grow 3 different hybrids in one year.",
+    "check": { "type": "hybrids", "count": 3 }
+  },
+  {
+    "id": "golden",
+    "name": "Golden Chanterelle",
+    "rule": "Reach the festival's top tier.",
+    "check": { "type": "tier", "tier": "golden" }
+  },
+  {
+    "id": "familyFarm",
+    "name": "Family Farm",
+    "rule": "Pass the homestead on to the next generation.",
+    "check": { "type": "generation", "count": 2 }
+  },
+  {
+    "id": "againstTheGrain",
+    "name": "Against the Grain",
+    "rule": "Reach a festival tier with all three Legend challenges taken on.",
+    "check": { "type": "challenges", "count": 3 }
   }
 ]

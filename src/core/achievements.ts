@@ -1,4 +1,5 @@
 import { content as defaultContent } from './content';
+import { score } from './engine';
 import type { AchievementCheck, Content, GameState } from './types';
 
 /**
@@ -6,14 +7,45 @@ import type { AchievementCheck, Content, GameState } from './types';
  * engine only records what happened (a zone cleared) and the journal decides what that earns.
  */
 
-function met(check: AchievementCheck, s: GameState): boolean {
+/** The year reached this tier or a higher one at the festival. */
+function reachedTier(s: GameState, tier: string | null, c: Content): boolean {
+  if (!s.over) return false;
+  const got = score(s, c).tier;
+  if (!got) return false;
+  const rank = (id: string) => c.rules.tiers.findIndex((t) => t.id === id);
+  return tier === null || rank(got.id) >= rank(tier);
+}
+
+function met(check: AchievementCheck, s: GameState, c: Content): boolean {
   switch (check.type) {
     case 'clearZone':
       return check.zone ? s.zonesCleared.includes(check.zone) : s.zonesCleared.length > 0;
+    case 'hybrids':
+      return s.hybridsMade.length >= check.count;
+    case 'orders':
+      return s.orders.filled.length >= check.count;
+    case 'tier':
+      return reachedTier(s, check.tier, c);
+    case 'rareFinds':
+      return s.stats.rareFinds >= check.count;
+    case 'dishes':
+      return s.stats.dishes.length >= check.count;
+    case 'cleanYear':
+      return s.over && s.stats.busts === 0 && s.stats.trips >= check.trips;
+    case 'fullFarm':
+      return s.grid.every((sq) => sq.tree || sq.species !== null);
+    case 'compost':
+      return s.stats.compostTiles >= check.count;
+    case 'coinsEarned':
+      return s.stats.coinsEarned >= check.amount;
+    case 'challenges':
+      return s.perks.challenges.length >= check.count && reachedTier(s, null, c);
+    case 'generation':
+      return s.perks.generation >= check.count;
   }
 }
 
 /** Ids of the achievements this year has earned so far. */
 export function achievementsEarned(s: GameState, c: Content = defaultContent): string[] {
-  return c.achievements.filter((a) => met(a.check, s)).map((a) => a.id);
+  return c.achievements.filter((a) => met(a.check, s, c)).map((a) => a.id);
 }

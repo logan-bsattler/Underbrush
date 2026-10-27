@@ -322,6 +322,30 @@ the engine records about a year, so adding one is data plus, for a new kind of c
   one trip. Going deeper with a non-hazard card still face down rules the trip out; rare finds
   don't count either way. The journal also keeps which zones you've cleared.
 
+The rest, roughly in the order a homestead meets them. Everything counted is within one year:
+
+| Achievement | Check | Feat |
+| --- | --- | --- |
+| First Ribbon | `tier` | Bronze or better at the festival |
+| Cross-Pollinator | `hybrids` | Grow a hybrid |
+| Into the Deep | `rareFinds` | Pick 5 rare mushrooms from deep finds (caches of coins don't count) |
+| Sure-Footed | `cleanYear` | 10 or more forage trips and no bust |
+| Village Cook | `dishes` | Cook 4 different dishes |
+| Black Gold | `compost` | Rot 5 Compost tiles from the pile |
+| Full Purse | `coinsEarned` | Earn 100 coins |
+| Full Order Book | `orders` | Deliver 6 festival orders |
+| Wall to Wall | `fullFarm` | Every square but the trees growing a mushroom at once |
+| Strange Gardens | `hybrids` | Grow 3 different hybrids |
+| Golden Chanterelle | `tier` | The festival's top tier |
+| Family Farm | `generation` | Pass the homestead on (earned on the next generation's first action) |
+| Against the Grain | `challenges` | Reach a tier with all three Legend challenges |
+
+Tier checks only count once the festival is over and use that generation's raised thresholds.
+The year's state now also counts rare finds and the different dishes cooked (`stats.rareFinds`,
+`stats.dishes`). Over 300 standard-kit years the baseline bot earns First Ribbon in 50%,
+Cross-Pollinator 76%, Sure-Footed 44%, Black Gold and Wall to Wall 8% each, Strange Gardens 1% and
+nothing else. It never cooks, goes deep or plans for orders, so those are for people.
+
 ## Not in this build
 
 Monetization and store builds (a natural demo cut is year one, levels 1–2), async co-op, expansion biomes, Riverbank/Waders, Burn Bed,

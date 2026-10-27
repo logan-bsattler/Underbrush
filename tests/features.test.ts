@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  achievementsEarned,
   basketCapacity,
   boardsFor,
   bustAt,
@@ -373,6 +374,84 @@ describe('achievements: clearing a zone', () => {
     expect(first.journal.zonesCleared).toEqual(['meadow']);
     expect(first.fresh).toContain('achievement:clearZone');
     expect(mergeDiscoveries(first.journal, s).fresh).toEqual([]);
+  });
+});
+
+describe('achievements: feats of a year', () => {
+  const earned = (s: GameState) => achievementsEarned(s);
+
+  it('counts a rare mushroom picked from a deep find, not a deep cache of coins', () => {
+    let s = run(fresh('rare'), { type: 'forage', zone: 'meadow' }, { type: 'deeper' }, { type: 'deeper' });
+    const at = s.forage!.patch.findIndex((p) => p.deep);
+    s.forage!.patch[at].card = { type: 'coins', amount: 3 };
+    expect(run(s, { type: 'flip', index: at }).stats.rareFinds).toBe(0);
+    s.forage!.patch[at].card = { type: 'specimen', species: 'stgeorge' };
+    expect(run(s, { type: 'flip', index: at }).stats.rareFinds).toBe(1);
+  });
+
+  it('remembers each different dish cooked this year', () => {
+    const s = fresh('menu');
+    s.storage = { reishi: 2, oyster: 2 };
+    let a = run(s, { type: 'cook', recipe: 'reishitea' }, { type: 'endMonth' }, { type: 'dismissNight' });
+    a = run(a, { type: 'cook', recipe: 'reishitea' }, { type: 'endMonth' }, { type: 'dismissNight' }, { type: 'cook', recipe: 'oysterfry' });
+    expect(a.stats.dishes).toEqual(['reishitea', 'oysterfry']);
+  });
+
+  it("awards festival tiers only once the festival is over, against the generation's tiers", () => {
+    const s = fresh('tier');
+    s.orderPoints = 15;
+    expect(earned(s)).not.toContain('firstRibbon');
+    s.over = true;
+    expect(earned(s)).toContain('firstRibbon');
+    expect(earned(s)).not.toContain('golden');
+    s.perks.generation = 2;
+    expect(earned(s)).not.toContain('firstRibbon');
+    expect(earned(s)).toContain('familyFarm');
+  });
+
+  it('needs a whole year without a bust for Sure-Footed', () => {
+    const s = fresh('sure');
+    s.stats.trips = 10;
+    expect(earned(s)).not.toContain('sureFooted');
+    s.over = true;
+    expect(earned(s)).toContain('sureFooted');
+    s.stats.busts = 1;
+    expect(earned(s)).not.toContain('sureFooted');
+  });
+
+  it('fills the farm for Wall to Wall, trees aside', () => {
+    const s = clearFarm(fresh('wall'));
+    const open = s.grid.map((sq, i) => (sq.tree ? -1 : i)).filter((i) => i >= 0);
+    for (const i of open.slice(1)) bed(s, i, 'oyster');
+    expect(earned(s)).not.toContain('wallToWall');
+    bed(s, open[0], 'oyster');
+    expect(earned(s)).toContain('wallToWall');
+  });
+
+  it('needs every Legend challenge and a festival tier for Against the Grain', () => {
+    const s = fresh('grain');
+    s.over = true;
+    s.perks.challenges = content.progression.challenges.map((c) => c.id);
+    expect(earned(s)).not.toContain('againstTheGrain');
+    s.orderPoints = 15;
+    expect(earned(s)).toContain('againstTheGrain');
+    s.perks.challenges = s.perks.challenges.slice(1);
+    expect(earned(s)).not.toContain('againstTheGrain');
+  });
+
+  it('counts hybrids, orders, compost and coins within the year', () => {
+    const s = fresh('counts');
+    expect(earned(s)).toEqual([]);
+    Object.assign(s, { hybridsMade: ['shaggyoyster', 'emberpuff', 'frostoyster'] });
+    s.orders.filled = ['a', 'b', 'c', 'd', 'e', 'f'];
+    Object.assign(s.stats, { compostTiles: 5, coinsEarned: 100, rareFinds: 5, dishes: ['a', 'b', 'c', 'd'] });
+    expect(earned(s)).toEqual(['firstCross', 'rareHaul', 'villageCook', 'blackGold', 'fullPurse', 'orderBook', 'strangeGardens']);
+  });
+
+  it('every achievement has a known check', () => {
+    const ids = content.achievements.map((a) => a.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const a of content.achievements) if (a.check.type === 'tier') expect(content.rules.tiers.map((t) => t.id)).toContain(a.check.tier);
   });
 });
 

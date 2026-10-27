@@ -891,7 +891,7 @@ describe('journal', () => {
     s.discovered = ['oyster', 'puffball'];
     s.hybridsMade = ['frostoyster'];
     const first = mergeDiscoveries(emptyJournal(), s);
-    expect(first.fresh).toEqual(['oyster', 'puffball', 'hybrid:frostoyster']);
+    expect(first.fresh).toEqual(['oyster', 'puffball', 'hybrid:frostoyster', 'achievement:firstCross']);
     const again = mergeDiscoveries(first.journal, s);
     expect(again.fresh).toEqual([]);
     s.over = true;
