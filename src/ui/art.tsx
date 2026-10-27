@@ -19,6 +19,9 @@ export function ArtDefs() {
           <feDisplacementMap in="SourceGraphic" in2="n" scale="14" xChannelSelector="R" yChannelSelector="G" result="d" />
           <feGaussianBlur in="d" stdDeviation="1.6" />
         </filter>
+        <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="7" />
+        </filter>
         <filter id="grain">
           <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="11" />
           <feColorMatrix values="0 0 0 0 0.2  0 0 0 0 0.16  0 0 0 0 0.1  0 0 0 0.09 0" />
@@ -98,6 +101,7 @@ function shapeFor(id: string, a: SpeciesArt): G {
     case 'ball':
       return (
         <g>
+          {a.star && <path d="M4 90 L30 80 L18 64 L40 74 L50 58 L60 74 L82 64 L70 80 L96 90 L50 95 Z" fill={a.gill} {...line} />}
           <path d="M28 86 Q20 60 34 44 Q50 30 68 42 Q82 58 72 86 Q50 92 28 86 Z" fill={a.cap} {...line} />
           <path d="M60 42 Q78 54 72 84 Q66 86 60 87 Q72 62 60 42 Z" fill={a.shade} opacity="0.55" />
           {[
@@ -125,6 +129,20 @@ function shapeFor(id: string, a: SpeciesArt): G {
             const len = 22 + ((i * 7) % 5) * 5;
             return <path d={`M${x} 46 Q${x + 1} ${46 + len / 2} ${x - 0.5} ${46 + len}`} fill="none" stroke={a.cap} strokeWidth="2" strokeLinecap="round" />;
           })}
+          {a.drops &&
+            id &&
+            [
+              [32, 32],
+              [48, 26],
+              [63, 33],
+              [41, 42],
+              [57, 43],
+            ].map(([x, y]) => (
+              <g>
+                <circle cx={x} cy={y} r="3.4" fill="#B3121B" />
+                <circle cx={x - 1} cy={y - 1.2} r="0.9" fill="#F6E1DF" />
+              </g>
+            ))}
           <path d="M8 90 L92 90" stroke="#8C6A4A" strokeWidth="5" strokeLinecap="round" opacity="0.7" />
         </g>
       );
@@ -194,6 +212,7 @@ export function Mushroom({ species, size = 64, title }: { species: string; size?
   const def = content.species[species];
   return (
     <svg class="mush" width={size} height={size} viewBox="0 0 100 100" role="img" aria-label={title ?? def.name}>
+      {def.art.glow && <circle cx="50" cy="52" r="40" fill={def.art.gill} opacity="0.75" filter="url(#glow)" />}
       <ellipse cx="50" cy="91" rx="34" ry="5" fill={def.art.shade} opacity="0.18" filter="url(#wash)" />
       <g filter="url(#wc)">{shapeFor(species, def.art)}</g>
     </svg>
@@ -562,6 +581,14 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
       return (
         <svg {...p}>
           <path d="M6 6l12 12M18 6 6 18" {...s} />
+        </svg>
+      );
+    case 'relic':
+      return (
+        <svg {...p}>
+          <circle cx="8" cy="8" r="4.6" fill="#C9A24B" stroke="#6A4E14" strokeWidth="1.5" />
+          <circle cx="8" cy="8" r="1.7" fill="#F6F1E4" />
+          <path d="M11.2 11.2 L20 20 M15.5 15.5 l2.4 -2.4 M18.2 18.2 l2.4 -2.4" stroke="#6A4E14" strokeWidth="2" strokeLinecap="round" fill="none" />
         </svg>
       );
     case 'spark':

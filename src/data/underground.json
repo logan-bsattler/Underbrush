@@ -1,0 +1,265 @@
+{
+  "meadow": [
+    {
+      "name": "Badger Setts",
+      "blurb": "Tunnels under the meadow, worn smooth by generations of badgers.",
+      "clue": "Grandpa used to speak of badger setts under the meadow, so deep the badgers came up smelling of wet stone.",
+      "payoff": "The setts go down and down, and they smell of wet stone. Grandpa was right.",
+      "artifact": "droverspenny",
+      "deck": [
+        { "card": { "type": "specimen", "species": "earthstar" }, "copies": 4 },
+        { "card": { "type": "specimen", "species": "scarletelfcup" }, "copies": 1 },
+        { "card": { "type": "coins", "amount": 3 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Loose Earth" }, "copies": 2 },
+        { "card": { "type": "hazard", "name": "Low Tunnel" }, "copies": 2 }
+      ]
+    },
+    {
+      "name": "The Old Well",
+      "blurb": "A dry well shaft the badgers broke into, lined with mossy brick.",
+      "clue": "Grandpa used to speak of an old well in the meadow, filled in before he was born. He said the badgers knew where it was.",
+      "payoff": "Mossy brick, and a well shaft running down. The badgers knew where it was all along.",
+      "artifact": "blueribbon",
+      "deck": [
+        { "card": { "type": "specimen", "species": "earthstar" }, "copies": 2 },
+        { "card": { "type": "specimen", "species": "scarletelfcup" }, "copies": 2 },
+        { "card": { "type": "coins", "amount": 4 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Crumbling Brick" }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Bad Air" }, "copies": 2 }
+      ]
+    },
+    {
+      "name": "The Spring Below",
+      "blurb": "Where the well's water went: a cold spring in a chamber of white stone.",
+      "clue": "Grandpa swore the old well never ran dry. The water just went somewhere deeper, he said, and took the wishes with it.",
+      "payoff": "A cold spring under the meadow, glinting with old coins and older wishes. The well never ran dry.",
+      "artifact": "stonecap",
+      "deck": [
+        { "card": { "type": "specimen", "species": "scarletelfcup" }, "copies": 2 },
+        { "card": { "type": "specimen", "species": "ghostfungus" }, "copies": 1 },
+        { "card": { "type": "coins", "amount": 5 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Deep Water" }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Rockfall" }, "copies": 3 }
+      ]
+    }
+  ],
+  "mixedwoods": [
+    {
+      "name": "Root Hollows",
+      "blurb": "Hollows among the roots of the great oaks, roomy enough to crawl through.",
+      "clue": "Grandma used to speak of hollows under the big oaks, where she hid as a girl and found things she never told anyone about.",
+      "payoff": "The root hollows, just as Grandma described them. No wonder she kept them to herself.",
+      "artifact": "sixpence",
+      "deck": [
+        { "card": { "type": "specimen", "species": "bleedingtooth" }, "copies": 3 },
+        { "card": { "type": "specimen", "species": "bitteroyster" }, "copies": 2 },
+        { "card": { "type": "coins", "amount": 3 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Tangled Roots" }, "copies": 2 },
+        { "card": { "type": "hazard", "name": "Loose Earth" }, "copies": 2 }
+      ]
+    },
+    {
+      "name": "The Root Cellar",
+      "blurb": "Someone shored up a hollow with planks long ago: a forgotten root cellar.",
+      "clue": "Grandma said someone once kept a cellar in the woods, under the roots, and never came back for what was in it.",
+      "payoff": "Planks and shelves under the roots: a cellar nobody came back for.",
+      "artifact": "rosette",
+      "deck": [
+        { "card": { "type": "specimen", "species": "bleedingtooth" }, "copies": 2 },
+        { "card": { "type": "specimen", "species": "bitteroyster" }, "copies": 2 },
+        { "card": { "type": "coins", "amount": 4 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Rotten Planks" }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Tangled Roots" }, "copies": 2 }
+      ]
+    },
+    {
+      "name": "The Taproot Hall",
+      "blurb": "A long hall where a single ancient taproot runs down into the dark.",
+      "clue": "Grandma always said the oldest oak in the woods had a root that reached the bottom of the world.",
+      "payoff": "One root, thick as a cart, running down into the dark. Grandma wasn't exaggerating.",
+      "artifact": "stonestem",
+      "deck": [
+        { "card": { "type": "specimen", "species": "bleedingtooth" }, "copies": 2 },
+        { "card": { "type": "specimen", "species": "ghostfungus" }, "copies": 1 },
+        { "card": { "type": "coins", "amount": 5 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Rockfall" }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Dead End" }, "copies": 3 }
+      ]
+    }
+  ],
+  "oldgrowth": [
+    {
+      "name": "Mossy Cave",
+      "blurb": "A cave mouth behind a curtain of moss, cold and dripping.",
+      "clue": "Great-uncle Tobias used to speak of a cave behind the moss in the old-growth, where he went to cool off in summer.",
+      "payoff": "A cave behind the moss, cool as Great-uncle Tobias promised.",
+      "artifact": "guinea",
+      "deck": [
+        { "card": { "type": "specimen", "species": "ghostfungus" }, "copies": 2 },
+        { "card": { "type": "specimen", "species": "bitteroyster" }, "copies": 3 },
+        { "card": { "type": "coins", "amount": 3 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Slick Stone" }, "copies": 2 },
+        { "card": { "type": "hazard", "name": "Low Ceiling" }, "copies": 2 }
+      ]
+    },
+    {
+      "name": "The Dripping Gallery",
+      "blurb": "A long gallery where water ticks from the ceiling like a slow clock.",
+      "clue": "Great-uncle Tobias said the cave went on and on, and that you could tell the time down there by the dripping.",
+      "payoff": "Drip, drip, drip, steady as a clock. Great-uncle Tobias wasn't spinning yarns.",
+      "artifact": "medal",
+      "deck": [
+        { "card": { "type": "specimen", "species": "ghostfungus" }, "copies": 2 },
+        { "card": { "type": "specimen", "species": "bitteroyster" }, "copies": 2 },
+        { "card": { "type": "coins", "amount": 4 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Slick Stone" }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Dead End" }, "copies": 2 }
+      ]
+    },
+    {
+      "name": "The Glowing Grotto",
+      "blurb": "A grotto lit only by the mushrooms on its walls.",
+      "clue": "Great-uncle Tobias swore that deep in the cave the mushrooms gave off their own light. Nobody believed him.",
+      "payoff": "The walls glow green and the mushrooms light the way. Great-uncle Tobias was telling the truth.",
+      "artifact": "stonering",
+      "deck": [
+        { "card": { "type": "specimen", "species": "ghostfungus" }, "copies": 3 },
+        { "card": { "type": "coins", "amount": 5 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Sheer Drop" }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Rockfall" }, "copies": 3 }
+      ]
+    }
+  ],
+  "burnscar": [
+    {
+      "name": "The Kiln Mouth",
+      "blurb": "The scorched mouth of an old charcoal kiln, half buried by last year's fire.",
+      "clue": "Great-grandpa used to speak of a charcoal kiln on the ridge, back when the family burned wood for a living.",
+      "payoff": "The fire cleared the ridge, and there it is: the mouth of Great-grandpa's kiln.",
+      "artifact": "lanternframe",
+      "deck": [
+        { "card": { "type": "specimen", "species": "charcoalburner" }, "copies": 3 },
+        { "card": { "type": "specimen", "species": "earthstar" }, "copies": 1 },
+        { "card": { "type": "coins", "amount": 3 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Ash Pit" }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Smoke Pocket" }, "copies": 2 }
+      ]
+    },
+    {
+      "name": "The Collapsed Kiln",
+      "blurb": "The kiln's dome fell in long ago; you pick through its blackened ribs.",
+      "clue": "Great-grandpa said the kiln caved in one wet spring, with his tools still inside.",
+      "payoff": "Fallen brick and blackened ribs: Great-grandpa's kiln, caved in with everything in it.",
+      "artifact": "compassrose",
+      "deck": [
+        { "card": { "type": "specimen", "species": "charcoalburner" }, "copies": 2 },
+        { "card": { "type": "specimen", "species": "earthstar" }, "copies": 1 },
+        { "card": { "type": "coins", "amount": 4 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Crumbling Brick" }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Ash Pit" }, "copies": 3 }
+      ]
+    },
+    {
+      "name": "The Ash Vault",
+      "blurb": "Beneath the kiln, a brick vault where the charcoal was stored dry.",
+      "clue": "Great-grandpa said there was a vault under the kiln, and that it was the driest place in the valley.",
+      "payoff": "A dry brick vault beneath the ash: the driest place in the valley, as promised.",
+      "artifact": "doorkey",
+      "deck": [
+        { "card": { "type": "specimen", "species": "charcoalburner" }, "copies": 2 },
+        { "card": { "type": "specimen", "species": "ghostfungus" }, "copies": 1 },
+        { "card": { "type": "coins", "amount": 6 }, "copies": 2 },
+        { "card": { "type": "hazard", "name": "Smoke Pocket" }, "copies": 4 },
+        { "card": { "type": "hazard", "name": "Crumbling Brick" }, "copies": 3 }
+      ]
+    }
+  ],
+  "riverbank": [
+    {
+      "name": "The Undercut Bank",
+      "blurb": "Where the creek has carved under the willow roots: a low, damp hollow.",
+      "clue": "Great-aunt Rue used to speak of hiding places under the creek bank, where the water had eaten the earth away.",
+      "payoff": "Under the willow roots, a hollow the creek carved out: Great-aunt Rue's hiding place.",
+      "artifact": "lanternglass",
+      "deck": [
+        { "card": { "type": "specimen", "species": "scarletelfcup" }, "copies": 3 },
+        { "card": { "type": "specimen", "species": "bitteroyster" }, "copies": 2 },
+        { "card": { "type": "coins", "amount": 3 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Mudslip" }, "copies": 2 },
+        { "card": { "type": "hazard", "name": "Rising Water" }, "copies": 2 }
+      ]
+    },
+    {
+      "name": "The Flooded Grotto",
+      "blurb": "A grotto half full of still green water, reached by wading.",
+      "clue": "Great-aunt Rue said that when the creek ran low you could wade into a grotto where the water stood still and green.",
+      "payoff": "Still green water in a stone grotto. Great-aunt Rue waded here once, too.",
+      "artifact": "maptube",
+      "deck": [
+        { "card": { "type": "specimen", "species": "scarletelfcup" }, "copies": 2 },
+        { "card": { "type": "specimen", "species": "bitteroyster" }, "copies": 2 },
+        { "card": { "type": "coins", "amount": 4 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Deep Water" }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Slick Stone" }, "copies": 2 }
+      ]
+    },
+    {
+      "name": "The Sunken Mill",
+      "blurb": "The stone footings of a mill the river swallowed long ago.",
+      "clue": "Great-aunt Rue swore there was a mill under the river once, and that on quiet nights you could hear its wheel.",
+      "payoff": "Millstones under the water, and a wheel that hasn't turned in a century. Great-aunt Rue heard right.",
+      "artifact": "baskethandle",
+      "deck": [
+        { "card": { "type": "specimen", "species": "scarletelfcup" }, "copies": 2 },
+        { "card": { "type": "specimen", "species": "ghostfungus" }, "copies": 1 },
+        { "card": { "type": "coins", "amount": 5 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Deep Water" }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Strong Current" }, "copies": 3 }
+      ]
+    }
+  ],
+  "hollow": [
+    {
+      "name": "Fallen Walls",
+      "blurb": "Moss-covered walls in the Hollow, too square to be stone the forest made.",
+      "clue": "Grandpa used to speak of an old ruin in the forest, past the old-growth, where the walls were too straight to be natural.",
+      "payoff": "Straight walls under the moss. Grandpa's old ruin in the forest, found at last.",
+      "artifact": "lanternwick",
+      "deck": [
+        { "card": { "type": "specimen", "species": "violetwebcap" }, "copies": 3 },
+        { "card": { "type": "specimen", "species": "ghostfungus" }, "copies": 2 },
+        { "card": { "type": "coins", "amount": 4 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Falling Stone" }, "copies": 2 },
+        { "card": { "type": "hazard", "name": "Bramble Wall" }, "copies": 2 }
+      ]
+    },
+    {
+      "name": "The Ruined Cellar",
+      "blurb": "Steps down through the ruin into a cellar choked with roots.",
+      "clue": "Grandpa said the ruin had a cellar, and that his own grandfather wouldn't go down the steps.",
+      "payoff": "Stone steps into a cellar full of roots. Whatever scared the old folks, it's quiet now.",
+      "artifact": "surveyorschain",
+      "deck": [
+        { "card": { "type": "specimen", "species": "violetwebcap" }, "copies": 2 },
+        { "card": { "type": "specimen", "species": "ghostfungus" }, "copies": 2 },
+        { "card": { "type": "coins", "amount": 5 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Falling Stone" }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Bad Air" }, "copies": 2 }
+      ]
+    },
+    {
+      "name": "The Old Hearth",
+      "blurb": "The heart of the ruin: a great stone hearth with a mark carved over it.",
+      "clue": "Grandpa had a story that the family didn't start out on the homestead at all, but somewhere deep in the Hollow.",
+      "payoff": "Carved over the hearth is the family's own mark. This ruin was the first homestead.",
+      "artifact": "hearthtile",
+      "deck": [
+        { "card": { "type": "specimen", "species": "violetwebcap" }, "copies": 2 },
+        { "card": { "type": "specimen", "species": "ghostfungus" }, "copies": 1 },
+        { "card": { "type": "coins", "amount": 6 }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Falling Stone" }, "copies": 3 },
+        { "card": { "type": "hazard", "name": "Collapse" }, "copies": 3 }
+      ]
+    }
+  ]
+}

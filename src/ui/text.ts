@@ -35,6 +35,8 @@ export function cardTitle(card: Card) {
       return `${card.amount} coins`;
     case 'hazard':
       return card.name;
+    case 'artifact':
+      return content.artifacts.find((a) => a.id === card.artifact)?.name ?? 'Artifact';
   }
 }
 
@@ -60,6 +62,10 @@ export function outcomeText(o: DrawOutcome, card: Card, dropped?: Specimen) {
       return 'A hazard. One more this trip and you bust.';
     case 'hazardIgnored':
       return 'Your knife gets you through it. No harm done.';
+    case 'artifact': {
+      const a = card.type === 'artifact' ? content.artifacts.find((x) => x.id === card.artifact) : null;
+      return `An artifact: ${a?.name ?? 'something old'}. ${a?.blurb ?? ''} It counts as a find, so get it home safe.`;
+    }
     case 'bust':
       return `Bust! You scramble home with only your first ${content.rules.bustKeep} finds.`;
   }

@@ -1,13 +1,17 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import {
   achievementProgress,
+  artifactHome,
   boardsFor,
   boardUnlockLevel,
   challengeBonus,
+  completedSets,
   content,
+  generationLore,
   heirloomChoices,
   heirloomSlots,
   isLegend,
+  layersOpen,
   levelFor,
   masteryLevel,
   newGame,
@@ -25,6 +29,8 @@ import type { Store } from './store';
 import { masteryName, name } from './text';
 
 const gearName = (id: string) => content.gear.find((g) => g.id === id)?.name ?? id;
+const zoneName = (id: string) => content.zones.find((z) => z.id === id)?.name ?? id;
+const ordinal = (n: number) => ['first', 'second', 'third', 'fourth', 'fifth'][n - 1] ?? `${n}th`;
 
 export function unlockText(u: Unlock): string {
   switch (u.type) {
@@ -146,6 +152,8 @@ export function Almanac({ store, onBack }: { store: Store; onBack: () => void })
 
       {(isLegend(j) || j.generation > 1) && <Legacy store={store} />}
 
+      <Cabinet j={j} />
+
       <h2>Species mastery</h2>
       <p class="small muted">Every real identification counts, across all your years.</p>
       <ul class="mastery-steps">
@@ -205,10 +213,59 @@ export function Almanac({ store, onBack }: { store: Store; onBack: () => void })
   );
 }
 
+/** The cabinet of curiosities: every artifact set, what the family has found of it, and the lore that hints at the rest. */
+function Cabinet({ j }: { j: Journal }) {
+  const done = completedSets(j.artifacts);
+  return (
+    <>
+      <h2>Cabinet of curiosities</h2>
+      <p class="small muted">
+        Under every zone lie older places. Each generation that takes on the homestead can climb down one layer further, and each layer
+        hides one artifact. Bring a whole set home and the family keeps its perk for every story year after.
+      </p>
+      <ul class="cabinet">
+        {content.artifactSets.map((set) => {
+          const complete = done.includes(set.id);
+          return (
+            <li class={complete ? 'complete' : ''}>
+              <div class="cab-head">
+                <b>{set.name}</b>
+                <span class="small muted">
+                  {content.artifacts.filter((a) => a.set === set.id && j.artifacts.includes(a.id)).length} of{' '}
+                  {content.artifacts.filter((a) => a.set === set.id).length}
+                </span>
+              </div>
+              <ul class="relics">
+                {content.artifacts
+                  .filter((a) => a.set === set.id)
+                  .map((a) => {
+                    const found = j.artifacts.includes(a.id);
+                    const home = artifactHome(a.id);
+                    return (
+                      <li class={found ? 'found' : ''}>
+                        <Icon name="relic" size={20} />
+                        <span>
+                          <b>{found ? a.name : 'Not yet found'}</b>
+                          <small>{found ? a.blurb : home ? `Somewhere in the ${ordinal(home.depth)} layer below the ${zoneName(home.zone)}.` : ''}</small>
+                        </span>
+                      </li>
+                    );
+                  })}
+              </ul>
+              {complete ? <p class="small cab-rule">{set.rule}</p> : <p class="small lore-line">{set.clue}</p>}
+            </li>
+          );
+        })}
+      </ul>
+    </>
+  );
+}
+
 /** Passing the homestead on: what it costs, what carries down, and the generations so far. */
 function Legacy({ store }: { store: Store }) {
   const j = store.journal;
   const { tierStep, startCoins } = content.progression.legacy;
+  const lore = generationLore(j.generation);
   const [sure, setSure] = useState(false);
   useEffect(() => {
     if (!sure) return;
@@ -220,9 +277,15 @@ function Legacy({ store }: { store: Store }) {
       <h2>Pass it on</h2>
       <p class="small">
         A Legend of the Valley can hand the homestead down. The next generation starts again at level 1 with no renown or gear, and every
-        festival tier sits {tierStep} points higher. Your field journal, species mastery and achievements stay in the family, and each
-        generation starts every year with {startCoins} more coins.
+        festival tier sits {tierStep} points higher. Your field journal, species mastery, achievements and cabinet of curiosities stay in
+        the family, each generation starts every year with {startCoins} more coins, and each one can climb one layer further below every
+        zone.
       </p>
+      {lore && (
+        <p class="small lore-line">
+          {lore.layer.clue} <span class="muted">({ordinal(lore.depth)} layer below the {zoneName(lore.zone)})</span>
+        </p>
+      )}
       {j.lineage.length > 0 && (
         <ul class="lineage">
           {j.lineage.map((l) => (
@@ -277,6 +340,7 @@ export function Pack({
   const lean = perks.challenges.includes('leanyear');
   const bonus = challengeBonus(perks.challenges);
   const year = j.years.filter((y) => y.mode === 'story').length + 1;
+  const layers = Math.max(...content.zones.map((z) => layersOpen(perks.generation, z.id)));
   const toggle = (id: string) =>
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : p.length < slots ? [...p, id] : [...p.slice(1), id]));
 
@@ -375,6 +439,19 @@ export function Pack({
         <li>{lean ? 'No coins and no heirlooms to start' : `${content.rules.startCoins + perks.bonusCoins} coins to start`}</li>
         {bonus > 0 && <li>+{Math.round(bonus * 100)}% renown from challenges</li>}
         {perks.generation > 1 && <li>Generation {perks.generation}: festival tiers {(perks.generation - 1) * content.progression.legacy.tierStep} points higher</li>}
+        {layers > 0 && (
+          <li>
+            {layers} layer{layers === 1 ? '' : 's'} open below every zone
+          </li>
+        )}
+        {perks.sets.map((id) => {
+          const set = content.artifactSets.find((x) => x.id === id)!;
+          return (
+            <li>
+              {set.name}: {set.rule}
+            </li>
+          );
+        })}
         <li>Shop stocks {perks.shop.map(gearName).join(', ')}</li>
         {perks.spawn.length > 0 && <li>Spawn of {perks.spawn.map(name).join(', ')} at the market</li>}
         {perks.autoHarvest && <li>Ripe beds are picked every morning</li>}

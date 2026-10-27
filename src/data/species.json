@@ -241,5 +241,68 @@
     "rule": "Can't be planted. A deep find on the Riverbank, fall only.",
     "blurb": "A head of cream ribbons the size of a hat at the foot of an old pine on the high bank.",
     "art": { "shape": "cluster", "cap": "#EFE3C2", "shade": "#C7B07C", "gill": "#F6EED8", "stem": "#E3D3A8" }
+  },
+  {
+    "id": "earthstar", "name": "Collared Earthstar", "latin": "Geastrum triplex", "kind": "wild", "value": 5,
+    "substrates": [], "seasons": "any", "growth": "none",
+    "group": "Star puffball", "lookalike": { "name": "Barometer Earthstar", "on": 1 },
+    "traits": {},
+    "rule": "Can't be planted. Found only underground, in any season: under the Meadow and the Burn Scar.",
+    "blurb": "A puffball sitting in a star of split skin, like an egg in a cup.",
+    "art": { "shape": "ball", "cap": "#B89A74", "shade": "#7E6448", "gill": "#E0CDAE", "stem": "#C9AE88", "star": true }
+  },
+  {
+    "id": "charcoalburner", "name": "Charcoal Burner", "latin": "Russula cyanoxantha", "kind": "wild", "value": 5,
+    "substrates": [], "seasons": "any", "growth": "none",
+    "group": "Smoky cap", "lookalike": { "name": "The Sickener", "on": 1 },
+    "traits": {},
+    "rule": "Can't be planted. Found only underground, in any season, in the old charcoal kiln under the Burn Scar.",
+    "blurb": "A cap of smoke and violet that bends without breaking. Named for the folk who tended the kilns.",
+    "art": { "shape": "cap", "cap": "#6C5F7E", "shade": "#43394F", "gill": "#F1EDE4", "stem": "#F3F0EA" }
+  },
+  {
+    "id": "bleedingtooth", "name": "Bleeding Tooth", "latin": "Hydnellum peckii", "kind": "wild", "value": 6,
+    "substrates": [], "seasons": "any", "growth": "none",
+    "group": "Weeping tooth", "lookalike": { "name": "Scaly Tooth", "on": 1 },
+    "traits": {},
+    "rule": "Can't be planted. Found only underground, in any season, in the hollows under the Mixed Woods.",
+    "blurb": "Weeps beads of red sap from a pale cap. Too bitter to eat; collectors pay well for it.",
+    "art": { "shape": "tooth", "cap": "#F1E9E2", "shade": "#B9A7A0", "gill": "#E7DCD5", "stem": "#8C6E62", "drops": true }
+  },
+  {
+    "id": "bitteroyster", "name": "Bitter Oyster", "latin": "Panellus stipticus", "kind": "wild", "value": 5,
+    "substrates": [], "seasons": "any", "growth": "none",
+    "group": "Glowing fan", "lookalike": { "name": "Tiny Oyster", "on": 1 },
+    "traits": {},
+    "rule": "Can't be planted. Found only underground, in any season, on old roots and drowned wood.",
+    "blurb": "Little tan fans whose gills glow green in the dark. Sold to collectors, not cooks.",
+    "art": { "shape": "shelf", "cap": "#C8A27A", "shade": "#8E6C4B", "gill": "#DDE9B8", "stem": "#C8A27A", "glow": true }
+  },
+  {
+    "id": "ghostfungus", "name": "Ghost Fungus", "latin": "Omphalotus nidiformis", "kind": "wild", "value": 7,
+    "substrates": [], "seasons": "any", "growth": "none",
+    "group": "Glowing funnel", "lookalike": { "name": "Jack-o'-lantern", "on": 2 },
+    "traits": {},
+    "rule": "Can't be planted. Found only underground, in any season: the caves under the Old-growth, and the deepest places.",
+    "blurb": "Pale funnels that light a cave with a cold green glow. Sold to collectors, never cooks.",
+    "art": { "shape": "funnel", "cap": "#E9E6D4", "shade": "#A9B39A", "gill": "#D5F0C0", "stem": "#DCD8C2", "glow": true }
+  },
+  {
+    "id": "scarletelfcup", "name": "Scarlet Elf Cup", "latin": "Sarcoscypha austriaca", "kind": "wild", "value": 5,
+    "substrates": [], "seasons": "any", "growth": "none",
+    "group": "Red cup", "lookalike": { "name": "Orange Peel Fungus", "on": 1 },
+    "traits": {},
+    "rule": "Can't be planted. Found only underground, in any season, wherever water stands still: grottos and old wells.",
+    "blurb": "Bright scarlet cups on sunken twigs, the only color in a dark grotto.",
+    "art": { "shape": "funnel", "cap": "#C7302A", "shade": "#8A1C18", "gill": "#E2554A", "stem": "#E9DCC8" }
+  },
+  {
+    "id": "violetwebcap", "name": "Violet Webcap", "latin": "Cortinarius violaceus", "kind": "wild", "value": 7,
+    "substrates": [], "seasons": "any", "growth": "none",
+    "group": "Deep violet cap", "lookalike": { "name": "Lilac Fibrecap", "on": 2 },
+    "traits": {},
+    "rule": "Can't be planted. Found only underground, in any season, among the ruins under the Hollow.",
+    "blurb": "Violet so dark it is nearly black, with a cobweb veil under the cap.",
+    "art": { "shape": "cap", "cap": "#3E2A5C", "shade": "#24173A", "gill": "#5A3F7E", "stem": "#5E4682", "fringe": true }
   }
 ]

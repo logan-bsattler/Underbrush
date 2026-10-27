@@ -190,7 +190,8 @@
   ],
   "legacy": {
     "tierStep": 5,
-    "startCoins": 2
+    "startCoins": 2,
+    "lore": ["hollow", "meadow", "hollow"]
   },
   "challenges": [
     {

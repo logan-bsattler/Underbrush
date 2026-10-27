@@ -2,6 +2,7 @@ import { achievementsEarned } from './achievements';
 import { content as defaultContent } from './content';
 import { score } from './engine';
 import { challengeBonus, levelFor, masteryLevel } from './progression';
+import { completedSets } from './underground';
 import type { Content, GameState } from './types';
 
 export interface YearRecord {
@@ -42,10 +43,14 @@ export interface Journal {
   generation: number;
   /** Each generation that passed the homestead on: the renown it reached and its story years. */
   lineage: { generation: number; renown: number; years: number }[];
+  /** The cabinet of curiosities: every artifact the family has brought home, in the order found. */
+  artifacts: string[];
+  /** Underground layers the family has reached, as "zone:depth". */
+  layers: string[];
 }
 
 export function emptyJournal(): Journal {
-  return { version: 1, discovered: [], lookalikes: [], hybrids: [], years: [], best: 0, renown: 0, idCounts: {}, gearOwned: [], achievements: [], zonesCleared: [], generation: 1, lineage: [] };
+  return { version: 1, discovered: [], lookalikes: [], hybrids: [], years: [], best: 0, renown: 0, idCounts: {}, gearOwned: [], achievements: [], zonesCleared: [], generation: 1, lineage: [], artifacts: [], layers: [] };
 }
 
 /** Fills in fields added after a journal was first saved. */
@@ -62,7 +67,7 @@ export function normalizeJournal(j: Partial<Journal> | null): Journal {
   return { ...base, ...j, years, version: 1 };
 }
 
-/** Folds this year's finds into the journal. Returns the ids that are new to it. */
+/** Folds this year's finds into the journal. Returns the ids that are new to it, sets the cabinet just completed among them. */
 export function mergeDiscoveries(j: Journal, s: GameState): { journal: Journal; fresh: string[] } {
   const fresh: string[] = [];
   const add = (list: string[], ids: string[], tag = '') => {
@@ -82,7 +87,11 @@ export function mergeDiscoveries(j: Journal, s: GameState): { journal: Journal; 
     lookalikes: add(j.lookalikes, s.lookalikesFound, 'lookalike:'),
     achievements: add(j.achievements, achievementsEarned(s), 'achievement:'),
     zonesCleared: Array.from(new Set([...j.zonesCleared, ...s.zonesCleared])),
+    artifacts: add(j.artifacts, s.artifacts ?? [], 'artifact:'),
+    layers: add(j.layers, s.layersReached ?? [], 'layer:'),
   };
+  const before = completedSets(j.artifacts);
+  for (const id of completedSets(journal.artifacts)) if (!before.includes(id)) fresh.push(`set:${id}`);
   return { journal, fresh };
 }
 

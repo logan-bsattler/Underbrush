@@ -322,6 +322,49 @@ Two loops for a homestead that has earned every level, both in `progression.json
 
 Daily years ignore both and stay on the standard kit.
 
+## The underground
+
+Foraging goes deeper each generation. Every zone has three layers below it in
+`src/data/underground.json`; generation 1 reaches none, and each generation after opens one more
+(`layersOpen`). Rules live in `src/core/underground.ts` and the `descend` action.
+
+- **Getting down.** From the deep patches (or the far edge of the zone), a trip can descend
+  (`descendStatus`). Each layer is a single patch dealt from its own 12-card deck, with more
+  hazards the deeper it is; the hazards met above still count. There's no going deeper in a layer,
+  only down again or home. The deck swipes down whenever the way is open.
+- **Artifacts.** Each layer holds one artifact (`artifacts.json`, 18 in all), dealt into its patch
+  until it's brought home that year. Turned, it's pocketed like a find, so a bust can cost it. It
+  scores 2, 3 or 4 festival points by depth (`score().artifacts`) and goes into the journal's
+  cabinet of curiosities for good.
+- **Sets.** Six sets of three. A whole set in the cabinet adds a modest perk to every story year
+  after, through `perksFor` (`perks.sets`): the Drover's Purse (+2 starting coins), the Forager's
+  Lantern (rare finds and artifacts glint face down), the Festival Ribbons (+2 festival points,
+  `score().family`), the Mapmaker's Case (descend from any patch), the Mushroom Stones (a bust
+  keeps one more find) and the First Homestead (+1 basket).
+- **Family lore.** Every layer has a clue in the family's voice ("Grandpa used to speak of...")
+  and a payoff line. The zone picker shows the clue for the next layer down; the Almanac's Pass it
+  on section tells the clue for a layer the generation just opened (`generationLore`, zones from
+  `legacy.lore`); and the first time the family reaches a layer or completes a set, a Family lore
+  banner pays it off. Unfound artifacts in the cabinet say which layer they lie in.
+
+Daily years stay on the standard kit: generation 1, no layers, no set perks.
+
+`npm run sim -- 300 gen` plays Legend years with every gear owned, the bot diving on every other
+trip (a floor: it never chases sets or plans a descent):
+
+| Generation | Bronze | Median | p90 | Tier reached | Artifacts/yr | Descents/yr | Bust rate |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 15 | 20 | 30 | 75% | 0.0 | 0.0 | 0% |
+| 2 | 20 | 28 | 43 | 86% | 2.9 | 15.9 | 1% |
+| 3 | 25 | 30 | 44 | 68% | 2.9 | 16.1 | 1% |
+| 4 | 30 | 27 | 40 | 40% | 2.6 | 17.3 | 1% |
+| 4, full cabinet | 30 | 30 | 43 | 52% | 2.7 | 16.6 | 1% |
+
+Artifacts roughly keep pace with the rising tiers through generation 3, and generation 4 is meant
+to be the hard one. The low bust rate is the bot, not the underground: generation 1 has no layers
+and busts just as rarely, the Mushroom Knife makes no difference to it, and Legend years run about
+29 short, cautious trips against 12 in a standard-kit year (3% busts there).
+
 ## Achievements
 
 Feats the field journal remembers across every year, listed in the Almanac and announced with a

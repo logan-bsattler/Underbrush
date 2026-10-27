@@ -42,6 +42,10 @@ function met(check: AchievementCheck, s: GameState, c: Content): boolean {
       return s.perks.challenges.length >= check.count && reachedTier(s, null, c);
     case 'generation':
       return s.perks.generation >= check.count;
+    case 'layer':
+      return s.layersReached.some((key) => Number(key.split(':')[1]) >= check.depth);
+    case 'artifacts':
+      return s.artifacts.length >= check.count;
   }
 }
 
@@ -64,6 +68,8 @@ export function achievementProgress(check: AchievementCheck, s: GameState): { ha
       return { have: s.stats.compostTiles, need: check.count };
     case 'coinsEarned':
       return { have: s.stats.coinsEarned, need: check.amount };
+    case 'artifacts':
+      return s.perks.generation > 1 ? { have: s.artifacts.length, need: check.count } : null;
     default:
       return null;
   }

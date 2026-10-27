@@ -61,6 +61,9 @@ export interface Store {
   /** Achievement ids earned since the player last dismissed the notice. */
   achieved: string[];
   dismissAchieved: () => void;
+  /** Family lore paid off since the player last dismissed it: "layer:zone:depth" for a layer first reached, "set:id" for a set just completed. */
+  lore: string[];
+  dismissLore: () => void;
   act: (a: Action) => ActionResult | null;
   /** Starts a year. Story years bring the homestead's progression, the packed heirlooms, the chosen board and any Legend challenges; daily years use the standard kit on the day's board. */
   start: (mode: GameState['mode'], heirlooms?: string[], board?: string, challenges?: string[]) => void;
@@ -76,6 +79,7 @@ export function useStore(): Store {
   const [error, setError] = useState<string | null>(null);
   const [last, setLast] = useState<ActionResult | null>(null);
   const [achieved, setAchieved] = useState<string[]>([]);
+  const [lore, setLore] = useState<string[]>([]);
   const gameRef = useRef(game);
   gameRef.current = game;
   const journalRef = useRef(journal);
@@ -95,6 +99,8 @@ export function useStore(): Store {
       if (merged.fresh.length) setFresh((f) => [...f, ...merged.fresh]);
       const won = merged.fresh.filter((f) => f.startsWith('achievement:')).map((f) => f.slice('achievement:'.length));
       if (won.length) setAchieved((a) => [...a, ...won]);
+      const told = merged.fresh.filter((f) => f.startsWith('layer:') || f.startsWith('set:'));
+      if (told.length) setLore((l) => [...l, ...told]);
     }
   }, []);
 
@@ -154,6 +160,13 @@ export function useStore(): Store {
     return () => clearTimeout(t);
   }, [achieved]);
 
+  // Lore is longer to read than an achievement's name, so it stays up a little longer.
+  useEffect(() => {
+    if (!lore.length) return;
+    const t = setTimeout(() => setLore([]), 8000);
+    return () => clearTimeout(t);
+  }, [lore]);
+
   return {
     game,
     journal,
@@ -162,6 +175,8 @@ export function useStore(): Store {
     last,
     achieved,
     dismissAchieved: () => setAchieved([]),
+    lore,
+    dismissLore: () => setLore([]),
     act,
     start,
     passItOn,

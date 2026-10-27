@@ -2,6 +2,7 @@ import { content as defaultContent } from './content';
 import { Rng, hashSeed } from './rng';
 import { runGrowth } from './growth';
 import { crossKey, farmLayout, hybridFor, inSeason, neighbors, seasonOf } from './board';
+import { artifactDef, buildLayerDeck, hasSetEffect, layerDef, layerKey, layersOpen, setBonus } from './underground';
 
 export * from './board';
 import type {
@@ -57,7 +58,23 @@ function isLean(perks: Perks, c: Content): boolean {
 
 export function basketCapacity(s: GameState, c: Content = defaultContent): number {
   const base = s.gear.includes('biggerbasket') ? c.rules.biggerBasketSize : c.rules.basketSize;
-  return base + (s.weather === 'goodseason' ? 1 : 0) + mealBonus(s, 'basket', c) + challengeEffect(s.perks, 'basket', c);
+  return (
+    base +
+    (s.weather === 'goodseason' ? 1 : 0) +
+    mealBonus(s, 'basket', c) +
+    challengeEffect(s.perks, 'basket', c) +
+    setBonus(s.perks.sets, 'basket', c)
+  );
+}
+
+/** Finds a bust lets you keep: the kit's first two, and one more with the Mushroom Stones. */
+export function bustKeep(s: GameState, c: Content = defaultContent): number {
+  return c.rules.bustKeep + setBonus(s.perks.sets, 'keep', c);
+}
+
+/** Rare finds and artifacts glint face down: the Forager's Lantern. */
+export function glints(s: GameState, c: Content = defaultContent): boolean {
+  return hasSetEffect(s.perks.sets, 'glint', c);
 }
 
 /** Hazards that bust a forage trip this month. */
@@ -151,6 +168,21 @@ export function zoneStatus(s: GameState, zone: ZoneDef, c: Content = defaultCont
   return { open: true };
 }
 
+/** Whether this trip can go down into the next layer below its zone: from the deep patches, or from the layer above. */
+export function descendStatus(s: GameState, c: Content = defaultContent): ZoneStatus {
+  const trip = s.forage;
+  if (!trip || trip.status !== 'open') return { open: false, reason: 'You are not out foraging.' };
+  const open = layersOpen(s.perks.generation, trip.zone, c);
+  if (trip.layer >= open) {
+    const zone = c.zones.find((z) => z.id === trip.zone)!;
+    return { open: false, reason: open ? 'This is as deep as your generation can go.' : `Nothing under the ${zone.name} is open to your generation.` };
+  }
+  // The way down is past the deep patches, or at the far edge of the zone; the Mapmaker's Case knows the shortcuts.
+  const walked = trip.depth >= c.rules.deepAt || !s.decks[trip.zone].draw.length;
+  if (trip.layer === 0 && !walked && !hasSetEffect(s.perks.sets, 'shortcut', c)) return { open: false, reason: 'The way down is past the deep patches.' };
+  return { open: true };
+}
+
 export function canPlantOn(s: GameState, speciesId: string, index: number, c: Content = defaultContent): boolean {
   const sq = s.grid[index];
   const sp = c.species[speciesId];
@@ -211,9 +243,12 @@ export function score(s: GameState, c: Content = defaultContent) {
   const planted = s.planted.length * c.rules.plantedPoints;
   const coins = Math.min(Math.floor(s.coins / c.rules.coinsPerPoint), c.rules.maxCoinPoints);
   const feast = s.feastPoints;
-  const total = s.orderPoints + hybrids + planted + coins + feast;
+  const artifacts = s.artifacts.reduce((sum, id) => sum + (artifactDef(id, c)?.points ?? 0), 0);
+  // The Festival Ribbons: the judges remember the family.
+  const family = setBonus(s.perks.sets, 'points', c);
+  const total = s.orderPoints + hybrids + planted + coins + feast + artifacts + family;
   const tier = [...tiersFor(s, c)].reverse().find((t) => total >= t.min) ?? null;
-  return { orders: s.orderPoints, hybrids, planted, coins, feast, total, tier };
+  return { orders: s.orderPoints, hybrids, planted, coins, feast, artifacts, family, total, tier };
 }
 
 // ── Setup ────────────────────────────────────────────────────────────────
@@ -244,6 +279,7 @@ export function standardPerks(c: Content = defaultContent): Perks {
     spawn: [],
     generation: 1,
     challenges: [],
+    sets: [],
   };
 }
 
@@ -256,6 +292,7 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   s.perks.spawn ??= [];
   s.perks.generation ??= 1;
   s.perks.challenges ??= [];
+  s.perks.sets ??= [];
   // Saves from before boards were all on Streamside, with the stream down the left column.
   s.board ??= 'streamside';
   s.grid.forEach((sq, i) => (sq.damp ??= i % s.size === 0));
@@ -274,6 +311,11 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
       s.decks[z.id] = { draw: new Rng(hashSeed(`${s.seed}:${z.id}:${printed.length}`)).shuffle(printed), discard: [] };
     }
   }
+  // Saves from before the underground have no layer decks.
+  dealLayerDecks(s, c);
+  s.artifacts ??= [];
+  s.layersReached ??= [];
+  s.stats.descents ??= 0;
   if (!s.stats.identified) s.stats.identified = {};
   s.compostPile ??= [];
   s.finale ??= null;
@@ -288,6 +330,8 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
     // A trip saved before clears were tracked can't say what it walked past, so one already deeper than the first patch can't clear.
     s.forage.missed ??= s.forage.depth > 1 ? 1 : 0;
     s.forage.cleared ??= false;
+    s.forage.layer ??= 0;
+    s.forage.relics ??= [];
   }
   // A trip saved by the older draw-one-card build ends where it stood; its finds are already in the basket.
   if (s.forage && !s.forage.patch) {
@@ -302,6 +346,16 @@ function buildDeck(zone: ZoneDef): Card[] {
   const cards: Card[] = [];
   for (const entry of zone.deck) for (let i = 0; i < entry.copies; i++) cards.push({ ...entry.card });
   return cards;
+}
+
+/** Deals a deck for every layer this generation has opened, each from its own seed so the rest of the year's dealing is untouched. */
+function dealLayerDecks(s: GameState, c: Content) {
+  for (const z of c.zones) {
+    for (let d = 1; d <= layersOpen(s.perks.generation, z.id, c); d++) {
+      const key = layerKey(z.id, d);
+      s.decks[key] ??= { draw: new Rng(hashSeed(`${s.seed}:${key}`)).shuffle(buildLayerDeck(layerDef(z.id, d, c)!)), discard: [] };
+    }
+  }
 }
 
 function rollWeather(s: GameState, rng: Rng, c: Content) {
@@ -375,6 +429,8 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     discovered: [],
     lookalikesFound: [],
     zonesCleared: [],
+    artifacts: [],
+    layersReached: [],
     watered: false,
     market: null,
     forage: null,
@@ -397,9 +453,11 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
       compostTiles: 0,
       rareFinds: 0,
       dishes: [],
+      descents: 0,
     },
     over: false,
   };
+  dealLayerDecks(s, c);
   rollWeather(s, rng, c);
   s.rng = rng.state;
   return s;
@@ -442,35 +500,48 @@ function guardFinale(s: GameState) {
   if (s.finale) fail('It is festival morning: there is time for one last harvest and a market visit, nothing more.');
 }
 
-/** Takes the top card of a zone deck. A trip is one pass through it, so null once it runs out. */
-function takeCard(s: GameState, zone: string): Card | null {
-  return s.decks[zone].draw.shift() ?? null;
+/** The deck the trip is dealing from: the zone's own on the surface, or the layer's below it. */
+function tripDeck(trip: ForageTrip): string {
+  return trip.layer ? layerKey(trip.zone, trip.layer) : trip.zone;
 }
 
-/** Going deeper leaves the unturned cards behind for the rest of the trip. Deep finds were never in the deck. */
+/** Takes the top card of a zone or layer deck. A trip is one pass through it, so null once it runs out. */
+function takeCard(s: GameState, deck: string): Card | null {
+  return s.decks[deck].draw.shift() ?? null;
+}
+
+/** Going deeper or down leaves the unturned cards behind for the rest of the trip. Deep finds and artifacts were never in the deck. */
 function leaveHidden(s: GameState, trip: ForageTrip) {
   for (const p of trip.patch) {
     if (p.flipped || p.deep) continue;
-    s.decks[trip.zone].discard.push(p.card);
+    s.decks[tripDeck(trip)].discard.push(p.card);
     if (p.card.type !== 'hazard') trip.missed += 1;
   }
 }
 
-/** Whether every card in the zone's deck but its hazards has been turned on this trip. Rare finds don't count. */
+/** Whether every card in the zone's deck but its hazards has been turned on this trip. Rare finds and the layers below don't count. */
 export function zoneCleared(s: GameState, trip: ForageTrip): boolean {
   return (
+    trip.layer === 0 &&
     trip.missed === 0 &&
     s.decks[trip.zone].draw.every((card) => card.type === 'hazard') &&
     trip.patch.every((p) => p.flipped || p.deep || p.card.type === 'hazard')
   );
 }
 
-/** When a trip ends, every card goes back and the deck is shuffled, so the next trip walks the whole zone again. */
+/** When a trip ends, every card goes back and each deck it walked is shuffled, so the next trip walks the whole zone again. */
 function restockDeck(s: GameState, trip: ForageTrip, rng: Rng) {
-  const deck = s.decks[trip.zone];
-  const unturned = trip.patch.filter((p) => !p.flipped && !p.deep).map((p) => p.card);
-  deck.draw = rng.shuffle([...deck.draw, ...deck.discard, ...unturned]);
-  deck.discard = [];
+  for (let layer = 0; layer <= trip.layer; layer++) {
+    const deck = s.decks[layer ? layerKey(trip.zone, layer) : trip.zone];
+    const unturned = layer === trip.layer ? trip.patch.filter((p) => !p.flipped && !p.deep).map((p) => p.card) : [];
+    deck.draw = rng.shuffle([...deck.draw, ...deck.discard, ...unturned]);
+    deck.discard = [];
+  }
+}
+
+/** Artifacts carried home: into the year's finds, so they score and aren't dealt again this year. A bust's lost ones stay below. */
+function bankRelics(s: GameState, trip: ForageTrip) {
+  for (const r of trip.relics) if (!trip.lost.includes(r.uid) && !s.artifacts.includes(r.artifact)) s.artifacts.push(r.artifact);
 }
 
 /** A rare find for a patch this deep: usually a wild species in season now, sometimes a forager's cache of coins. */
@@ -482,13 +553,20 @@ function deepFind(s: GameState, zone: ZoneDef, rng: Rng, c: Content): Card | nul
   return pool.length ? { ...rng.pick(pool) } : null;
 }
 
+/** A layer's artifact, until it's been brought home this year. */
+function layerRelic(s: GameState, trip: ForageTrip, c: Content): Card | null {
+  const id = layerDef(trip.zone, trip.layer, c)?.artifact;
+  return id && !s.artifacts.includes(id) ? { type: 'artifact', artifact: id } : null;
+}
+
 function dealPatch(s: GameState, trip: ForageTrip, rng: Rng, c: Content) {
   const n = c.rules.patchSize * c.rules.patchSize;
   const zone = c.zones.find((z) => z.id === trip.zone)!;
-  const deep = trip.depth >= c.rules.deepAt ? deepFind(s, zone, rng, c) : null;
+  // Underground, the one card from outside the deck is the layer's artifact rather than a deep find.
+  const deep = trip.layer ? layerRelic(s, trip, c) : trip.depth >= c.rules.deepAt ? deepFind(s, zone, rng, c) : null;
   trip.patch = [];
   for (let i = 0; i < (deep ? n - 1 : n); i++) {
-    const card = takeCard(s, trip.zone);
+    const card = takeCard(s, tripDeck(trip));
     if (!card) break;
     trip.patch.push({ card, flipped: false, outcome: null });
   }
@@ -548,6 +626,8 @@ export function dispatch(
         zone: zone.id,
         patch: [],
         depth: 1,
+        layer: 0,
+        relics: [],
         drawn: [],
         hazards: 0,
         knifeUsed: false,
@@ -564,9 +644,23 @@ export function dispatch(
     case 'deeper': {
       const trip = s.forage;
       if (!trip || trip.status !== 'open') fail('You are not out foraging.');
+      if (trip.layer) fail('Each layer is a single patch. Descend further, or head home.');
       if (!s.decks[trip.zone].draw.length) fail("You've walked the whole zone. Time to head home.");
       leaveHidden(s, trip);
       trip.depth += 1;
+      dealPatch(s, trip, rng, c);
+      break;
+    }
+
+    case 'descend': {
+      const status = descendStatus(s, c);
+      if (!status.open) fail(status.reason);
+      const trip = s.forage!;
+      leaveHidden(s, trip);
+      trip.layer += 1;
+      const key = layerKey(trip.zone, trip.layer);
+      if (!s.layersReached.includes(key)) s.layersReached.push(key);
+      s.stats.descents += 1;
       dealPatch(s, trip, rng, c);
       break;
     }
@@ -578,7 +672,7 @@ export function dispatch(
       if (spot.flipped) fail('You already turned that one.');
       const card = spot.card;
       spot.flipped = true;
-      if (!spot.deep) s.decks[trip.zone].discard.push(card);
+      if (!spot.deep) s.decks[tripDeck(trip)].discard.push(card);
       let outcome: ActionResult & { kind: 'draw' } = { kind: 'draw', index: action.index, card, outcome: 'basket' };
       if (card.type === 'specimen') {
         const sp = c.species[card.species];
@@ -617,6 +711,12 @@ export function dispatch(
       } else if (card.type === 'substrate') {
         s.shed.push(card.substrate);
         outcome.outcome = 'substrate';
+      } else if (card.type === 'artifact') {
+        // Pocketed, not basketed: it counts as a find, so only a bust can cost it.
+        const uid = s.nextUid++;
+        trip.relics.push({ uid, artifact: card.artifact });
+        trip.picked.push(uid);
+        outcome.outcome = 'artifact';
       } else {
         if (s.gear.includes('knife') && !trip.knifeUsed) {
           trip.knifeUsed = true;
@@ -628,8 +728,9 @@ export function dispatch(
             outcome.outcome = 'bust';
             trip.status = 'busted';
             s.stats.busts += 1;
-            trip.lost = trip.picked.slice(c.rules.bustKeep);
+            trip.lost = trip.picked.slice(bustKeep(s, c));
             s.basket = s.basket.filter((b) => !trip.lost.includes(b.uid));
+            bankRelics(s, trip);
             restockDeck(s, trip, rng);
           }
         }
@@ -647,6 +748,7 @@ export function dispatch(
 
     case 'stopForage': {
       if (!s.forage || s.forage.status !== 'open') fail('You are not out foraging.');
+      bankRelics(s, s.forage);
       restockDeck(s, s.forage, rng);
       s.forage.status = 'stopped';
       break;

@@ -82,5 +82,23 @@
     "name": "Against the Grain",
     "rule": "Reach a festival tier with all three Legend challenges taken on.",
     "check": { "type": "challenges", "count": 3 }
+  },
+  {
+    "id": "belowGround",
+    "name": "Below Ground",
+    "rule": "Descend into the underground below a zone.",
+    "check": { "type": "layer", "depth": 1 }
+  },
+  {
+    "id": "curiosities",
+    "name": "Cabinet of Curiosities",
+    "rule": "Bring home 4 artifacts in one year.",
+    "check": { "type": "artifacts", "count": 4 }
+  },
+  {
+    "id": "bedrock",
+    "name": "Bedrock",
+    "rule": "Descend three layers below a zone on one trip.",
+    "check": { "type": "layer", "depth": 3 }
   }
 ]

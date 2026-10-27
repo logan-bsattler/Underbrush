@@ -10,6 +10,7 @@ import {
   inSeason,
   isDamp,
   isShaded,
+  layerDef,
   lookalikeOn,
   masteryOf,
   mealEffect,
@@ -1061,8 +1062,38 @@ export function Game({
           {store.error}
         </div>
       )}
-      {store.achieved.length > 0 && <AchievementToast ids={store.achieved} onDone={store.dismissAchieved} />}
+      <div class="notices">
+        {store.achieved.length > 0 && <AchievementToast ids={store.achieved} onDone={store.dismissAchieved} />}
+        {store.lore.length > 0 && <LoreToast ids={store.lore} onDone={store.dismissLore} />}
+      </div>
     </div>
+  );
+}
+
+/** The family's lore paying off: a layer reached for the first time, or a set of artifacts made whole. */
+function LoreToast({ ids, onDone }: { ids: string[]; onDone: () => void }) {
+  const told = ids.flatMap((id) => {
+    if (id.startsWith('layer:')) {
+      const [zone, depth] = id.slice('layer:'.length).split(':');
+      const l = layerDef(zone, Number(depth));
+      return l ? [{ title: l.name, line: l.payoff }] : [];
+    }
+    const set = content.artifactSets.find((x) => x.id === id.slice('set:'.length));
+    return set ? [{ title: set.name, line: set.payoff }] : [];
+  });
+  return (
+    <button class="achieved lore" role="status" onClick={onDone}>
+      <Icon name="relic" size={28} />
+      <span>
+        <span class="eyebrow">Family lore</span>
+        {told.map((t) => (
+          <>
+            <b>{t.title}</b>
+            <small>{t.line}</small>
+          </>
+        ))}
+      </span>
+    </button>
   );
 }
 

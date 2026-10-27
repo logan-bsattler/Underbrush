@@ -1,6 +1,7 @@
 import { content as defaultContent } from './content';
 import type { Journal } from './journal';
 import type { Content, LevelDef, Perks, Unlock } from './types';
+import { completedSets, setBonus } from './underground';
 
 /**
  * Progression across years: festival score becomes renown, renown raises the homestead level,
@@ -34,8 +35,9 @@ export function isLegend(j: Journal, c: Content = defaultContent): boolean {
 
 /**
  * Hands the homestead down to the next generation: renown, levels and gear start over, while the
- * field journal, species mastery and achievements stay in the family. Each generation starts with
- * a few more coins and faces higher festival tiers.
+ * field journal, species mastery, achievements and the cabinet of curiosities stay in the family.
+ * Each generation starts with a few more coins, faces higher festival tiers, and opens one more
+ * layer under every zone.
  */
 export function passItOn(j: Journal, c: Content = defaultContent): Journal {
   if (!isLegend(j, c)) throw new Error('Only a Legend of the Valley can pass the homestead on.');
@@ -83,7 +85,8 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
     if (m > 0) mastery[id] = m;
   }
   let size = c.rules.gridSize;
-  let bonusCoins = (j.generation - 1) * c.progression.legacy.startCoins;
+  const sets = completedSets(j.artifacts, c);
+  let bonusCoins = (j.generation - 1) * c.progression.legacy.startCoins + setBonus(sets, 'coins', c);
   let bonusActions = 0;
   let autoHarvest = false;
   for (const u of unlocks) {
@@ -103,6 +106,7 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
     spawn: j.discovered.filter((id) => c.species[id]?.kind === 'cultivated'),
     generation: j.generation,
     challenges: isLegend(j, c) ? challenges.filter((id) => c.progression.challenges.some((x) => x.id === id)) : [],
+    sets,
   };
 }
 

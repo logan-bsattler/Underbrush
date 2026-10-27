@@ -12,6 +12,12 @@ export interface SpeciesArt {
   stem: string;
   fringe?: boolean;
   gloss?: boolean;
+  /** Glows in the dark: a soft halo behind the mushroom. */
+  glow?: boolean;
+  /** A ball that sits in a star of split skin (an earthstar). */
+  star?: boolean;
+  /** Beads of red sap on the cap. */
+  drops?: boolean;
 }
 
 export interface SpeciesTraits {
@@ -45,7 +51,8 @@ export type Card =
   | { type: 'specimen'; species: string }
   | { type: 'substrate'; substrate: Substrate }
   | { type: 'coins'; amount: number }
-  | { type: 'hazard'; name: string };
+  | { type: 'hazard'; name: string }
+  | { type: 'artifact'; artifact: string };
 
 export interface ZoneDef {
   id: string;
@@ -58,6 +65,46 @@ export interface ZoneDef {
   deck: { card: Card; copies: number }[];
   /** Rare finds dealt into each patch once a trip is rules.deepAt patches deep. Never part of the deck. */
   deep: Card[];
+}
+
+/** One level of a zone's underground: a small deck of its own, dealt as a single patch when you descend into it. */
+export interface LayerDef {
+  name: string;
+  blurb: string;
+  /** Family lore that hints at this layer before it opens... */
+  clue: string;
+  /** ...and the line that pays it off the first time the family reaches it. */
+  payoff: string;
+  /** Dealt into the layer's patch until it's found that year. Never part of the deck. */
+  artifact: string;
+  deck: { card: Card; copies: number }[];
+}
+
+export type SetEffect =
+  | { type: 'coins'; amount: number }
+  | { type: 'glint' }
+  | { type: 'points'; amount: number }
+  | { type: 'shortcut' }
+  | { type: 'keep'; amount: number }
+  | { type: 'basket'; amount: number };
+
+/** A curiosity from the underground: festival points the year it comes home, and a place in the cabinet for good. */
+export interface ArtifactDef {
+  id: string;
+  name: string;
+  set: string;
+  points: number;
+  blurb: string;
+}
+
+/** Artifacts that belong together. A full set in the cabinet brings a small perk to every story year after. */
+export interface ArtifactSetDef {
+  id: string;
+  name: string;
+  rule: string;
+  clue: string;
+  payoff: string;
+  effect: SetEffect;
 }
 
 /** A farm layout to start the year on, written for the 4×4 farm; a 5×5 farm extends it right and down. */
@@ -202,7 +249,11 @@ export type AchievementCheck =
   /** Reach a festival tier with at least this many Legend challenges taken on. */
   | { type: 'challenges'; count: number }
   /** Work the homestead as this generation or a later one. */
-  | { type: 'generation'; count: number };
+  | { type: 'generation'; count: number }
+  /** Descend this many layers below a zone on one trip. */
+  | { type: 'layer'; depth: number }
+  /** Bring home this many artifacts in one year. */
+  | { type: 'artifacts'; count: number };
 
 /** A feat the field journal remembers across years. Earned once, from any story or daily year. */
 export interface AchievementDef {
@@ -255,6 +306,8 @@ export interface LegacyDef {
   tierStep: number;
   /** Extra starting coins per generation after the first: the family's mark. */
   startCoins: number;
+  /** The zone whose newly opened layer the family tells of as each generation begins, from generation 2. */
+  lore: string[];
 }
 
 export interface ProgressionDef {
@@ -276,6 +329,10 @@ export interface Content {
   boards: BoardDef[];
   recipes: RecipeDef[];
   achievements: AchievementDef[];
+  /** Each zone's underground layers, top down, by zone id. Generation 2 opens the first, and each one after opens one more. */
+  underground: Record<string, LayerDef[]>;
+  artifacts: ArtifactDef[];
+  artifactSets: ArtifactSetDef[];
 }
 
 // ── State ────────────────────────────────────────────────────────────────
@@ -309,7 +366,7 @@ export interface PatchCard {
   card: Card;
   flipped: boolean;
   outcome: DrawOutcome | null;
-  /** A deep find: not from the deck, so it never goes back into it. */
+  /** A deep find, or a layer's artifact: not from the deck, so it never goes back into it. */
   deep?: boolean;
 }
 
@@ -320,6 +377,10 @@ export interface ForageTrip {
   patch: PatchCard[];
   /** How many patches deep into the zone you've walked this trip (1 on arrival). */
   depth: number;
+  /** How many layers below the zone you've descended (0 on the surface). */
+  layer: number;
+  /** Artifacts turned this trip: they count as finds, so a bust can cost them, and they're brought home when the trip ends. */
+  relics: { uid: number; artifact: string }[];
   /** Every card turned this trip, in order, with what a find bumped out of a full basket. */
   drawn: { card: Card; outcome: DrawOutcome; dropped?: Specimen }[];
   hazards: number;
@@ -344,6 +405,7 @@ export type DrawOutcome =
   | 'substrate'
   | 'hazard'
   | 'hazardIgnored'
+  | 'artifact'
   | 'bust';
 
 export interface Cross {
@@ -391,6 +453,8 @@ export interface Stats {
   rareFinds: number;
   /** Different dishes cooked this year. */
   dishes: string[];
+  /** Times you descended into a layer. */
+  descents: number;
 }
 
 /** What the homestead's progression brings into a year. Daily years use the standard kit. */
@@ -412,6 +476,8 @@ export interface Perks {
   generation: number;
   /** Legend challenges taken on this year. */
   challenges: string[];
+  /** Artifact sets complete in the field journal's cabinet. */
+  sets: string[];
 }
 
 export interface GameState {
@@ -455,6 +521,10 @@ export interface GameState {
   lookalikesFound: string[];
   /** Zones cleared this year: every card but the hazards turned on one trip. */
   zonesCleared: string[];
+  /** Artifacts brought home this year. Each scores festival points; once found, it isn't dealt again this year. */
+  artifacts: string[];
+  /** Underground layers reached this year, as "zone:depth". */
+  layersReached: string[];
   watered: boolean;
   /** An open market visit and the orders delivered on it so far. */
   market: { deliveries: number } | null;
@@ -478,6 +548,8 @@ export type Action =
   | { type: 'forage'; zone: string }
   | { type: 'flip'; index: number }
   | { type: 'deeper' }
+  /** Goes down into the next underground layer below the zone, from its deep patches or a layer above. */
+  | { type: 'descend' }
   | { type: 'stopForage' }
   | { type: 'closeTrip' }
   /** Identifies every unidentified specimen in the basket, for one action. */

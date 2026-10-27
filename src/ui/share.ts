@@ -35,6 +35,8 @@ export function shareText(g: GameState, url: string): string {
     `Species ${sc.planted}`,
     `Coins ${sc.coins}`,
     ...(sc.feast ? [`Feast ${sc.feast}`] : []),
+    ...(sc.artifacts ? [`Artifacts ${sc.artifacts}`] : []),
+    ...(sc.family ? [`Family ${sc.family}`] : []),
   ];
   return [
     day ? `Underbrush daily · ${day}` : 'Underbrush · story year',

@@ -9,7 +9,24 @@ import progressionJson from '../data/progression.json';
 import boardsJson from '../data/boards.json';
 import recipesJson from '../data/recipes.json';
 import achievementsJson from '../data/achievements.json';
-import type { AchievementDef, BoardDef, Content, GearDef, OrderDef, ProgressionDef, RecipeDef, RulesDef, SpeciesDef, WeatherDef, ZoneDef } from './types';
+import undergroundJson from '../data/underground.json';
+import artifactsJson from '../data/artifacts.json';
+import type {
+  AchievementDef,
+  ArtifactDef,
+  ArtifactSetDef,
+  BoardDef,
+  Content,
+  GearDef,
+  LayerDef,
+  OrderDef,
+  ProgressionDef,
+  RecipeDef,
+  RulesDef,
+  SpeciesDef,
+  WeatherDef,
+  ZoneDef,
+} from './types';
 
 /** Builds the content bundle. Everything balance-related lives in src/data so tabletop and app share it. */
 export function loadContent(): Content {
@@ -28,6 +45,9 @@ export function loadContent(): Content {
     boards: boardsJson as BoardDef[],
     recipes: recipesJson as unknown as RecipeDef[],
     achievements: achievementsJson as AchievementDef[],
+    underground: undergroundJson as Record<string, LayerDef[]>,
+    artifacts: artifactsJson.artifacts as ArtifactDef[],
+    artifactSets: artifactsJson.sets as ArtifactSetDef[],
   };
 }
 

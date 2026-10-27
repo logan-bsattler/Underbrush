@@ -79,6 +79,18 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
               <td>{sc.feast}</td>
             </tr>
           )}
+          {sc.artifacts > 0 && (
+            <tr>
+              <td>Artifacts brought up ({g.artifacts.map((id) => content.artifacts.find((a) => a.id === id)?.name ?? id).join(', ')})</td>
+              <td>{sc.artifacts}</td>
+            </tr>
+          )}
+          {sc.family > 0 && (
+            <tr>
+              <td>Family ribbons: the judges remember the family</td>
+              <td>{sc.family}</td>
+            </tr>
+          )}
           <tr class="total">
             <td>Total</td>
             <td>{sc.total}</td>

@@ -1,0 +1,72 @@
+{
+  "artifacts": [
+    { "id": "droverspenny", "name": "Drover's Penny", "set": "purse", "points": 2, "blurb": "A copper penny worn smooth on one side by a thumb." },
+    { "id": "sixpence", "name": "Silver Sixpence", "set": "purse", "points": 2, "blurb": "Bent once for luck, and straightened again." },
+    { "id": "guinea", "name": "Worn Guinea", "set": "purse", "points": 2, "blurb": "Gold, and older than anyone's grandmother." },
+    { "id": "lanternframe", "name": "Lantern Frame", "set": "lantern", "points": 2, "blurb": "Blackened iron, still square, still sound." },
+    { "id": "lanternglass", "name": "Lantern Glass", "set": "lantern", "points": 2, "blurb": "A pane of wavy glass, wrapped in oilcloth and tucked out of the water." },
+    { "id": "lanternwick", "name": "Lantern Wick", "set": "lantern", "points": 2, "blurb": "A coil of wick in a tin that kept it dry for a hundred years." },
+    { "id": "blueribbon", "name": "Faded Blue Ribbon", "set": "ribbons", "points": 3, "blurb": "First Prize, Harvest Festival. The year is too faded to read." },
+    { "id": "rosette", "name": "Prize Rosette", "set": "ribbons", "points": 3, "blurb": "Red and gold silk folds: Best Basket in the Valley." },
+    { "id": "medal", "name": "Judge's Medal", "set": "ribbons", "points": 3, "blurb": "A brass medal stamped with a chanterelle, given only once a generation." },
+    { "id": "compassrose", "name": "Brass Compass Rose", "set": "maps", "points": 3, "blurb": "The needle still swings north, then thinks better of it and points down." },
+    { "id": "maptube", "name": "Sealed Map Tube", "set": "maps", "points": 3, "blurb": "Waxed shut. Inside, a chart of tunnels no one alive has walked." },
+    { "id": "surveyorschain", "name": "Surveyor's Chain", "set": "maps", "points": 3, "blurb": "A hundred iron links, each exactly as long as the last." },
+    { "id": "stonecap", "name": "Stone Cap", "set": "stones", "points": 4, "blurb": "The cap of a mushroom carved in pale stone, broken clean at the stem." },
+    { "id": "stonestem", "name": "Stone Stem", "set": "stones", "points": 4, "blurb": "A stone stem, broken at both ends, smooth from handling." },
+    { "id": "stonering", "name": "Stone Ring", "set": "stones", "points": 4, "blurb": "A carved ring that once sat under a stone cap." },
+    { "id": "doorkey", "name": "Iron Door Key", "set": "homestead", "points": 4, "blurb": "Heavy as a trowel, with the family mark on the bow." },
+    { "id": "baskethandle", "name": "Willow Basket Handle", "set": "homestead", "points": 4, "blurb": "Plaited willow, dark with age and still supple." },
+    { "id": "hearthtile", "name": "Hearth Tile", "set": "homestead", "points": 4, "blurb": "A fired tile painted with a ring of little mushrooms." }
+  ],
+  "sets": [
+    {
+      "id": "purse",
+      "name": "The Drover's Purse",
+      "rule": "Start every story year with 2 more coins.",
+      "clue": "Grandma said a drover once lost his purse on the way through the valley, a coin here and a coin there, and spent the rest of his life looking under the wrong trees.",
+      "payoff": "Penny, sixpence and guinea, together again. The drover's purse is whole: 2 more coins every year.",
+      "effect": { "type": "coins", "amount": 2 }
+    },
+    {
+      "id": "lantern",
+      "name": "The Forager's Lantern",
+      "rule": "Rare finds and artifacts glint through the leaves before you turn them.",
+      "clue": "Great-aunt Rue said the first forager in the family carried a lantern that could find a mushroom in the dark, and that it came apart in three places.",
+      "payoff": "Frame, glass and wick: the old lantern burns again. Rare finds glint before you turn them.",
+      "effect": { "type": "glint" }
+    },
+    {
+      "id": "ribbons",
+      "name": "The Festival Ribbons",
+      "rule": "2 more festival points every story year: the judges remember the family.",
+      "clue": "Grandpa said the family once won every prize at the Harvest Festival, and hid the ribbons away when times got hard.",
+      "payoff": "Every old ribbon, found. The judges remember the family: 2 more festival points every year.",
+      "effect": { "type": "points", "amount": 2 }
+    },
+    {
+      "id": "maps",
+      "name": "The Mapmaker's Case",
+      "rule": "Descend from any patch of a zone, not only its deep ones.",
+      "clue": "Great-grandpa said a mapmaker charted every tunnel under the valley, then lost the pieces of his kit in three different holes.",
+      "payoff": "The mapmaker's case is whole, and his charts show the shortcuts: descend from any patch.",
+      "effect": { "type": "shortcut" }
+    },
+    {
+      "id": "stones",
+      "name": "The Mushroom Stones",
+      "rule": "A bust keeps one more of your finds.",
+      "clue": "Great-uncle Tobias said the old people carved a mushroom out of stone for luck, then broke it in three so no one could steal the luck.",
+      "payoff": "Cap, stem and ring: the lucky stone mushroom is whole again. A bust keeps one more find.",
+      "effect": { "type": "keep", "amount": 1 }
+    },
+    {
+      "id": "homestead",
+      "name": "The First Homestead",
+      "rule": "One more basket slot: the first homestead's basket, rewoven.",
+      "clue": "Grandpa said that one day someone in the family would find the way back to where it all began.",
+      "payoff": "Key, basket and hearth: the first homestead, remembered. Its basket, rewoven, holds one more find.",
+      "effect": { "type": "basket", "amount": 1 }
+    }
+  ]
+}

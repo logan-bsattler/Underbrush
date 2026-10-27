@@ -1,11 +1,13 @@
 import {
   content,
+  descendStatus,
   dispatch,
   emptyGround,
   heirloomChoices,
   heirloomSlots,
   isDamp,
   isWatered,
+  layersOpen,
   levelFor,
   newGame,
   orderPayment,
@@ -47,8 +49,10 @@ function safestCard(t: ForageTrip): { index: number; risk: number } | null {
 /**
  * A simple greedy player used to fuzz the rules and to estimate pacing.
  * It is deliberately unclever: the point is a repeatable baseline, not a strong strategy.
+ * With `dive`, every other trip to a zone with layers open walks straight past the surface and
+ * goes underground; the baseline never does.
  */
-export function playYear(start: GameState, opts: { greed?: number } = {}): GameState {
+export function playYear(start: GameState, opts: { greed?: number; dive?: boolean } = {}): GameState {
   const greed = opts.greed ?? 3;
   let s = start;
   const act = (a: Action) => {
@@ -138,14 +142,21 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
       const zones = content.zones.filter((z) => zoneStatus(s, z).open);
       if (!zones.length) break;
       const zone = zones[zones.length - 1].id === 'burnscar' ? 'burnscar' : zones[(s.round + s.actionsLeft) % zones.length].id;
+      const dive = !!opts.dive && layersOpen(s.perks.generation, zone) > 0 && s.tripCount % 2 === 1;
       act({ type: 'forage', zone });
       while (s.forage?.status === 'open') {
         const t: ForageTrip = s.forage;
+        if (dive && t.layer === 0) {
+          act(descendStatus(s).open ? { type: 'descend' } : { type: 'deeper' });
+          continue;
+        }
         const full = s.basket.length >= (s.gear.includes('biggerbasket') ? 6 : 4);
         const pick = safestCard(t);
         if (full || (t.hazards >= 1 && t.drawn.length >= greed)) act({ type: 'stopForage' });
         else if (pick && (pick.risk < 0.35 || t.hazards === 0)) act({ type: 'flip', index: pick.index });
-        else if (t.depth < 3 && t.hazards === 0) act({ type: 'deeper' });
+        else if (t.layer === 0 && t.depth < 3 && t.hazards === 0) act({ type: 'deeper' });
+        // From a later generation on, a clean trip that has walked the deep patches goes underground.
+        else if (t.hazards === 0 && descendStatus(s).open) act({ type: 'descend' });
         else act({ type: 'stopForage' });
       }
       act({ type: 'closeTrip' });
@@ -155,7 +166,7 @@ export function playYear(start: GameState, opts: { greed?: number } = {}): GameS
   return s;
 }
 
-const HEIRLOOM_PREFERENCE = ['biggerbasket', 'knife', 'lantern', 'dripline', 'fieldguide', 'dehydrator', 'growtent', 'trailmap', 'blightspray', 'compass'];
+export const HEIRLOOM_PREFERENCE = ['biggerbasket', 'knife', 'lantern', 'dripline', 'fieldguide', 'dehydrator', 'growtent', 'trailmap', 'blightspray', 'compass'];
 
 /** Plays a story campaign of several years, carrying the journal (and so the progression) forward. */
 export function playCampaign(years: number, seed: string, journal: Journal): { journal: Journal; games: GameState[] } {
