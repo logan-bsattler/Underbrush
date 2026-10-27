@@ -882,7 +882,8 @@ describe('the year', () => {
       expect(end.over).toBe(true);
       expect(end.round).toBe(12);
     }
-  });
+    // Sixty bot-played years, underground layers included, run past Vitest's 5-second default.
+  }, 20000);
 });
 
 describe('journal', () => {
