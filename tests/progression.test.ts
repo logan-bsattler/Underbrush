@@ -183,7 +183,7 @@ describe('the end game', () => {
 
   it('passes the homestead on: renown and gear start over, the journal and mastery stay', () => {
     const j = passItOn({ ...legend(), gearOwned: ['knife'], idCounts: { oyster: 20 }, discovered: ['oyster'], achievements: ['clearZone'] });
-    expect(j).toMatchObject({ renown: 0, gearOwned: [], generation: 2, idCounts: { oyster: 20 }, discovered: ['oyster'], achievements: ['clearZone'] });
+    expect(j).toMatchObject({ renown: 0, gearOwned: [], generation: 2, idCounts: { oyster: 20 }, discovered: ['oyster'], achievements: ['clearZone', 'familyFarm'] });
     expect(j.lineage).toHaveLength(1);
     expect(levelFor(j.renown).level).toBe(1);
     expect(() => passItOn(j)).toThrow(/Legend/);

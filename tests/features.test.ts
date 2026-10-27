@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  achievementProgress,
   achievementsEarned,
   basketCapacity,
   boardsFor,
@@ -464,6 +465,19 @@ describe('achievements: feats of a year', () => {
     s.orders.filled = ['a', 'b', 'c', 'd', 'e', 'f'];
     Object.assign(s.stats, { compostTiles: 5, coinsEarned: 100, rareFinds: 5, dishes: ['a', 'b', 'c', 'd'] });
     expect(earned(s)).toEqual(['firstCross', 'rareHaul', 'villageCook', 'blackGold', 'fullPurse', 'orderBook', 'strangeGardens']);
+  });
+
+  it('reports how far this year is toward counted achievements', () => {
+    const s = clearFarm(fresh('progress'));
+    s.stats.rareFinds = 2;
+    s.stats.trips = 4;
+    const of = (id: string) => achievementProgress(content.achievements.find((a) => a.id === id)!.check, s);
+    expect(of('rareHaul')).toEqual({ have: 2, need: 5 });
+    expect(of('sureFooted')).toEqual({ have: 4, need: 10 });
+    expect(of('wallToWall')).toEqual({ have: 0, need: s.grid.filter((sq) => !sq.tree).length });
+    expect(of('golden')).toBeNull();
+    s.stats.busts = 1;
+    expect(of('sureFooted')).toBeNull();
   });
 
   it('every achievement has a known check', () => {

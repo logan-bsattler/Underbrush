@@ -39,11 +39,15 @@ export function isLegend(j: Journal, c: Content = defaultContent): boolean {
  */
 export function passItOn(j: Journal, c: Content = defaultContent): Journal {
   if (!isLegend(j, c)) throw new Error('Only a Legend of the Valley can pass the homestead on.');
+  const generation = j.generation + 1;
+  // Lineage achievements are earned the moment the homestead changes hands, not on the next year's first move.
+  const lineage = c.achievements.filter((a) => a.check.type === 'generation' && generation >= a.check.count && !j.achievements.includes(a.id));
   return {
     ...j,
     renown: 0,
     gearOwned: [],
-    generation: j.generation + 1,
+    achievements: [...j.achievements, ...lineage.map((a) => a.id)],
+    generation,
     lineage: [...j.lineage, { generation: j.generation, renown: j.renown, years: j.years.filter((y) => y.mode === 'story').length }],
   };
 }

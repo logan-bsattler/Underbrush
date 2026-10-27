@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import {
+  achievementProgress,
   boardsFor,
   boardUnlockLevel,
   challengeBonus,
@@ -179,12 +180,18 @@ export function Almanac({ store, onBack }: { store: Store; onBack: () => void })
       <ul class="achievements">
         {content.achievements.map((a) => {
           const got = j.achievements.includes(a.id);
+          const year = !got && store.game && !store.game.over ? achievementProgress(a.check, store.game) : null;
           return (
             <li class={got ? 'earned' : ''}>
               <Icon name="spark" size={22} />
               <span>
                 <b>{a.name}</b>
                 <small>{a.rule}</small>
+                {year && (
+                  <small class="muted">
+                    This year: {Math.min(year.have, year.need)} of {year.need}
+                  </small>
+                )}
                 {a.check.type === 'clearZone' && j.zonesCleared.length > 0 && (
                   <small class="muted">Cleared: {content.zones.filter((z) => j.zonesCleared.includes(z.id)).map((z) => z.name).join(', ')}</small>
                 )}

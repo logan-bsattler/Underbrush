@@ -45,6 +45,30 @@ function met(check: AchievementCheck, s: GameState, c: Content): boolean {
   }
 }
 
+/** How far this year is toward a counted achievement, or null when it isn't counted (or can't be earned this year). */
+export function achievementProgress(check: AchievementCheck, s: GameState): { have: number; need: number } | null {
+  switch (check.type) {
+    case 'hybrids':
+      return { have: s.hybridsMade.length, need: check.count };
+    case 'orders':
+      return { have: s.orders.filled.length, need: check.count };
+    case 'rareFinds':
+      return { have: s.stats.rareFinds, need: check.count };
+    case 'dishes':
+      return { have: s.stats.dishes.length, need: check.count };
+    case 'cleanYear':
+      return s.stats.busts ? null : { have: s.stats.trips, need: check.trips };
+    case 'fullFarm':
+      return { have: s.grid.filter((sq) => !sq.tree && sq.species).length, need: s.grid.filter((sq) => !sq.tree).length };
+    case 'compost':
+      return { have: s.stats.compostTiles, need: check.count };
+    case 'coinsEarned':
+      return { have: s.stats.coinsEarned, need: check.amount };
+    default:
+      return null;
+  }
+}
+
 /** Ids of the achievements this year has earned so far. */
 export function achievementsEarned(s: GameState, c: Content = defaultContent): string[] {
   return c.achievements.filter((a) => met(a.check, s, c)).map((a) => a.id);

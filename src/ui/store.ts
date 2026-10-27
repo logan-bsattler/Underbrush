@@ -139,7 +139,10 @@ export function useStore(): Store {
   }, [error]);
 
   const passItOn = useCallback(() => {
+    const before = journalRef.current.achievements;
     const j = handDown(journalRef.current);
+    const won = j.achievements.filter((id) => !before.includes(id));
+    if (won.length) setAchieved((a) => [...a, ...won]);
     journalRef.current = j;
     setJournal(j);
     write(JOURNAL_KEY, j);
