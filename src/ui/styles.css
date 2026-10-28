@@ -1356,7 +1356,535 @@ button.chip {
 }
 .fc.bust .fc-front {
   background: #f4d3c0;
-  animation: shake 0.5s;
+}
+/* The hazard that busts you is stamped, a beat after its own trouble has played out. */
+.fc.bust .fc-front::after {
+  content: 'Bust';
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  translate: -50% -50%;
+  rotate: -14deg;
+  padding: 1px 9px;
+  border: 3px solid var(--rust);
+  border-radius: 8px;
+  color: var(--rust);
+  background: rgba(251, 233, 207, 0.82);
+  font: 800 clamp(14px, 5cqw, 20px) var(--serif);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  animation: bust-stamp 0.35s cubic-bezier(0.3, 1.5, 0.5, 1) 0.95s both;
+}
+@keyframes bust-stamp {
+  from {
+    opacity: 0;
+    scale: 2.4;
+  }
+}
+
+/* Turning a hazard: each kind of trouble plays across its card as it lands face up, then settles. */
+.hz-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+.hz-fx i {
+  position: absolute;
+  display: block;
+}
+.hz-fx svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+}
+
+/* Ticks: a few dark specks scurry up the card, and it shivers. */
+.fc.hz-ticks .fc-inner {
+  animation: hz-shiver 0.55s linear 0.25s both;
+}
+@keyframes hz-shiver {
+  10%, 30%, 50%, 70% {
+    translate: -2px 0;
+  }
+  20%, 40%, 60%, 80% {
+    translate: 2px 0;
+  }
+}
+.hz-fx.ticks i {
+  left: calc(28% + var(--k) * 20%);
+  bottom: -10px;
+  width: 6px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3a2518;
+  box-shadow: -3px 1px 0 -2px #3a2518, 3px 1px 0 -2px #3a2518;
+  animation: hz-scurry 0.75s ease-out 0.25s both;
+  animation-delay: calc(0.25s + var(--k) * 90ms);
+}
+@keyframes hz-scurry {
+  0% {
+    bottom: -10px;
+    opacity: 1;
+  }
+  45% {
+    bottom: 42%;
+    translate: calc((var(--k) - 1) * 9px) 0;
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    bottom: 78%;
+    translate: calc((1 - var(--k)) * 6px) 0;
+    opacity: 0;
+  }
+}
+
+/* Sudden rain: slanting streaks sweep down the face and the card goes cool. */
+.hz-fx.rain {
+  background:
+    repeating-linear-gradient(105deg, transparent 0 9px, rgba(74, 122, 152, 0.55) 9px 10.5px, transparent 10.5px 23px),
+    rgba(156, 192, 212, 0.28);
+  background-size: 100% 40px;
+  animation: hz-rain 0.85s linear 0.25s both;
+}
+@keyframes hz-rain {
+  0% {
+    opacity: 0;
+    background-position: 0 0;
+  }
+  20%, 70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    background-position: -10px 120px;
+  }
+}
+.fc.hz-rain .fc-front .icon {
+  animation: hz-droop 0.85s ease-in-out 0.25s both;
+}
+@keyframes hz-droop {
+  40% {
+    translate: 0 4px;
+    rotate: -4deg;
+  }
+}
+
+/* Water: a scalloped tide rises up the card and laps, lifting what's on it, then drains away. */
+.hz-fx.water::before,
+.hz-fx.bog::before {
+  content: '';
+  position: absolute;
+  inset: 0 -20px;
+  background:
+    radial-gradient(circle at 10px 0, transparent 9px, #7fb0c9 10px) 0 0 / 20px 100% repeat-x;
+  opacity: 0.75;
+  translate: 0 100%;
+  animation: hz-tide 0.8s ease-in-out 0.25s both;
+}
+@keyframes hz-tide {
+  35% {
+    translate: -10px 52%;
+  }
+  60% {
+    translate: 0 58%;
+  }
+  80% {
+    translate: -6px 60%;
+  }
+}
+.fc.hz-water .fc-front .icon {
+  animation: hz-float 0.8s ease-in-out 0.25s both;
+}
+@keyframes hz-float {
+  35% {
+    translate: 0 -6px;
+    rotate: 6deg;
+  }
+  65% {
+    translate: 0 -3px;
+    rotate: -4deg;
+  }
+}
+
+/* Bog: thick mud wells up and the card's art sinks into it, then slowly works free. */
+.hz-fx.bog::before {
+  background: radial-gradient(circle at 10px 0, transparent 9px, #7a5a3a 10px) 0 0 / 20px 100% repeat-x;
+  opacity: 0.8;
+  animation: hz-mud 0.85s cubic-bezier(0.4, 0, 0.6, 1) 0.25s both;
+}
+@keyframes hz-mud {
+  45%, 70% {
+    translate: 0 55%;
+  }
+}
+.hz-fx.bog i {
+  left: calc(26% + var(--k) * 22%);
+  bottom: 30%;
+  width: 7px;
+  height: 7px;
+  border: 2px solid #5e4632;
+  border-radius: 50%;
+  opacity: 0;
+  animation: hz-bubble 0.4s ease-out 0.25s both;
+  animation-delay: calc(0.5s + var(--k) * 90ms);
+}
+@keyframes hz-bubble {
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 -10px;
+    scale: 1.6;
+  }
+}
+.fc.hz-bog .fc-front .icon {
+  animation: hz-sink 0.85s cubic-bezier(0.4, 0, 0.6, 1) 0.25s both;
+}
+@keyframes hz-sink {
+  45%, 65% {
+    translate: 0 22%;
+    scale: 0.92;
+  }
+}
+
+/* Slick footing: the card skids out from under you and catches itself, a wet sheen running across it. */
+.fc.hz-slip .fc-inner {
+  animation: hz-skid 0.6s cubic-bezier(0.3, 0.7, 0.4, 1) 0.25s both;
+}
+@keyframes hz-skid {
+  30% {
+    translate: 9px 2px;
+    rotate: 7deg;
+  }
+  60% {
+    translate: -4px 0;
+    rotate: -3deg;
+  }
+}
+.hz-fx.slip::before {
+  content: '';
+  position: absolute;
+  inset: -20% -60%;
+  background: linear-gradient(110deg, transparent 40%, rgba(255, 255, 255, 0.75) 48%, transparent 56%);
+  translate: -60% 0;
+  animation: hz-sheen 0.6s ease-in 0.25s both;
+}
+@keyframes hz-sheen {
+  to {
+    translate: 60% 0;
+  }
+}
+
+/* Falling things: it drops onto the card from above, the card squashes under it, and chips fly. */
+.fc.hz-fall .fc-front .icon {
+  animation: hz-drop-in 0.45s cubic-bezier(0.5, 0, 0.9, 0.5) 0.25s both;
+}
+@keyframes hz-drop-in {
+  from {
+    translate: 0 -160%;
+  }
+}
+.fc.hz-fall .fc-inner {
+  animation: hz-thud 0.4s ease-out 0.25s both;
+  animation-delay: 0.68s;
+}
+@keyframes hz-thud {
+  25% {
+    scale: 1.06 0.9;
+    translate: 0 4px;
+  }
+  60% {
+    scale: 0.98 1.03;
+  }
+}
+.hz-fx.fall i {
+  left: 48%;
+  top: 56%;
+  width: 6px;
+  height: 5px;
+  border-radius: 2px;
+  background: #8a7b68;
+  border: 1px solid #4a3e33;
+  opacity: 0;
+  animation: hz-chip 0.45s ease-out 0.25s both;
+  animation-delay: 0.68s;
+}
+@keyframes hz-chip {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    translate: calc((var(--k) - 1) * 24px) -14px;
+  }
+  100% {
+    translate: calc((var(--k) - 1) * 32px) 4px;
+    rotate: calc((var(--k) - 1) * 120deg);
+    opacity: 0;
+  }
+}
+
+/* Ash and bad air: grey puffs roll up over the card and it fades behind them before clearing. */
+.hz-fx.ash i {
+  left: calc(4% + var(--k) * 28%);
+  bottom: -20%;
+  width: 60%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(120, 112, 102, 0.6), rgba(120, 112, 102, 0) 68%);
+  opacity: 0;
+  animation: hz-puff 0.85s ease-out 0.25s both;
+  animation-delay: calc(0.25s + var(--k) * 80ms);
+}
+@keyframes hz-puff {
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: 0 -55%;
+    scale: 1.7;
+  }
+}
+.fc.hz-ash .fc-front .icon {
+  animation: hz-fade 0.85s ease-in-out 0.25s both;
+}
+@keyframes hz-fade {
+  40% {
+    opacity: 0.3;
+    scale: 0.94;
+  }
+}
+
+/* Lost: the trail wanders off across the card while its marker turns about, looking for the way. */
+.hz-fx.lost svg path {
+  stroke: #9a6a2c;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-dasharray: 2 7;
+  vector-effect: non-scaling-stroke;
+  animation: hz-wander 0.9s linear 0.25s both;
+}
+.hz-fx.lost {
+  animation: hz-fade-out 0.9s ease-in 0.25s both;
+}
+@keyframes hz-wander {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+@keyframes hz-fade-out {
+  0%, 55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.fc.hz-lost .fc-front .icon {
+  animation: hz-search 0.9s cubic-bezier(0.4, 0, 0.3, 1) 0.25s both;
+}
+@keyframes hz-search {
+  25% {
+    rotate: -50deg;
+  }
+  55% {
+    rotate: 70deg;
+  }
+  80% {
+    rotate: -15deg;
+  }
+}
+
+/* Brambles and roots: thorny stems grow across the card and tug at it, then let go. */
+.hz-fx.tangle svg path {
+  stroke: #5e6e3a;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  vector-effect: non-scaling-stroke;
+  animation: hz-grow 0.45s ease-out 0.25s both;
+  animation-delay: 0.25s;
+}
+.hz-fx.tangle svg path + path {
+  animation-delay: 0.4s;
+}
+.hz-fx.tangle {
+  animation: hz-fade-out 0.95s ease-in 0.25s both;
+}
+@keyframes hz-grow {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.fc.hz-tangle .fc-inner {
+  animation: hz-tug 0.7s ease-in-out 0.25s both;
+  animation-delay: 0.45s;
+}
+@keyframes hz-tug {
+  35% {
+    translate: -5px 0;
+    rotate: -2deg;
+  }
+  70% {
+    translate: 2px 0;
+  }
+}
+
+/* Low headroom: the dark comes down from the top and the card ducks under it. */
+.hz-fx.low::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 34%;
+  background: linear-gradient(#3a2e24, rgba(58, 46, 36, 0));
+  translate: 0 -100%;
+  animation: hz-ceiling 0.7s ease-in-out 0.25s both;
+}
+@keyframes hz-ceiling {
+  35%, 60% {
+    translate: 0 0;
+  }
+}
+.fc.hz-low .fc-inner {
+  animation: hz-duck 0.7s cubic-bezier(0.3, 1.4, 0.5, 1) 0.25s both;
+}
+@keyframes hz-duck {
+  35%, 55% {
+    scale: 1.04 0.86;
+    translate: 0 5px;
+  }
+}
+
+/* A drop: the card tips forward and its art falls away below, then climbs back into place. */
+.fc.hz-drop .fc-inner {
+  animation: hz-tip 0.75s ease-in-out 0.25s both;
+}
+@keyframes hz-tip {
+  35%, 55% {
+    rotate: x 22deg;
+    translate: 0 4px;
+  }
+}
+.fc.hz-drop .fc-front .icon {
+  animation: hz-plunge 0.75s ease-in-out 0.25s both;
+}
+@keyframes hz-plunge {
+  35% {
+    translate: 0 140%;
+    opacity: 0;
+  }
+  55% {
+    translate: 0 -30%;
+    opacity: 0;
+  }
+}
+.hz-fx.drop::before {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 40%;
+  background: linear-gradient(rgba(23, 17, 12, 0), rgba(23, 17, 12, 0.55));
+  opacity: 0;
+  animation: hz-gap 0.75s ease-in-out 0.25s both;
+}
+@keyframes hz-gap {
+  35%, 55% {
+    opacity: 1;
+  }
+}
+
+/* Anything else is a plain jolt. */
+.fc.hz-jolt .fc-inner {
+  animation: hz-jolt 0.45s ease-out 0.25s both;
+}
+@keyframes hz-jolt {
+  25% {
+    translate: -5px 0;
+    rotate: -2deg;
+  }
+  55% {
+    translate: 4px 0;
+    rotate: 1.5deg;
+  }
+}
+
+/* A bust: once the hazard has played out, the whole floor quakes, the edges flush rust and the stamp comes down.
+   The cards you never turned show only after, and the trip's end follows them. */
+.forage-screen > .hazard-hold {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: auto;
+}
+.hazard-hold.bust {
+  background: radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(166, 74, 32, 0.5));
+  animation: bust-flush 1s ease-out 0.9s both;
+}
+@keyframes bust-flush {
+  0% {
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.forage-screen.busting .floor {
+  animation: bust-quake 0.55s ease-out 0.95s;
+}
+@keyframes bust-quake {
+  10% {
+    translate: -8px 3px;
+    rotate: -1.2deg;
+  }
+  25% {
+    translate: 7px -2px;
+    rotate: 1deg;
+  }
+  45% {
+    translate: -5px 1px;
+    rotate: -0.6deg;
+  }
+  65% {
+    translate: 3px 0;
+  }
+  85% {
+    translate: -1px 0;
+  }
+}
+.forage-screen.busting .hz.on {
+  animation: shake 0.4s, bust-pip 0.5s ease-out 0.95s;
+}
+@keyframes bust-pip {
+  35% {
+    scale: 1.35;
+    filter: drop-shadow(0 0 4px rgba(166, 74, 32, 0.8));
+  }
+}
+.forage-screen.busting .fc.passed .fc-inner {
+  transition-delay: calc(1.3s + var(--i) * 40ms);
+}
+.forage-screen.busting .forage-foot.done {
+  animation: fade-up 0.4s ease 1.5s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hz-fx,
+  .fc.bust .fc-front::after {
+    animation: none;
+  }
+  .hz-fx {
+    display: none;
+  }
 }
 .fc.basketFull .fc-front,
 .fc.emptyPatch .fc-front {

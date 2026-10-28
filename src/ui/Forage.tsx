@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import {
   basketCapacity,
   bustAt,
@@ -39,6 +39,62 @@ function CardArt({ card, outcome }: { card: Card; outcome: DrawOutcome | null })
   if (card.type === 'substrate') return <SubstrateArt substrate={card.substrate} size={64} />;
   if (card.type === 'ground') return <Icon name={card.look} size={44} />;
   return <Icon name={card.type === 'coins' ? 'coin' : card.type === 'artifact' ? 'relic' : card.type === 'entrance' ? 'way' : 'hazard'} size={44} />;
+}
+
+/** How each hazard plays out when it's turned: hazards that feel alike share a reveal. Any new one gets a plain jolt. */
+const hazardKinds: Record<string, string> = {
+  Ticks: 'ticks',
+  'Sudden Rain': 'rain',
+  'High Water': 'water',
+  'Deep Water': 'water',
+  'Rising Water': 'water',
+  'Strong Current': 'water',
+  Bog: 'bog',
+  Mudslip: 'bog',
+  'Slick Rocks': 'slip',
+  'Slick Stone': 'slip',
+  'Loose Earth': 'slip',
+  Deadfall: 'fall',
+  Rockfall: 'fall',
+  'Falling Stone': 'fall',
+  Collapse: 'fall',
+  'Crumbling Brick': 'fall',
+  'Ash Slide': 'ash',
+  'Ash Pit': 'ash',
+  'Smoke Pocket': 'ash',
+  'Bad Air': 'ash',
+  'Lost Trail': 'lost',
+  'Dead End': 'lost',
+  'Bramble Wall': 'tangle',
+  'Tangled Roots': 'tangle',
+  'Low Ceiling': 'low',
+  'Low Tunnel': 'low',
+  'Sheer Drop': 'drop',
+  'Rotten Planks': 'drop',
+};
+const hazardKind = (name: string) => hazardKinds[name] ?? 'jolt';
+
+/** The weather or ground a hazard brings across its card as it's turned: drawn over the face, gone once it has passed. */
+function HazardFx({ kind }: { kind: string }) {
+  const bits = kind === 'ticks' || kind === 'fall' || kind === 'ash' || kind === 'bog' ? [0, 1, 2] : [];
+  return (
+    <span class={`hz-fx ${kind}`} aria-hidden="true">
+      {bits.map((k) => (
+        <i style={{ '--k': k } as any} />
+      ))}
+      {kind === 'lost' && (
+        <svg viewBox="0 0 100 125" preserveAspectRatio="none">
+          <path d="M14 122 C30 96 72 106 60 78 S18 50 40 30 S88 22 70 4" />
+        </svg>
+      )}
+      {kind === 'tangle' && (
+        <svg viewBox="0 0 100 125" preserveAspectRatio="none">
+          <path pathLength="1" d="M-4 30 Q30 52 50 40 T104 58 M30 46 l-4 -8 M62 44 l6 -7 M84 52 l2 -9" />
+          <path pathLength="1" d="M104 88 Q70 70 48 86 T-4 96 M70 76 l3 -8 M38 90 l-5 7 M16 94 l-2 -9" />
+        </svg>
+      )}
+    </span>
+  );
 }
 
 function cardLabel(card: Card, outcome: DrawOutcome | null) {
@@ -195,14 +251,24 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   // While the way down plays out, the trip takes no other input.
   const [descent, setDescent] = useState<{ from: DOMRect; layer: Layer; depth: number } | null>(null);
   const [arrived, setArrived] = useState<number | null>(null);
-  const busy = !!descent;
+  // A hazard plays out on its card, and a bust shakes the floor after it: the trip waits for both.
+  const [hold, setHold] = useState<{ index: number; kind: string; bust: boolean } | null>(null);
+  const holding = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => () => clearTimeout(holding.current), []);
+  const busy = !!descent || !!hold;
 
   const flip = (index: number) => {
     if (busy) return;
+    const card = trip.patch[index]?.card;
     const r = store.act({ type: 'flip', index });
     if (r?.kind === 'draw') {
       if (r.outcome === 'bust') buzz([60, 40, 120]);
       else if (r.outcome === 'hazard') buzz(40);
+      if (card?.type === 'hazard' && !reducedMotion()) {
+        const bust = r.outcome === 'bust';
+        setHold({ index, kind: hazardKind(card.name), bust });
+        holding.current = setTimeout(() => setHold(null), bust ? 2000 : 1150);
+      }
     }
   };
   // A trip is one pass through the zone's deck: once it is dealt out, there is nothing deeper.
@@ -271,7 +337,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
                   : `Tap a card to turn it. Each one you turn shows how many hazards lie beside it.${wayDown}`;
 
   return (
-    <div class={`overlay forage-screen ${under ? 'under' : ''}`} aria-busy={busy} style={{ '--zone': zone.color } as any}>
+    <div class={`overlay forage-screen ${under ? 'under' : ''} ${hold?.bust ? 'busting' : ''}`} aria-busy={busy} style={{ '--zone': zone.color } as any}>
       <div class="forage-wash" aria-hidden="true" />
       <header class="forage-head">
         <div>
@@ -325,7 +391,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             return (
               <button
                 key={`${trip.depth}-${trip.layer}-${i}`}
-                class={`fc ${p.card.type} ${p.outcome ?? ''} ${shown ? 'up' : ''} ${!p.flipped && !open ? 'passed' : ''} ${rare ? 'deep' : ''} ${rare && p.flipped ? 'found' : ''} ${glint ? 'glint' : ''} ${door ? 'door' : ''} ${door && descent ? 'lifted' : ''}`}
+                class={`fc ${p.card.type} ${p.outcome ?? ''} ${shown ? 'up' : ''} ${!p.flipped && !open ? 'passed' : ''} ${rare ? 'deep' : ''} ${rare && p.flipped ? 'found' : ''} ${glint ? 'glint' : ''} ${door ? 'door' : ''} ${door && descent ? 'lifted' : ''} ${hold?.index === i ? `hz-${hold.kind}` : ''}`}
                 style={{ '--i': i } as any}
                 disabled={!open || (p.flipped && !door)}
                 onClick={() => (door ? descend() : flip(i))}
@@ -342,6 +408,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
                       </span>
                     )}
                     <CardArt card={p.card} outcome={p.outcome} />
+                    {hold?.index === i && <HazardFx kind={hold.kind} />}
                     <span class="fc-title">{cardLabel(p.card, p.outcome)}</span>
                     {door && <span class="door-tag">Tap to go down</span>}
                     {p.flipped && p.card.type !== 'hazard' && (
@@ -456,6 +523,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
           <button
             class="btn primary big wide"
             onClick={() => {
+              if (busy) return;
               store.act({ type: 'closeTrip' });
               onClose();
             }}
@@ -464,6 +532,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
           </button>
         </footer>
       )}
+      {hold && <div class={`hazard-hold ${hold.bust ? 'bust' : ''}`} aria-hidden="true" />}
       {descent && <Descent {...descent} onInside={inside} onDone={() => setDescent(null)} />}
       {store.error && (
         <div class="toast" role="alert">
