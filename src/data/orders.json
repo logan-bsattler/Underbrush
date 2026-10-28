@@ -5,7 +5,7 @@
   { "id": "o-enoki2", "label": "2 Enoki", "points": 4, "need": { "kind": "species", "items": { "enoki": 2 } } },
   { "id": "o-shii2", "label": "2 Shiitake", "points": 5, "need": { "kind": "species", "items": { "shiitake": 2 } } },
   { "id": "o-reishii", "label": "1 Reishi + 1 Shiitake", "points": 6, "need": { "kind": "species", "items": { "reishi": 1, "shiitake": 1 } } },
-  { "id": "o-chant2", "label": "2 Chanterelle", "points": 6, "need": { "kind": "species", "items": { "chanterelle": 2 } } },
+  { "id": "o-chant2", "label": "1 Chanterelle + 1 Lion's Mane", "points": 6, "need": { "kind": "species", "items": { "chanterelle": 1, "lionsmane": 1 } } },
   { "id": "o-hyb2", "label": "Any 2 hybrid mushrooms", "points": 6, "need": { "kind": "hybrids", "count": 2 } },
   { "id": "o-four", "label": "4 different species, 1 each", "points": 7, "need": { "kind": "distinct", "count": 4 } },
   { "id": "o-lacquer", "label": "1 Lacquer Cap", "points": 7, "need": { "kind": "species", "items": { "lacquercap": 1 } } },
