@@ -74,7 +74,7 @@ export function outcomeText(o: DrawOutcome, card: Card, dropped?: Specimen) {
       return `Nothing here but ${card.type === 'ground' ? card.name.toLowerCase() : 'the forest floor'}.`;
     case 'wayDown': {
       const layer = card.type === 'entrance' ? content.underground[card.zone]?.[card.depth - 1] : null;
-      return `A way down${layer ? ` to the ${layer.name.replace(/^The /, '')}` : ''}! Swipe the deck to descend, or turn more cards first.`;
+      return `A way down${layer ? ` to the ${layer.name.replace(/^The /, '')}` : ''}! Tap it to go down, or turn more cards first.`;
     }
     case 'bust':
       return `Bust! You scramble home with only your first ${content.rules.bustKeep} finds.`;

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'preact/hooks';
+import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import {
   basketCapacity,
   bustAt,
@@ -106,6 +106,76 @@ function ZonePicker({ g, store, onClose }: { g: GameState; store: Store; onClose
   );
 }
 
+const reducedMotion = () => !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+const wait = (ms: number) => new Promise((done) => setTimeout(done, ms));
+
+type Layer = NonNullable<ReturnType<typeof layerDef>>;
+
+/**
+ * Going down: the way-down card lifts off the floor and grows to fill the screen, then the view walks
+ * into its mouth until all is dark. `onInside` deals the layer below; the dark then lifts off it.
+ */
+function Descent({ from, layer, depth, onInside, onDone }: { from: DOMRect; layer: Layer; depth: number; onInside: () => void; onDone: () => void }) {
+  const wrap = useRef<HTMLDivElement>(null);
+  const dim = useRef<HTMLDivElement>(null);
+  const card = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const w = wrap.current!;
+    const el = card.current!;
+    const to = el.getBoundingClientRect();
+    const dx = from.left + from.width / 2 - (to.left + to.width / 2);
+    const dy = from.top + from.height / 2 - (to.top + to.height / 2);
+    const s = from.width / to.width;
+    let live = true;
+    w.focus();
+    (async () => {
+      try {
+        dim.current!.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 450, easing: 'ease-out', fill: 'both' });
+        await el.animate(
+          [
+            { transform: `translate(${dx}px, ${dy}px) scale(${s})` },
+            { transform: 'translate(0, 0) scale(1.04)', offset: 0.8 },
+            { transform: 'none' },
+          ],
+          { duration: 700, easing: 'cubic-bezier(0.2, 0.8, 0.3, 1)', fill: 'both' },
+        ).finished;
+        el.classList.add('shown');
+        await wait(650);
+        if (!live) return;
+        // Into the cave: zoom on the dark of its mouth, just above the steps.
+        const art = el.querySelector('svg')!.getBoundingClientRect();
+        const box = el.getBoundingClientRect();
+        el.style.transformOrigin = `${art.left + art.width / 2 - box.left}px ${art.top + art.height * 0.55 - box.top}px`;
+        el.classList.add('entering');
+        w.classList.add('dark');
+        await el.animate([{ transform: 'none' }, { transform: 'scale(24)' }], { duration: 1000, easing: 'cubic-bezier(0.6, 0, 0.85, 0.35)', fill: 'forwards' })
+          .finished;
+        if (!live) return;
+        el.style.visibility = 'hidden';
+        onInside();
+        await w.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 600, delay: 150, easing: 'ease-out', fill: 'forwards' }).finished;
+      } catch {
+        // A cancelled animation: the screen is going away, so there's nothing left to finish.
+      }
+      if (live) onDone();
+    })();
+    return () => {
+      live = false;
+    };
+  }, []);
+  return (
+    <div class="descent" ref={wrap} tabIndex={-1} role="status" aria-label={`Descending into ${the(layer.name)}`}>
+      <div class="descent-dim" ref={dim} />
+      <div class="descent-card" ref={card} aria-hidden="true">
+        <span class="descent-eyebrow">The way down</span>
+        <Icon name="way" size={44} />
+        <span class="descent-name">{layer.name}</span>
+        <span class="descent-depth">{ordinal(depth)} layer</span>
+      </div>
+    </div>
+  );
+}
+
 function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () => void }) {
   const trip = g.forage!;
   const zone = content.zones.find((z) => z.id === trip.zone)!;
@@ -121,8 +191,14 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   const next = down.open ? layerDef(trip.zone, trip.layer + 1) : null;
   const start = useRef<number | null>(null);
   const [dragging, setDragging] = useState(false);
+  const floor = useRef<HTMLDivElement>(null);
+  // While the way down plays out, the trip takes no other input.
+  const [descent, setDescent] = useState<{ from: DOMRect; layer: Layer; depth: number } | null>(null);
+  const [arrived, setArrived] = useState<number | null>(null);
+  const busy = !!descent;
 
   const flip = (index: number) => {
+    if (busy) return;
     const r = store.act({ type: 'flip', index });
     if (r?.kind === 'draw') {
       if (r.outcome === 'bust') buzz([60, 40, 120]);
@@ -132,8 +208,18 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   // A trip is one pass through the zone's deck: once it is dealt out, there is nothing deeper.
   const left = g.decks[trip.zone].draw.length;
   const end = under || left === 0;
-  const deeper = () => open && !end && store.act({ type: 'deeper' });
-  const descend = () => open && next && store.act({ type: 'descend' });
+  const deeper = () => !busy && open && !end && store.act({ type: 'deeper' });
+  const descend = () => {
+    if (busy || !open || !next) return;
+    const way = floor.current?.querySelector<HTMLElement>('.fc.entrance');
+    if (!way || reducedMotion() || !way.animate) return store.act({ type: 'descend' });
+    setDescent({ from: way.getBoundingClientRect(), layer: next, depth: trip.layer + 1 });
+  };
+  const inside = () => {
+    // The layer below is dealt in the dark; its cards come up a beat later, as the dark lifts.
+    setArrived(trip.layer + 1);
+    store.act({ type: 'descend' });
+  };
   // The deck swipes down a layer whenever the way is open, and deeper into the zone otherwise.
   const swipe = () => (next ? descend() : deeper());
 
@@ -185,7 +271,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
                   : `Tap a card to turn it. Each one you turn shows how many hazards lie beside it.${wayDown}`;
 
   return (
-    <div class={`overlay forage-screen ${under ? 'under' : ''}`} style={{ '--zone': zone.color } as any}>
+    <div class={`overlay forage-screen ${under ? 'under' : ''}`} aria-busy={busy} style={{ '--zone': zone.color } as any}>
       <div class="forage-wash" aria-hidden="true" />
       <header class="forage-head">
         <div>
@@ -218,13 +304,17 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
       </p>
 
       <div class="floor-wrap">
-        <div class="floor" style={{ '--n': n } as any} role="grid" aria-label="Forest floor">
+        <div class={`floor ${under && arrived === trip.layer ? 'arriving' : ''}`} ref={floor} style={{ '--n': n } as any} role="grid" aria-label="Forest floor">
           {trip.patch.map((p, i) => {
             // Once the trip is over, the cards you didn't turn are shown faintly: what you walked past.
             const shown = p.flipped || !open;
             const near = hazardsNear(trip, i);
+            // The way down, once turned, is a door: tap it to go down.
+            const door = open && p.flipped && p.card.type === 'entrance' && !!next;
             const label = p.flipped
-              ? `${cardLabel(p.card, p.outcome)}${p.card.type === 'hazard' ? '' : `, ${near} hazard${near === 1 ? '' : 's'} beside it`}`
+              ? door
+                ? `${cardLabel(p.card, p.outcome)}: descend into ${the(next!.name)}`
+                : `${cardLabel(p.card, p.outcome)}${p.card.type === 'hazard' ? '' : `, ${near} hazard${near === 1 ? '' : 's'} beside it`}`
               : open
                 ? `Face-down card, row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}`
                 : `Passed by: ${p.deep && p.card.type !== 'artifact' ? 'a rare find, ' : ''}${cardLabel(p.card, null)}`;
@@ -235,10 +325,10 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             return (
               <button
                 key={`${trip.depth}-${trip.layer}-${i}`}
-                class={`fc ${p.card.type} ${p.outcome ?? ''} ${shown ? 'up' : ''} ${!p.flipped && !open ? 'passed' : ''} ${rare ? 'deep' : ''} ${rare && p.flipped ? 'found' : ''} ${glint ? 'glint' : ''}`}
+                class={`fc ${p.card.type} ${p.outcome ?? ''} ${shown ? 'up' : ''} ${!p.flipped && !open ? 'passed' : ''} ${rare ? 'deep' : ''} ${rare && p.flipped ? 'found' : ''} ${glint ? 'glint' : ''} ${door ? 'door' : ''} ${door && descent ? 'lifted' : ''}`}
                 style={{ '--i': i } as any}
-                disabled={!open || p.flipped}
-                onClick={() => flip(i)}
+                disabled={!open || (p.flipped && !door)}
+                onClick={() => (door ? descend() : flip(i))}
                 aria-label={label}
               >
                 <span class="fc-inner">
@@ -253,6 +343,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
                     )}
                     <CardArt card={p.card} outcome={p.outcome} />
                     <span class="fc-title">{cardLabel(p.card, p.outcome)}</span>
+                    {door && <span class="door-tag">Tap to go down</span>}
                     {p.flipped && p.card.type !== 'hazard' && (
                       <span class={`near n${near}`} title={`${near} hazard${near === 1 ? '' : 's'} beside this card`}>
                         <Icon name="hazard" size={12} />
@@ -335,7 +426,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             </div>
           </div>
           <div class="foot-actions">
-            <button class="btn big" onClick={() => store.act({ type: 'stopForage' })}>
+            <button class="btn big" onClick={() => !busy && store.act({ type: 'stopForage' })}>
               Head home
             </button>
             {next && (
@@ -373,6 +464,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
           </button>
         </footer>
       )}
+      {descent && <Descent {...descent} onInside={inside} onDone={() => setDescent(null)} />}
       {store.error && (
         <div class="toast" role="alert">
           {store.error}

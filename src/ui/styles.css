@@ -3046,6 +3046,120 @@ h3 .inline-link {
     #2f261e;
   color: #f3e3b5;
 }
+/* Turning the way down: a slower flip that lifts the card off the floor, then gold light spills out. */
+.fc.entrance.up:not(.passed) .fc-inner {
+  transition-duration: 0.75s;
+  animation: way-lift 0.75s ease-out;
+}
+@keyframes way-lift {
+  40% {
+    scale: 1.14;
+  }
+}
+.fc.door .fc-front {
+  animation: door-glow 2.4s ease-in-out 0.75s infinite;
+}
+@keyframes door-glow {
+  50% {
+    box-shadow: 0 0 0 2px rgba(233, 185, 73, 0.6), 0 0 22px 4px rgba(233, 185, 73, 0.5);
+  }
+}
+.door-tag {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  translate: -50% 0;
+  white-space: nowrap;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #2f261e;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+/* Tapped, the card leaves the floor for the middle of the screen. */
+.fc.lifted {
+  visibility: hidden;
+}
+/* Going down: the way-down card, big; the view then walks into its mouth until all is dark. */
+.forage-screen > .descent {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  outline: none;
+}
+.descent-dim {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 45%, rgba(47, 38, 30, 0.7), rgba(23, 17, 12, 0.88));
+}
+.descent-dim::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #17110c;
+  opacity: 0;
+  transition: opacity 0.9s ease-in;
+}
+.descent.dark .descent-dim::after {
+  opacity: 1;
+}
+.descent-card {
+  position: relative;
+  width: min(72vw, 330px, 46dvh);
+  aspect-ratio: 4 / 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 18px;
+  border: 3px solid var(--gold);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(201, 162, 75, 0.35), transparent 70%),
+    #2f261e;
+  color: #f3e3b5;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  text-align: center;
+}
+.descent-card.shown {
+  animation: door-glow 1.3s ease-in-out;
+}
+.descent-card .icon {
+  width: 60%;
+  height: auto;
+}
+.descent-eyebrow,
+.descent-depth {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #cdbf9f;
+}
+.descent-name {
+  font-family: var(--serif);
+  font-weight: 800;
+  font-size: clamp(22px, 7vw, 30px);
+  line-height: 1.05;
+  padding-inline: 12px;
+}
+.descent-card > span {
+  transition: opacity 0.25s;
+}
+.descent-card.entering > span {
+  opacity: 0;
+}
+/* Once inside, the layer is dealt a beat later and more slowly, as the dark lifts. */
+.floor.arriving .fc {
+  animation-duration: 0.6s;
+  animation-delay: calc(220ms + var(--i) * 85ms);
+}
 /* An artifact, turned: old brass on parchment. */
 .fc.artifact .fc-front {
   border-color: #6a4e14;
