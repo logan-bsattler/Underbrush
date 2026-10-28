@@ -3032,6 +3032,20 @@ h3 .inline-link {
   border-color: var(--gold);
   color: #f3e3b5;
 }
+/* Plain forest floor, turned: nothing to take, so it sits back quietly. */
+.fc.ground .fc-front {
+  background: #ece5d3;
+  border-color: #8a7d66;
+  color: #5e5444;
+}
+/* The way down, turned: a dark opening edged in gold. */
+.fc.entrance .fc-front {
+  border-color: var(--gold);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(201, 162, 75, 0.35), transparent 70%),
+    #2f261e;
+  color: #f3e3b5;
+}
 /* An artifact, turned: old brass on parchment. */
 .fc.artifact .fc-front {
   border-color: #6a4e14;

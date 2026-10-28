@@ -7,6 +7,7 @@ import {
   descendStatus,
   gearUnlockLevel,
   glints,
+  hasSetEffect,
   hazardsNear,
   inSeason,
   layerDef,
@@ -36,7 +37,8 @@ function CardArt({ card, outcome }: { card: Card; outcome: DrawOutcome | null })
   if (card.type === 'specimen')
     return outcome === 'known' ? <Mushroom species={card.species} size={64} /> : <Unknown species={card.species} size={64} />;
   if (card.type === 'substrate') return <SubstrateArt substrate={card.substrate} size={64} />;
-  return <Icon name={card.type === 'coins' ? 'coin' : card.type === 'artifact' ? 'relic' : 'hazard'} size={44} />;
+  if (card.type === 'ground') return <Icon name={card.look} size={44} />;
+  return <Icon name={card.type === 'coins' ? 'coin' : card.type === 'artifact' ? 'relic' : card.type === 'entrance' ? 'way' : 'hazard'} size={44} />;
 }
 
 function cardLabel(card: Card, outcome: DrawOutcome | null) {
@@ -145,7 +147,16 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   const lastWasDeep = !!deepHere?.flipped && last?.card === deepHere.card;
   const deepAt = content.rules.deepAt;
   const justCleared = store.last?.kind === 'draw' && !!store.last.cleared;
-  const wayDown = next ? ` A way leads down to ${the(next.name)}.` : '';
+  // The way down is one face-down card in the zone's last patch, and in each layer above the deepest open one.
+  const way = trip.patch.find((p) => p.card.type === 'entrance');
+  const below = layersOpen(g.perks.generation, trip.zone) > trip.layer;
+  const wayDown = next
+    ? ` A way leads down to ${the(next.name)}.`
+    : way
+      ? ` ${deepHere ? 'Another' : 'One card'} hides the way down.`
+      : below && !under
+        ? ` The way down lies in the ${hasSetEffect(g.perks.sets, 'shortcut') ? 'first deep' : 'last'} patch.`
+        : '';
   const relics = trip.relics.filter((r) => !trip.lost.includes(r.uid)).map((r) => cardTitle({ type: 'artifact', artifact: r.artifact }));
   const message = justCleared
     ? `Nothing left unturned: every card in the ${zone.name} but its hazards.`
@@ -164,7 +175,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
         : !open
           ? 'The faded cards are what you walked past.'
           : layer
-            ? `${layer.blurb}${deepHere ? ' Something old lies hidden in this patch.' : ''}`
+            ? `${layer.blurb}${deepHere ? ' Something old lies hidden in this patch.' : ''}${wayDown}`
             : deepHere
               ? `Deep in the woods. One card on this ${end ? 'last patch' : 'patch'} hides a rare find.${wayDown}`
               : end && trip.depth > 1
@@ -266,7 +277,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             aria-label={
               next
                 ? `Descend into ${the(next.name)}. ${hidden} unturned card${hidden === 1 ? '' : 's'} stay behind.`
-                : under && !down.open
+                : (under || (way && end)) && !down.open
                   ? down.reason
                   : end
                     ? 'End of the zone: the whole deck is dealt.'
@@ -298,6 +309,11 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
                   <span>Swipe up</span>
                   <small>to descend</small>
                   <small>{ordinal(trip.layer + 1)} layer</small>
+                </>
+              ) : way && end ? (
+                <>
+                  <span>Way down</span>
+                  <small>hidden in this patch</small>
                 </>
               ) : under ? (
                 <>

@@ -37,6 +37,10 @@ export function cardTitle(card: Card) {
       return card.name;
     case 'artifact':
       return content.artifacts.find((a) => a.id === card.artifact)?.name ?? 'Artifact';
+    case 'ground':
+      return card.name;
+    case 'entrance':
+      return 'Way down';
   }
 }
 
@@ -65,6 +69,12 @@ export function outcomeText(o: DrawOutcome, card: Card, dropped?: Specimen) {
     case 'artifact': {
       const a = card.type === 'artifact' ? content.artifacts.find((x) => x.id === card.artifact) : null;
       return `An artifact: ${a?.name ?? 'something old'}. ${a?.blurb ?? ''} It counts as a find, so get it home safe.`;
+    }
+    case 'nothing':
+      return `Nothing here but ${card.type === 'ground' ? card.name.toLowerCase() : 'the forest floor'}.`;
+    case 'wayDown': {
+      const layer = card.type === 'entrance' ? content.underground[card.zone]?.[card.depth - 1] : null;
+      return `A way down${layer ? ` to the ${layer.name.replace(/^The /, '')}` : ''}! Swipe the deck to descend, or turn more cards first.`;
     }
     case 'bust':
       return `Bust! You scramble home with only your first ${content.rules.bustKeep} finds.`;

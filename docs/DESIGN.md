@@ -80,6 +80,12 @@ keeps the deck and the kit's rules but adds a small deduction game on top:
   When the trip ends, every card goes back and the deck is shuffled, so each trip walks the whole
   printed deck, and the deck shows how many cards are left. When a trip ends, the cards you passed
   are shown faded.
+- **Plain ground.** About 40% of every zone deck is plain forest floor (`ground`): bare earth,
+  brush or a tree in the zone's own names (Tall Grass, Leaf Litter, Fireweed...), 13 of 32 cards.
+  They replaced mushroom, substrate and coin cards; hazards kept their counts, so each turn risks as
+  much for less, and a turned plain card's number is often all it gives. Each zone kept every
+  species it had, at roughly its old proportions (Meadow dropped its one Compost card, Mixed Woods
+  and Burn Scar their coins).
 - **Deck size** (not the kit's): every zone has 32 cards, up from the kit's 24, so a single pass
   reaches two deep patches instead of one. The decks are the kit's scaled by 4/3, keeping each
   zone's share of specimens, substrate, coins and hazards; Mixed Woods trades a Chanterelle for a
@@ -328,10 +334,13 @@ Foraging goes deeper each generation. Every zone has three layers below it in
 `src/data/underground.json`; generation 1 reaches none, and each generation after opens one more
 (`layersOpen`). Rules live in `src/core/underground.ts` and the `descend` action.
 
-- **Getting down.** From the deep patches (or the far edge of the zone), a trip can descend
-  (`descendStatus`). Each layer is a single patch dealt from its own 12-card deck, with more
-  hazards the deeper it is; the hazards met above still count. There's no going deeper in a layer,
-  only down again or home. The deck swipes down whenever the way is open.
+- **Getting down.** The way down is a face-down card (`entrance`), dealt from outside the deck
+  into the zone's last patch, and into each layer's patch when a deeper layer is open. Turn it and
+  the trip can descend (`descendStatus`); bust first, head home or swipe past it, and there's no
+  descent this trip. The message says which patch hides it, never which card. Each layer is a
+  single patch dealt from its own 12-card deck, with more hazards the deeper it is; the hazards met
+  above still count. There's no going deeper in a layer, only down again or home. The deck swipes
+  down once the way is turned.
 - **Artifacts.** Each layer holds one artifact (`artifacts.json`, 18 in all), dealt into its patch
   until it's brought home that year. Turned, it's pocketed like a find, so a bust can cost it. It
   scores 2, 3 or 4 festival points by depth (`score().artifacts`) and goes into the journal's
@@ -339,7 +348,7 @@ Foraging goes deeper each generation. Every zone has three layers below it in
 - **Sets.** Six sets of three. A whole set in the cabinet adds a modest perk to every story year
   after, through `perksFor` (`perks.sets`): the Drover's Purse (+2 starting coins), the Forager's
   Lantern (rare finds and artifacts glint face down), the Festival Ribbons (+2 festival points,
-  `score().family`), the Mapmaker's Case (descend from any patch), the Mushroom Stones (a bust
+  `score().family`), the Mapmaker's Case (the way down lies in the first deep patch, not the last), the Mushroom Stones (a bust
   keeps one more find) and the First Homestead (+1 basket).
 - **Family lore.** Every layer has a clue in the family's voice ("Grandpa used to speak of...")
   and a payoff line. The zone picker shows the clue for the next layer down; the Almanac's Pass it
@@ -354,16 +363,18 @@ trip (a floor: it never chases sets or plans a descent):
 
 | Generation | Bronze | Median | p90 | Tier reached | Artifacts/yr | Descents/yr | Bust rate |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 15 | 20 | 30 | 75% | 0.0 | 0.0 | 0% |
-| 2 | 20 | 28 | 43 | 86% | 2.9 | 15.9 | 1% |
-| 3 | 25 | 30 | 44 | 68% | 2.9 | 16.1 | 1% |
-| 4 | 30 | 27 | 40 | 40% | 2.6 | 17.3 | 1% |
-| 4, full cabinet | 30 | 30 | 43 | 52% | 2.7 | 16.6 | 1% |
+| 1 | 15 | 18 | 32 | 76% | 0.0 | 0.0 | 1% |
+| 2 | 20 | 32 | 43 | 96% | 2.6 | 12.6 | 2% |
+| 3 | 25 | 38 | 51 | 98% | 5.1 | 22.4 | 6% |
+| 4 | 30 | 46 | 58 | 98% | 6.9 | 30.9 | 16% |
+| 4, full cabinet | 30 | 48 | 60 | 99% | 6.9 | 30.8 | 17% |
 
-Artifacts roughly keep pace with the rising tiers through generation 3, and generation 4 is meant
-to be the hard one. The low bust rate is the bot, not the underground: generation 1 has no layers
-and busts just as rarely, the Mushroom Knife makes no difference to it, and Legend years run about
-29 short, cautious trips against 12 in a standard-kit year (3% busts there).
+With plain ground and the way-down card, the diving bot now walks to the zone's last patch and
+turns cards until it finds the way, picking up finds as it goes, and in later generations turns
+each layer's patch for the next way down. That is why artifacts, descents and busts all climb with
+the generation: generation 4 has three layers to search through. The tiers were left as they
+were. On the standard kit the baseline bot fell from 15.0 to 11.9 a year (1,000 years), with
+Bronze or better from 49% to 28%, since 13 of every zone's 32 cards now give nothing.
 
 ## Achievements
 

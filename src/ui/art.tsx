@@ -583,6 +583,36 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
           <path d="M6 6l12 12M18 6 6 18" {...s} />
         </svg>
       );
+    case 'ground':
+      return (
+        <svg {...p}>
+          <path d="M2 17 Q7 13 12 15 T22 15 V20 H2 Z" fill="#9C7C58" stroke="#5E4632" strokeWidth="1.4" strokeLinejoin="round" />
+          <circle cx="8" cy="18" r="0.9" fill="#5E4632" />
+          <circle cx="15" cy="17.5" r="1.1" fill="#5E4632" />
+        </svg>
+      );
+    case 'brush':
+      return (
+        <svg {...p}>
+          <path d="M3 20 Q12 14 21 20 Z" fill="#7E9A55" stroke="#3E5228" strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="M6 19 Q5 10 8 5 M10 18 Q11 9 12 3 M14 18 Q14 10 17 5 M18 19 Q19 13 20 9" {...s} stroke="#3E5228" />
+        </svg>
+      );
+    case 'tree':
+      return (
+        <svg {...p}>
+          <path d="M11 21 V14 M13 21 V14" {...s} stroke="#5E4632" strokeWidth="2.2" />
+          <path d="M12 2 Q20 6 18 12 Q19 16 12 15 Q5 16 6 12 Q4 6 12 2 Z" fill="#6E8B4E" stroke="#3E5228" strokeWidth="1.4" />
+        </svg>
+      );
+    case 'way':
+      return (
+        <svg {...p}>
+          <path d="M3 21 V12 Q12 1 21 12 V21 Z" fill="#5E4632" stroke="#2F261E" strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="M7 21 V13 Q12 6 17 13 V21 Z" fill="#17110C" />
+          <path d="M8.5 17.5 H15.5 M9.5 19.5 H14.5" {...s} stroke="#C9A24B" strokeWidth="1.3" />
+        </svg>
+      );
     case 'relic':
       return (
         <svg {...p}>

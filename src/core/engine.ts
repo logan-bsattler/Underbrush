@@ -15,6 +15,7 @@ import type {
   GameState,
   MealEffect,
   OrderDef,
+  PatchCard,
   Perks,
   RecipeDef,
   Specimen,
@@ -168,7 +169,7 @@ export function zoneStatus(s: GameState, zone: ZoneDef, c: Content = defaultCont
   return { open: true };
 }
 
-/** Whether this trip can go down into the next layer below its zone: from the deep patches, or from the layer above. */
+/** Whether this trip can go down into the next layer below its zone: once the way down in this patch has been turned. */
 export function descendStatus(s: GameState, c: Content = defaultContent): ZoneStatus {
   const trip = s.forage;
   if (!trip || trip.status !== 'open') return { open: false, reason: 'You are not out foraging.' };
@@ -177,10 +178,11 @@ export function descendStatus(s: GameState, c: Content = defaultContent): ZoneSt
     const zone = c.zones.find((z) => z.id === trip.zone)!;
     return { open: false, reason: open ? 'This is as deep as your generation can go.' : `Nothing under the ${zone.name} is open to your generation.` };
   }
-  // The way down is past the deep patches, or at the far edge of the zone; the Mapmaker's Case knows the shortcuts.
-  const walked = trip.depth >= c.rules.deepAt || !s.decks[trip.zone].draw.length;
-  if (trip.layer === 0 && !walked && !hasSetEffect(s.perks.sets, 'shortcut', c)) return { open: false, reason: 'The way down is past the deep patches.' };
-  return { open: true };
+  const way = trip.patch.find((p) => p.card.type === 'entrance');
+  if (way?.flipped) return { open: true };
+  if (way) return { open: false, reason: 'One card in this patch hides the way down. Turn it to descend.' };
+  // On the surface, the way down lies in the zone's last patch; the Mapmaker's Case knows a shorter one.
+  return { open: false, reason: `The way down is in the ${hasSetEffect(s.perks.sets, 'shortcut', c) ? 'first deep' : 'last'} patch of the zone.` };
 }
 
 export function canPlantOn(s: GameState, speciesId: string, index: number, c: Content = defaultContent): boolean {
@@ -510,10 +512,15 @@ function takeCard(s: GameState, deck: string): Card | null {
   return s.decks[deck].draw.shift() ?? null;
 }
 
-/** Going deeper or down leaves the unturned cards behind for the rest of the trip. Deep finds and artifacts were never in the deck. */
+/** Whether a patch card came from the deck: deep finds, artifacts and the way down never did, so they never go back. */
+function fromDeck(p: PatchCard): boolean {
+  return !p.deep && p.card.type !== 'entrance';
+}
+
+/** Going deeper or down leaves the unturned cards behind for the rest of the trip. */
 function leaveHidden(s: GameState, trip: ForageTrip) {
   for (const p of trip.patch) {
-    if (p.flipped || p.deep) continue;
+    if (p.flipped || !fromDeck(p)) continue;
     s.decks[tripDeck(trip)].discard.push(p.card);
     if (p.card.type !== 'hazard') trip.missed += 1;
   }
@@ -525,7 +532,7 @@ export function zoneCleared(s: GameState, trip: ForageTrip): boolean {
     trip.layer === 0 &&
     trip.missed === 0 &&
     s.decks[trip.zone].draw.every((card) => card.type === 'hazard') &&
-    trip.patch.every((p) => p.flipped || p.deep || p.card.type === 'hazard')
+    trip.patch.every((p) => p.flipped || !fromDeck(p) || p.card.type === 'hazard')
   );
 }
 
@@ -533,7 +540,7 @@ export function zoneCleared(s: GameState, trip: ForageTrip): boolean {
 function restockDeck(s: GameState, trip: ForageTrip, rng: Rng) {
   for (let layer = 0; layer <= trip.layer; layer++) {
     const deck = s.decks[layer ? layerKey(trip.zone, layer) : trip.zone];
-    const unturned = layer === trip.layer ? trip.patch.filter((p) => !p.flipped && !p.deep).map((p) => p.card) : [];
+    const unturned = layer === trip.layer ? trip.patch.filter((p) => !p.flipped && fromDeck(p)).map((p) => p.card) : [];
     deck.draw = rng.shuffle([...deck.draw, ...deck.discard, ...unturned]);
     deck.discard = [];
   }
@@ -559,18 +566,35 @@ function layerRelic(s: GameState, trip: ForageTrip, c: Content): Card | null {
   return id && !s.artifacts.includes(id) ? { type: 'artifact', artifact: id } : null;
 }
 
+/**
+ * The way down to the next layer, when this generation has one open: in a layer's only patch, or in
+ * the zone's last patch (its first deep one, with the Mapmaker's Case).
+ */
+function wayDown(s: GameState, trip: ForageTrip, last: boolean, c: Content): Card | null {
+  if (trip.layer >= layersOpen(s.perks.generation, trip.zone, c)) return null;
+  if (!trip.layer && !(hasSetEffect(s.perks.sets, 'shortcut', c) ? trip.depth === c.rules.deepAt : last)) return null;
+  return { type: 'entrance', zone: trip.zone, depth: trip.layer + 1 };
+}
+
 function dealPatch(s: GameState, trip: ForageTrip, rng: Rng, c: Content) {
   const n = c.rules.patchSize * c.rules.patchSize;
   const zone = c.zones.find((z) => z.id === trip.zone)!;
+  const deck = s.decks[tripDeck(trip)];
   // Underground, the one card from outside the deck is the layer's artifact rather than a deep find.
   const deep = trip.layer ? layerRelic(s, trip, c) : trip.depth >= c.rules.deepAt ? deepFind(s, zone, rng, c) : null;
+  const last = !trip.layer && deck.draw.length <= n - (deep ? 1 : 0);
+  const way = wayDown(s, trip, last, c);
+  const room = n - (deep ? 1 : 0) - (way ? 1 : 0);
   trip.patch = [];
-  for (let i = 0; i < (deep ? n - 1 : n); i++) {
+  for (let i = 0; i < room; i++) {
     const card = takeCard(s, tripDeck(trip));
     if (!card) break;
     trip.patch.push({ card, flipped: false, outcome: null });
   }
+  // The zone's last patch ends the trip's pass: a card the way down crowds out is walked past.
+  if (way && last) deck.discard.push(...deck.draw.splice(0));
   if (deep) trip.patch.splice(Math.floor(rng.next() * (trip.patch.length + 1)), 0, { card: deep, flipped: false, outcome: null, deep: true });
+  if (way) trip.patch.splice(Math.floor(rng.next() * (trip.patch.length + 1)), 0, { card: way, flipped: false, outcome: null });
 }
 
 /** Hazards orthogonally beside a patch card: the rustle you notice once you've turned it. */
@@ -672,7 +696,7 @@ export function dispatch(
       if (spot.flipped) fail('You already turned that one.');
       const card = spot.card;
       spot.flipped = true;
-      if (!spot.deep) s.decks[tripDeck(trip)].discard.push(card);
+      if (fromDeck(spot)) s.decks[tripDeck(trip)].discard.push(card);
       let outcome: ActionResult & { kind: 'draw' } = { kind: 'draw', index: action.index, card, outcome: 'basket' };
       if (card.type === 'specimen') {
         const sp = c.species[card.species];
@@ -711,6 +735,10 @@ export function dispatch(
       } else if (card.type === 'substrate') {
         s.shed.push(card.substrate);
         outcome.outcome = 'substrate';
+      } else if (card.type === 'ground') {
+        outcome.outcome = 'nothing';
+      } else if (card.type === 'entrance') {
+        outcome.outcome = 'wayDown';
       } else if (card.type === 'artifact') {
         // Pocketed, not basketed: it counts as a find, so only a bust can cost it.
         const uid = s.nextUid++;

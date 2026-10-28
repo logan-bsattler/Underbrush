@@ -33,7 +33,8 @@ function safestCard(t: ForageTrip): { index: number; risk: number } | null {
   const risk = t.patch.map(() => 0.25);
   t.patch.forEach((p, i) => {
     if (!p.flipped || p.card.type === 'hazard') return;
-    const around = neighbors(i, size);
+    // A patch at the end of the deck can be short: only the cards actually dealt are neighbors.
+    const around = neighbors(i, size).filter((n) => n < t.patch.length);
     const hidden = around.filter((n) => !t.patch[n].flipped);
     const found = around.filter((n) => t.patch[n].flipped && t.patch[n].card.type === 'hazard').length;
     const left = hazardsNear(t, i) - found;
@@ -49,8 +50,8 @@ function safestCard(t: ForageTrip): { index: number; risk: number } | null {
 /**
  * A simple greedy player used to fuzz the rules and to estimate pacing.
  * It is deliberately unclever: the point is a repeatable baseline, not a strong strategy.
- * With `dive`, every other trip to a zone with layers open walks straight past the surface and
- * goes underground; the baseline never does.
+ * With `dive`, every other trip to a zone with layers open walks straight to the patch with the
+ * way down, turns cards until it finds it, and goes underground; the baseline never does.
  */
 export function playYear(start: GameState, opts: { greed?: number; dive?: boolean } = {}): GameState {
   const greed = opts.greed ?? 3;
@@ -146,13 +147,20 @@ export function playYear(start: GameState, opts: { greed?: number; dive?: boolea
       act({ type: 'forage', zone });
       while (s.forage?.status === 'open') {
         const t: ForageTrip = s.forage;
-        if (dive && t.layer === 0) {
-          act(descendStatus(s).open ? { type: 'descend' } : { type: 'deeper' });
+        const way = t.patch.find((p) => p.card.type === 'entrance');
+        if (dive && (t.layer === 0 || way)) {
+          // The message says which patch hides the way down; the bot still has to turn cards to find it.
+          if (way?.flipped) act({ type: 'descend' });
+          else if (way) act({ type: 'flip', index: safestCard(t)!.index });
+          else if (s.decks[t.zone].draw.length) act({ type: 'deeper' });
+          else act({ type: 'stopForage' });
           continue;
         }
         const full = s.basket.length >= (s.gear.includes('biggerbasket') ? 6 : 4);
         const pick = safestCard(t);
-        if (full || (t.hazards >= 1 && t.drawn.length >= greed)) act({ type: 'stopForage' });
+        // Plain ground is no find: greed counts what the trip has actually brought in.
+        const finds = t.drawn.filter((d) => d.card.type !== 'ground' && d.card.type !== 'entrance').length;
+        if (full || (t.hazards >= 1 && finds >= greed)) act({ type: 'stopForage' });
         else if (pick && (pick.risk < 0.35 || t.hazards === 0)) act({ type: 'flip', index: pick.index });
         else if (t.layer === 0 && t.depth < 3 && t.hazards === 0) act({ type: 'deeper' });
         // From a later generation on, a clean trip that has walked the deep patches goes underground.

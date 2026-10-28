@@ -52,7 +52,11 @@ export type Card =
   | { type: 'substrate'; substrate: Substrate }
   | { type: 'coins'; amount: number }
   | { type: 'hazard'; name: string }
-  | { type: 'artifact'; artifact: string };
+  | { type: 'artifact'; artifact: string }
+  /** Plain forest floor: bare ground, brush or a tree. Nothing to take, but its number still tells. */
+  | { type: 'ground'; name: string; look: 'ground' | 'brush' | 'tree' }
+  /** The way down to a zone's next layer, dealt from outside the deck. Turn it to open the descent. */
+  | { type: 'entrance'; zone: string; depth: number };
 
 export interface ZoneDef {
   id: string;
@@ -406,6 +410,8 @@ export type DrawOutcome =
   | 'hazard'
   | 'hazardIgnored'
   | 'artifact'
+  | 'nothing'
+  | 'wayDown'
   | 'bust';
 
 export interface Cross {

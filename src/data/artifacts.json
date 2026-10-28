@@ -47,9 +47,9 @@
     {
       "id": "maps",
       "name": "The Mapmaker's Case",
-      "rule": "Descend from any patch of a zone, not only its deep ones.",
+      "rule": "The way down lies in a zone's first deep patch, not its last.",
       "clue": "Great-grandpa said a mapmaker charted every tunnel under the valley, then lost the pieces of his kit in three different holes.",
-      "payoff": "The mapmaker's case is whole, and his charts show the shortcuts: descend from any patch.",
+      "payoff": "The mapmaker's case is whole, and his charts show the shortcuts: the way down lies in the first deep patch.",
       "effect": { "type": "shortcut" }
     },
     {
