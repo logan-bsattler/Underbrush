@@ -14,7 +14,8 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
   const bonus = challengeBonus(g.perks.challenges);
   const tend = g.stats.tendActions.reduce((a, b) => a + b, 0);
   const idle = g.stats.idleActions.reduce((a, b) => a + b, 0);
-  const fresh = store.freshThisYear.filter((f) => !f.startsWith('achievement:'));
+  // Only mushrooms are drawn here: artifacts, layers and sets are told as lore during the year and scored below.
+  const fresh = store.freshThisYear.filter((f) => !f.includes(':') || f.startsWith('hybrid:') || f.startsWith('lookalike:'));
   const won = store.freshThisYear.flatMap((f) => (f.startsWith('achievement:') ? content.achievements.filter((a) => `achievement:${a.id}` === f) : []));
   const record = store.journal.years.find((y) => y.seed === g.seed);
   const [shared, setShared] = useState<null | 'shared' | 'copied' | 'failed'>(null);
