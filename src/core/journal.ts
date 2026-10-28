@@ -17,7 +17,20 @@ export interface YearRecord {
   levelTo: number;
   /** Species whose mastery level rose this year. */
   masteryUps: string[];
+  // The rest came after the first saves, so years recorded before them don't have them. Ids only: names come from content.
+  /** The festival's points, row by row; they sum to `score`. */
+  breakdown?: ScoreBreakdown;
+  board?: string;
+  generation?: number;
+  /** Legend challenges taken on. */
+  challenges?: string[];
+  /** Orders delivered. */
+  orders?: string[];
+  hybrids?: string[];
+  artifacts?: string[];
 }
+
+export type ScoreBreakdown = Omit<ReturnType<typeof score>, 'total' | 'tier'>;
 
 /**
  * The field journal carries over between years, like the tabletop journal pad,
@@ -99,7 +112,8 @@ export function mergeDiscoveries(j: Journal, s: GameState): { journal: Journal; 
 export function recordYear(j: Journal, s: GameState, c: Content = defaultContent): Journal {
   const { journal } = mergeDiscoveries(j, s);
   if (journal.years.some((y) => y.seed === s.seed)) return journal;
-  const sc = score(s, c);
+  const { total, tier, ...breakdown } = score(s, c);
+  const sc = { total, tier };
   const levelFrom = levelFor(journal.renown, c).level;
   // Legend challenges earn extra renown on top of the festival score.
   const earned = Math.round(sc.total * (1 + challengeBonus(s.perks.challenges ?? [], c)));
@@ -128,6 +142,13 @@ export function recordYear(j: Journal, s: GameState, c: Content = defaultContent
         levelFrom,
         levelTo: levelFor(renown, c).level,
         masteryUps,
+        breakdown,
+        board: s.board,
+        generation: s.perks.generation,
+        challenges: [...(s.perks.challenges ?? [])],
+        orders: [...s.orders.filled],
+        hybrids: [...s.hybridsMade],
+        artifacts: [...(s.artifacts ?? [])],
       },
     ],
     best: Math.max(journal.best, sc.total),

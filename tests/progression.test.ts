@@ -169,6 +169,49 @@ describe('recording a year', () => {
     expect(j.years[0]).toMatchObject({ seed: 'x', levelFrom: 1, masteryUps: [] });
   });
 
+  it('keeps the score card and what was delivered, made and found with each year', () => {
+    const hybrid = content.speciesOrder.find((id) => content.species[id].kind === 'hybrid')!;
+    const s = finished('h1', {
+      board: content.boards[1].id,
+      orderPoints: 9,
+      coins: 7,
+      feastPoints: 3,
+      hybridsMade: [hybrid],
+      orders: { visible: [], deck: [], filled: [content.orders[0].id, content.orders[1].id] },
+      artifacts: [content.artifacts[0].id],
+    });
+    s.perks = { ...s.perks, generation: 2, challenges: ['shorthanded'] };
+    const y = recordYear(emptyJournal(), s).years[0];
+    const sc = score(s);
+    expect(y).toMatchObject({
+      board: content.boards[1].id,
+      generation: 2,
+      challenges: ['shorthanded'],
+      orders: [content.orders[0].id, content.orders[1].id],
+      hybrids: [hybrid],
+      artifacts: [content.artifacts[0].id],
+    });
+    expect(y.breakdown).toEqual({ orders: 9, hybrids: sc.hybrids, planted: sc.planted, coins: sc.coins, feast: 3, artifacts: sc.artifacts, family: 0 });
+    expect(Object.values(y.breakdown!).reduce((a, b) => a + b, 0)).toBe(y.score);
+    // The record holds its own copies, so the next year can't change it.
+    s.orders.filled.push('later');
+    expect(y.orders).toHaveLength(2);
+  });
+
+  it('adds one record per seed, however often the year is recorded', () => {
+    const s = finished('h2', { orderPoints: 5 });
+    const j = recordYear(recordYear(recordYear(emptyJournal(), s), s), s);
+    expect(j.years).toHaveLength(1);
+  });
+
+  it('loads years recorded before the score card was kept, without inventing one', () => {
+    const old = { years: [{ finished: '2026-05-01T12:00:00.000Z', mode: 'story', seed: 'old', score: 31, tier: 'bronze', renown: 31, levelFrom: 1, levelTo: 2, masteryUps: [] }] };
+    const y = normalizeJournal(old as Partial<Journal>).years[0];
+    expect(y).toMatchObject({ seed: 'old', score: 31, tier: 'bronze' });
+    expect(y.breakdown).toBeUndefined();
+    expect(y.orders).toBeUndefined();
+  });
+
   it('plays multi-year campaigns without illegal moves, banking every score', () => {
     for (let i = 0; i < 6; i++) {
       const { journal, games } = playCampaign(4, `c-${i}`, emptyJournal());

@@ -1,10 +1,78 @@
 import { useState } from 'preact/hooks';
-import { challengeBonus, content, score, tiersFor } from '../core';
+import { challengeBonus, content, score, tiersFor, type ScoreBreakdown } from '../core';
 import { Icon, Mushroom } from './art';
 import { RenownPanel } from './Progress';
 import type { Store } from './store';
 import { shareResult, shareText } from './share';
 import { name } from './text';
+
+const artifactName = (id: string) => content.artifacts.find((a) => a.id === id)?.name ?? id;
+
+/** The festival's points, row by row. Planted and coin counts are left out when they weren't kept, as in older history. */
+export function ScoreTable({
+  sc,
+  total,
+  orders,
+  hybrids,
+  planted,
+  coins,
+  artifacts,
+}: {
+  sc: ScoreBreakdown;
+  total: number;
+  orders: number;
+  hybrids: string[];
+  planted?: number;
+  coins?: number;
+  artifacts: string[];
+}) {
+  return (
+    <table class="score-table">
+      <tbody>
+        <tr>
+          <td>Orders delivered ({orders})</td>
+          <td>{sc.orders}</td>
+        </tr>
+        <tr>
+          <td>Hybrids made ({hybrids.map(name).join(', ') || 'none'})</td>
+          <td>{sc.hybrids}</td>
+        </tr>
+        <tr>
+          <td>Species planted{planted !== undefined && ` (${planted})`}</td>
+          <td>{sc.planted}</td>
+        </tr>
+        <tr>
+          <td>
+            Coins left over ({coins !== undefined && `${coins}, `}1 point per {content.rules.coinsPerPoint}, up to {content.rules.maxCoinPoints})
+          </td>
+          <td>{sc.coins}</td>
+        </tr>
+        {sc.feast > 0 && (
+          <tr>
+            <td>Dishes the judges remember</td>
+            <td>{sc.feast}</td>
+          </tr>
+        )}
+        {sc.artifacts > 0 && (
+          <tr>
+            <td>Artifacts brought up ({artifacts.map(artifactName).join(', ')})</td>
+            <td>{sc.artifacts}</td>
+          </tr>
+        )}
+        {sc.family > 0 && (
+          <tr>
+            <td>Family ribbons: the judges remember the family</td>
+            <td>{sc.family}</td>
+          </tr>
+        )}
+        <tr class="total">
+          <td>Total</td>
+          <td>{total}</td>
+        </tr>
+      </tbody>
+    </table>
+  );
+}
 
 export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: () => void; onNewYear: () => void }) {
   const g = store.game!;
@@ -54,50 +122,15 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
       )}
       {record && <RenownPanel record={record} journal={store.journal} />}
 
-      <table class="score-table">
-        <tbody>
-          <tr>
-            <td>Orders delivered ({g.orders.filled.length})</td>
-            <td>{sc.orders}</td>
-          </tr>
-          <tr>
-            <td>Hybrids made ({g.hybridsMade.map(name).join(', ') || 'none'})</td>
-            <td>{sc.hybrids}</td>
-          </tr>
-          <tr>
-            <td>Species planted ({g.planted.length})</td>
-            <td>{sc.planted}</td>
-          </tr>
-          <tr>
-            <td>
-              Coins left over ({g.coins}, 1 point per {content.rules.coinsPerPoint}, up to {content.rules.maxCoinPoints})
-            </td>
-            <td>{sc.coins}</td>
-          </tr>
-          {sc.feast > 0 && (
-            <tr>
-              <td>Dishes the judges remember</td>
-              <td>{sc.feast}</td>
-            </tr>
-          )}
-          {sc.artifacts > 0 && (
-            <tr>
-              <td>Artifacts brought up ({g.artifacts.map((id) => content.artifacts.find((a) => a.id === id)?.name ?? id).join(', ')})</td>
-              <td>{sc.artifacts}</td>
-            </tr>
-          )}
-          {sc.family > 0 && (
-            <tr>
-              <td>Family ribbons: the judges remember the family</td>
-              <td>{sc.family}</td>
-            </tr>
-          )}
-          <tr class="total">
-            <td>Total</td>
-            <td>{sc.total}</td>
-          </tr>
-        </tbody>
-      </table>
+      <ScoreTable
+        sc={sc}
+        total={sc.total}
+        orders={g.orders.filled.length}
+        hybrids={g.hybridsMade}
+        planted={g.planted.length}
+        coins={g.coins}
+        artifacts={g.artifacts}
+      />
 
       <div class="tiers">
         {tiers.map((t) => (

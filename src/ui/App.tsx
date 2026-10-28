@@ -2,11 +2,12 @@ import { useErrorBoundary, useState } from 'preact/hooks';
 import { boardsFor, heirloomChoices, heirloomSlots, isLegend, levelFor } from '../core';
 import { ArtDefs } from './art';
 import { Game } from './Game';
+import { PastFestivals } from './History';
 import { Almanac, Pack } from './Progress';
 import { HowTo, Journal, Title } from './Screens';
 import { clearSave, useStore } from './store';
 
-type View = 'title' | 'game' | 'journal' | 'help' | 'almanac' | 'pack';
+type View = 'title' | 'game' | 'journal' | 'help' | 'almanac' | 'history' | 'pack';
 
 /** If anything throws while rendering, show a way out instead of a blank page. */
 export function App() {
@@ -78,7 +79,9 @@ function Main() {
     );
   else if (view === 'journal') screen = <Journal store={store} onBack={() => setView(back)} />;
   else if (view === 'help') screen = <HowTo onBack={() => setView(back)} />;
-  else if (view === 'almanac') screen = <Almanac store={store} onBack={() => setView(back)} />;
+  // History opens from the Almanac and returns to it, leaving the Almanac's own way back alone.
+  else if (view === 'almanac') screen = <Almanac store={store} onBack={() => setView(back)} onHistory={() => setView('history')} />;
+  else if (view === 'history') screen = <PastFestivals store={store} onBack={() => setView('almanac')} />;
   else if (view === 'pack')
     screen = (
       <Pack

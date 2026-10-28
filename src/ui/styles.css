@@ -3153,3 +3153,71 @@ h3 .inline-link {
   font-weight: 700;
   color: var(--moss-dark);
 }
+/* Past festivals */
+.almanac > .btn.wide {
+  margin: 4px 0 8px;
+}
+.festivals {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 16px;
+  display: grid;
+  gap: 8px;
+}
+.festivals > li {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  min-width: 0;
+}
+.festivals > li.best {
+  border-color: var(--gold);
+}
+.fest-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.fest-score {
+  flex: none;
+  min-width: 2.2em;
+  font-family: var(--serif);
+  font-weight: 800;
+  font-size: 22px;
+  text-align: right;
+}
+.fest-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.fest-best {
+  color: var(--rust);
+  font-weight: 700;
+}
+.fest-chev {
+  flex: none;
+  color: var(--ink-soft);
+}
+.fest-detail {
+  padding: 0 12px 12px;
+  border-top: 1px dashed var(--line);
+}
+.fest-detail p {
+  margin: 8px 0 0;
+}
+.fest-detail .score-table td {
+  font-size: 14px;
+}
+.fest-detail .score-table td:last-child {
+  font-size: 16px;
+}

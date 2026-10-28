@@ -120,7 +120,7 @@ function LevelRow({ l, j }: { l: LevelDef; j: Journal }) {
   );
 }
 
-export function Almanac({ store, onBack }: { store: Store; onBack: () => void }) {
+export function Almanac({ store, onBack, onHistory }: { store: Store; onBack: () => void; onHistory: () => void }) {
   const j = store.journal;
   const st = standing(j);
   const species = content.speciesOrder.filter((id) => content.species[id].kind !== 'hybrid');
@@ -138,6 +138,11 @@ export function Almanac({ store, onBack }: { store: Store; onBack: () => void })
         Your festival score each story or daily year becomes renown. Renown raises your homestead's level, and every level brings
         something new into the years that follow.
       </p>
+      {j.years.length > 0 && (
+        <button class="btn wide" onClick={onHistory}>
+          Past festivals ({j.years.length})
+        </button>
+      )}
 
       <h2>The homestead</h2>
       <ol class="levels">
