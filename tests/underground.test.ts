@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   achievementProgress,
   achievementsEarned,
+  actionsPerMonth,
   artifactHome,
   basketCapacity,
   completedSets,
   content,
+  descendCost,
   descendStatus,
   dispatch,
   emptyJournal,
@@ -21,6 +23,7 @@ import {
   normalizeJournal,
   passItOn,
   perksFor,
+  recoveryCost,
   score,
   standardPerks,
   type Action,
@@ -432,5 +435,246 @@ describe('old saves', () => {
     delete (s.forage as Partial<GameState['forage']> & object).layer;
     delete (s.forage as Partial<GameState['forage']> & object).relics;
     expect(migrateState(s).forage).toMatchObject({ layer: 0, relics: [] });
+  });
+});
+
+describe('falls below ground', () => {
+  /** Busts a trip under the Meadow in this layer (0 for the surface): down to it, then a second hazard. */
+  function fallIn(s: GameState, layer: number): GameState {
+    if (layer === 0) s = run(s, { type: 'forage', zone: 'meadow' });
+    else {
+      s = run(toWay(s), { type: 'descend' });
+      for (let d = 2; d <= layer; d++) s = run(turnWay(s), { type: 'descend' });
+    }
+    s.forage!.hazards = 1;
+    const at = s.forage!.patch.findIndex((p) => !p.flipped && !p.deep && !isWay(p));
+    s.forage!.patch[at].card = hazard;
+    s = run(s, { type: 'flip', index: at });
+    expect(s.forage!.status).toBe('busted');
+    return run(s, { type: 'closeTrip' });
+  }
+
+  /** Ends the month, turning down any hybrids the night offers. */
+  function rest(s: GameState): GameState {
+    s = structuredClone(s);
+    s.pendingCrosses = [];
+    return run(s, { type: 'endMonth' });
+  }
+
+  const full = (s: GameState) => actionsPerMonth(s) - s.moldPenalty;
+  const recovering = (s: GameState) => s.night!.events.filter((e) => e.type === 'recovering');
+
+  it('costs nothing after a surface bust', () => {
+    const s = rest(fallIn(year(2), 0));
+    expect(s.actionsLeft).toBe(full(s));
+    expect(recovering(s)).toEqual([]);
+  });
+
+  it('takes 1 action off next month for a first layer, 2 for a second, and leaves the rest of the bust month alone', () => {
+    const one = fallIn(year(2), 1);
+    expect(one.actionsLeft).toBe(actionsPerMonth(one) - 1);
+    expect(one.recovery).toEqual({ zone: 'meadow', layer: 1 });
+    expect(rest(one).actionsLeft).toBe(full(rest(one)) - 1);
+    const two = fallIn(year(3), 2);
+    expect(two.actionsLeft).toBe(actionsPerMonth(two) - 1);
+    expect(rest(two).actionsLeft).toBe(full(rest(two)) - 2);
+  });
+
+  it('names the zone, layer and cost in the night report', () => {
+    expect(recovering(rest(fallIn(year(3), 2)))).toEqual([{ type: 'recovering', zone: 'meadow', layer: 2, actions: 2 }]);
+    expect(recovering(rest(fallIn(year(4), 3)))).toEqual([{ type: 'recovering', zone: 'meadow', layer: 3, actions: 'month' }]);
+  });
+
+  describe('a month away after a third layer', () => {
+    const away = () => rest(fallIn(year(4), 3));
+
+    it('has no actions and blocks every homestead move, even the free ones', () => {
+      const s = away();
+      expect(s).toMatchObject({ actionsLeft: 0, away: true, recovery: null });
+      s.coins = 50;
+      s.storage = { reishi: 1, oyster: 2 };
+      s.shed = ['straw'];
+      const blocked: Action[] = [
+        { type: 'forage', zone: 'meadow' },
+        { type: 'harvest' },
+        { type: 'water' },
+        { type: 'sell', species: 'oyster', count: 1 },
+        { type: 'fillOrder', order: s.orders.visible[0] },
+        { type: 'hireHand' },
+        { type: 'cook', recipe: 'reishitea' },
+        { type: 'placeSubstrate', index: 0, square: 8 },
+        { type: 'saveSpawn', species: 'oyster' },
+      ];
+      for (const a of blocked) expect(() => dispatch(s, a), a.type).toThrow("You're out recovering this month.");
+    });
+
+    it('still lets the night be dismissed, crosses be decided and the month end', () => {
+      let s = away();
+      s = run(s, { type: 'dismissNight' });
+      expect(s.night).toBeNull();
+      s.pendingCrosses = [{ a: 4, b: 5, hybrid: 'x' }];
+      s = run(s, { type: 'resolveCross', index: 0, replace: null });
+      expect(s.pendingCrosses).toEqual([]);
+      s = run(s, { type: 'endMonth' });
+      expect(s.away).toBe(false);
+    });
+
+    it('still runs the night: dry marks and overripe fruit, rain and the Drip Line, and picking at first light', () => {
+      const bed = (s: GameState, stage: 'C' | 'F') => {
+        Object.assign(s.grid[5], { substrate: 'log', species: 'shiitake', stage, hold: 0, dry: 0, blight: false });
+        s.weather = 'clear';
+        return s;
+      };
+      expect(rest(bed(away(), 'C')).night!.events).toContainEqual({ type: 'dry', square: 5 });
+      expect(rest(bed(away(), 'F')).night!.events).toContainEqual({ type: 'overripe', square: 5 });
+      const rain = bed(away(), 'C');
+      rain.weather = 'rain';
+      expect(rest(rain).night!.events).not.toContainEqual({ type: 'dry', square: 5 });
+      const drip = bed(away(), 'C');
+      drip.gear.push('dripline');
+      expect(rest(drip).night!.events).not.toContainEqual({ type: 'dry', square: 5 });
+      // Oyster is fast: it fruits tonight and is picked at first light.
+      const picked = bed(away(), 'C');
+      Object.assign(picked.grid[5], { substrate: 'straw', species: 'oyster' });
+      picked.round = 4;
+      picked.perks.autoHarvest = true;
+      expect(rest(picked).night!.events.some((e) => e.type === 'autoHarvest' && e.squares.includes(5))).toBe(true);
+    });
+
+    it('lasts one month, and the month after has its full actions', () => {
+      const s = rest(away());
+      expect(s.away).toBe(false);
+      expect(s.actionsLeft).toBe(full(s));
+      expect(recovering(s)).toEqual([]);
+    });
+
+    it('still spoils storage at a season turn without the Dehydrator', () => {
+      const fell = year(4);
+      fell.round = 2;
+      let s = rest(fallIn(fell, 3));
+      expect(s).toMatchObject({ round: 3, away: true });
+      s.storage = { oyster: 2 };
+      s = rest(s);
+      expect(s.night!.events).toContainEqual({ type: 'spoil', lost: { oyster: 2 } });
+      expect(s.storage).toEqual({});
+    });
+  });
+
+  it('stacks with Short-handed and the Mold Bloom, never below 0 actions', () => {
+    const short = year(3);
+    short.perks.challenges = ['shorthanded'];
+    const s = fallIn(short, 2);
+    expect(rest(s).actionsLeft).toBe(1);
+    for (const i of [1, 2, 3]) s.grid[i].blight = true;
+    const molded = rest(s);
+    expect(molded.moldPenalty).toBe(1);
+    expect(molded.actionsLeft).toBe(0);
+    expect(molded.away).toBe(false);
+    // A short month isn't a month away: the free moves still work.
+    molded.shed = ['straw'];
+    const ground = molded.grid.findIndex((q) => !q.tree && q.substrate === null);
+    expect(run(molded, { type: 'placeSubstrate', index: 0, square: ground }).grid[ground].substrate).toBe('straw');
+  });
+
+  it('counts only the deepest of two falls in one month', () => {
+    const s = fallIn(fallIn(year(3), 2), 1);
+    expect(s.recovery).toEqual({ zone: 'meadow', layer: 2 });
+    expect(s.stats.deepBusts).toEqual([0, 1, 1, 0]);
+    expect(rest(s).actionsLeft).toBe(full(rest(s)) - 2);
+  });
+
+  it('lands one layer softer with the Mushroom Stones', () => {
+    const stones = set('stones');
+    const one = rest(fallIn(year(2, stones), 1));
+    expect(one.actionsLeft).toBe(full(one));
+    expect(recovering(one)).toEqual([]);
+    const two = rest(fallIn(year(3, stones), 2));
+    expect(two.actionsLeft).toBe(full(two) - 1);
+    const three = rest(fallIn(year(4, stones), 3));
+    expect(three).toMatchObject({ away: false, actionsLeft: full(three) - 2 });
+    expect(recoveryCost(3, ['stones'])).toBe(2);
+    expect(recoveryCost(3, [])).toBe('month');
+    expect(recoveryCost(0, [])).toBe(0);
+  });
+
+  it('can be bought back with a hand or a cup of Reishi Tea', () => {
+    const s = rest(fallIn(year(3), 2));
+    const short = s.actionsLeft;
+    s.coins = 20;
+    s.storage = { reishi: 1 };
+    expect(run(s, { type: 'hireHand' }).actionsLeft).toBe(short + 1);
+    expect(run(s, { type: 'cook', recipe: 'reishitea' }).actionsLeft).toBe(short + 1);
+  });
+
+  it('forgives a first or second layer in month 12, and a third costs only the last harvest', () => {
+    const inDecember = (generation: number, layer: number, artifacts: string[] = []) => {
+      const s = year(generation, artifacts);
+      s.round = 12;
+      return rest(fallIn(s, layer));
+    };
+    for (const [g, l] of [
+      [2, 1],
+      [3, 2],
+    ]) {
+      const s = inDecember(g, l);
+      expect(s.finale).toEqual({ harvested: false, marketed: false });
+      expect(recovering(s)).toEqual([]);
+    }
+    const s = inDecember(4, 3);
+    expect(s.finale).toEqual({ harvested: true, marketed: false });
+    expect(recovering(s)).toEqual([{ type: 'recovering', zone: 'meadow', layer: 3, actions: 'month' }]);
+    expect(s).toMatchObject({ away: false, stats: { monthsAway: 0 } });
+    s.storage = { oyster: 1 };
+    expect(run(s, { type: 'sell', species: 'oyster', count: 1 }).finale!.marketed).toBe(true);
+    // With the Stones a third layer is 2 actions, and festival morning forgives it.
+    expect(inDecember(4, 3, set('stones')).finale!.harvested).toBe(false);
+  });
+
+  it('counts falls by layer and months away in the stats', () => {
+    const s = rest(fallIn(year(4), 3));
+    expect(s.stats.deepBusts).toEqual([0, 0, 0, 1]);
+    expect(s.stats.monthsAway).toBe(1);
+    expect(s.stats.busts).toBe(1);
+  });
+
+  it('rolls no dice: the year goes on exactly as it would have without the fall', () => {
+    const fell = fallIn(year(3), 2);
+    const a = rest(fell);
+    const b = rest({ ...fell, recovery: null });
+    expect(a.rng).toBe(b.rng);
+    expect({ ...a, actionsLeft: 0, night: null }).toEqual({ ...b, actionsLeft: 0, night: null });
+  });
+
+  it('never reaches a daily year', () => {
+    let s = newGame({ seed: 'daily-fall', mode: 'daily', perks: standardPerks() });
+    s.weather = 'clear';
+    s = toWayPatch(s);
+    expect(descendCost(s)).toBeNull();
+    expect(() => dispatch(s, { type: 'descend' })).toThrow();
+    s = rest(fallIn(run(s, { type: 'stopForage' }, { type: 'closeTrip' }), 0));
+    expect(s).toMatchObject({ recovery: null, away: false, stats: { deepBusts: [0, 0, 0, 0], monthsAway: 0 } });
+  });
+
+  it('names the next layer’s stakes before descending, softened by the Stones', () => {
+    expect(descendCost(year(3))).toBeNull();
+    expect(descendCost(run(year(3), { type: 'forage', zone: 'meadow' }))).toBe(1);
+    const first = run(toWay(year(3)), { type: 'descend' });
+    expect(descendCost(first)).toBe(2);
+    expect(descendCost(run(turnWay(first), { type: 'descend' }))).toBeNull();
+    const deep = run(turnWay(run(toWay(year(4, set('stones'))), { type: 'descend' })), { type: 'descend' });
+    expect(descendCost(deep)).toBe(2);
+    expect(descendCost(run(toWay(year(4)), { type: 'descend' }, { type: 'stopForage' }))).toBeNull();
+    expect(descendCost(run(year(1), { type: 'forage', zone: 'meadow' }))).toBeNull();
+  });
+
+  it('brings a save from before falls up to date, owing nothing', () => {
+    const s = fallIn(year(3), 2);
+    delete (s as Partial<GameState>).recovery;
+    delete (s as Partial<GameState>).away;
+    delete (s.stats as Partial<GameState['stats']>).deepBusts;
+    delete (s.stats as Partial<GameState['stats']>).monthsAway;
+    const m = migrateState(structuredClone(s));
+    expect(m).toMatchObject({ recovery: null, away: false, stats: { deepBusts: [0, 0, 0, 0], monthsAway: 0 } });
+    expect(rest(m).actionsLeft).toBe(full(rest(m)));
   });
 });

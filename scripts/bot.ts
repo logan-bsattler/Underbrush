@@ -20,6 +20,7 @@ import {
   type ForageTrip,
   type GameState,
   type Journal,
+  type NightReport,
 } from '../src/core';
 import { neighbors } from '../src/core/board';
 
@@ -52,12 +53,19 @@ function safestCard(t: ForageTrip): { index: number; risk: number } | null {
  * It is deliberately unclever: the point is a repeatable baseline, not a strong strategy.
  * With `dive`, every other trip to a zone with layers open walks straight to the patch with the
  * way down, turns cards until it finds it, and goes underground; the baseline never does.
+ * With `careful` as well, below ground it heads home after the first counted hazard and won't descend
+ * with one already counted, so it never falls; without it, `dive` is the careless worst case.
  */
-export function playYear(start: GameState, opts: { greed?: number; dive?: boolean } = {}): GameState {
+export function playYear(
+  start: GameState,
+  opts: { greed?: number; dive?: boolean; careful?: boolean; onNight?: (report: NightReport) => void } = {},
+): GameState {
   const greed = opts.greed ?? 3;
   let s = start;
   const act = (a: Action) => {
-    s = dispatch(s, a).state;
+    const r = dispatch(s, a);
+    s = r.state;
+    if (r.result.kind === 'night') opts.onNight?.(r.result.report);
   };
   const value = (id: string | null) => (id ? content.species[id].value : 0);
 
@@ -81,6 +89,11 @@ export function playYear(start: GameState, opts: { greed?: number; dive?: boolea
       const compost = s.shed.filter((x) => x === 'compost').length;
       if (compost) act({ type: 'sellCompost', count: compost });
       act({ type: 'festival' });
+      continue;
+    }
+    // Out recovering from a fall: nothing to do but come home at the month's end.
+    if (s.away) {
+      act({ type: 'endMonth' });
       continue;
     }
     while (s.shed.length && emptyGround(s).length) act({ type: 'placeSubstrate', index: 0, square: emptyGround(s)[0] });
@@ -148,7 +161,12 @@ export function playYear(start: GameState, opts: { greed?: number; dive?: boolea
       while (s.forage?.status === 'open') {
         const t: ForageTrip = s.forage;
         const way = t.patch.find((p) => p.card.type === 'entrance');
-        if (dive && (t.layer === 0 || way)) {
+        // A careful diver heads home from below after the first counted hazard, and won't go down with one counted.
+        if (opts.careful && t.hazards >= 1 && t.layer > 0) {
+          act({ type: 'stopForage' });
+          continue;
+        }
+        if (dive && !(opts.careful && t.hazards >= 1) && (t.layer === 0 || way)) {
           // The message says which patch hides the way down; the bot still has to turn cards to find it.
           if (way?.flipped) act({ type: 'descend' });
           else if (way) act({ type: 'flip', index: safestCard(t)!.index });

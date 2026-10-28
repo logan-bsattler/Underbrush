@@ -60,6 +60,18 @@ export function hasSetEffect(sets: string[], type: 'glint' | 'shortcut', c: Cont
   return sets.some((id) => c.artifactSets.find((x) => x.id === id)?.effect.type === type);
 }
 
+/**
+ * What a fall in this layer costs next month at the homestead: actions lost, or 'month' for the whole
+ * month away. Nothing on the surface. The Mushroom Stones, which soften a bust, land every fall one layer softer.
+ */
+export function recoveryCost(layer: number, sets: string[], c: Content = defaultContent): number | 'month' {
+  if (layer <= 0) return 0;
+  const felt = layer - setBonus(sets, 'keep', c);
+  if (felt <= 0) return 0;
+  if (felt >= c.rules.recovery.awayFrom) return 'month';
+  return c.rules.recovery.actions[felt - 1] ?? 0;
+}
+
 /** The family's hint at what lies below a zone: the first layer this generation can't reach yet. Null once every layer is open. */
 export function nextClue(generation: number, zone: string, c: Content = defaultContent): { depth: number; layer: LayerDef } | null {
   const depth = layersOpen(generation, zone, c) + 1;

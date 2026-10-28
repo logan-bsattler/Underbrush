@@ -2,7 +2,7 @@ import { content as defaultContent } from './content';
 import { Rng, hashSeed } from './rng';
 import { runGrowth } from './growth';
 import { crossKey, farmLayout, hybridFor, inSeason, neighbors, seasonOf } from './board';
-import { artifactDef, buildLayerDeck, hasSetEffect, layerDef, layerKey, layersOpen, setBonus } from './underground';
+import { artifactDef, buildLayerDeck, hasSetEffect, layerDef, layerKey, layersOpen, recoveryCost, setBonus } from './underground';
 
 export * from './board';
 import type {
@@ -185,6 +185,16 @@ export function descendStatus(s: GameState, c: Content = defaultContent): ZoneSt
   return { open: false, reason: `The way down is in the ${hasSetEffect(s.perks.sets, 'shortcut', c) ? 'first deep' : 'last'} patch of the zone.` };
 }
 
+/**
+ * What a fall in the next layer down would cost next month, so the stakes can be named before descending.
+ * Null when this trip can't go any deeper.
+ */
+export function descendCost(s: GameState, c: Content = defaultContent): number | 'month' | null {
+  const trip = s.forage;
+  if (!trip || trip.status !== 'open' || trip.layer >= layersOpen(s.perks.generation, trip.zone, c)) return null;
+  return recoveryCost(trip.layer + 1, s.perks.sets, c);
+}
+
 export function canPlantOn(s: GameState, speciesId: string, index: number, c: Content = defaultContent): boolean {
   const sq = s.grid[index];
   const sp = c.species[speciesId];
@@ -321,6 +331,10 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   if (!s.stats.identified) s.stats.identified = {};
   s.compostPile ??= [];
   s.finale ??= null;
+  s.recovery ??= null;
+  s.away ??= false;
+  s.stats.deepBusts ??= [0, 0, 0, 0];
+  s.stats.monthsAway ??= 0;
   // Market visits saved before deliveries were counted only knew whether one had been made.
   if (s.market && s.market.deliveries === undefined) s.market = { deliveries: (s.market as { orderFilled?: boolean }).orderFilled ? 1 : 0 };
   s.stats.scraps ??= s.compostPile.length;
@@ -440,6 +454,8 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     declinedCrosses: [],
     night: null,
     moldPenalty: 0,
+    recovery: null,
+    away: false,
     finale: null,
     nextUid: 1,
     tripCount: 0,
@@ -456,6 +472,8 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
       rareFinds: 0,
       dishes: [],
       descents: 0,
+      deepBusts: [0, 0, 0, 0],
+      monthsAway: 0,
     },
     over: false,
   };
@@ -500,6 +518,11 @@ function openMarketVisit(s: GameState) {
 /** On festival morning only the last harvest and market visit are open. */
 function guardFinale(s: GameState) {
   if (s.finale) fail('It is festival morning: there is time for one last harvest and a market visit, nothing more.');
+}
+
+/** A month out recovering from a fall in a third layer: nothing at the homestead, even the moves that cost no action. */
+function guardAway(s: GameState) {
+  if (s.away) fail("You're out recovering this month.");
 }
 
 /** The deck the trip is dealing from: the zone's own on the surface, or the layer's below it. */
@@ -629,6 +652,7 @@ export function dispatch(
 
   switch (action.type) {
     case 'forage': {
+      guardAway(s);
       guardIdle(s);
       guardFinale(s);
       if (s.forage) s.forage = null;
@@ -756,6 +780,11 @@ export function dispatch(
             outcome.outcome = 'bust';
             trip.status = 'busted';
             s.stats.busts += 1;
+            if (trip.layer) {
+              // Hurt below ground: the time comes off next month. Two falls in one month don't add up; the worst counts.
+              s.stats.deepBusts[trip.layer] = (s.stats.deepBusts[trip.layer] ?? 0) + 1;
+              if (!s.recovery || trip.layer > s.recovery.layer) s.recovery = { zone: trip.zone, layer: trip.layer };
+            }
             trip.lost = trip.picked.slice(bustKeep(s, c));
             s.basket = s.basket.filter((b) => !trip.lost.includes(b.uid));
             bankRelics(s, trip);
@@ -789,6 +818,7 @@ export function dispatch(
     }
 
     case 'identify': {
+      guardAway(s);
       guardIdle(s);
       guardFinale(s);
       const unknown = s.basket.filter((b) => !b.identified);
@@ -822,6 +852,7 @@ export function dispatch(
     }
 
     case 'plant': {
+      guardAway(s);
       guardIdle(s);
       guardFinale(s);
       const spec = specimenFor(s, action.uid);
@@ -842,6 +873,7 @@ export function dispatch(
     }
 
     case 'discard': {
+      guardAway(s);
       if (s.forage && s.forage.status === 'open') fail('Finish your forage trip first.');
       const spec = specimenFor(s, action.uid);
       s.basket = s.basket.filter((b) => b.uid !== spec.uid);
@@ -851,6 +883,7 @@ export function dispatch(
     }
 
     case 'compostBasket': {
+      guardAway(s);
       if (s.forage && s.forage.status === 'open') fail('Finish your forage trip first.');
       if (!s.basket.length) fail('Your basket is empty.');
       for (const spec of s.basket) s.compostPile.push(spec.species);
@@ -860,6 +893,7 @@ export function dispatch(
     }
 
     case 'placeSubstrate': {
+      guardAway(s);
       if (s.forage && s.forage.status === 'open') fail('Finish your forage trip first.');
       const sub: Substrate | undefined = s.shed[action.index];
       if (!sub) fail('Nothing in the shed there.');
@@ -871,6 +905,7 @@ export function dispatch(
     }
 
     case 'water': {
+      guardAway(s);
       guardIdle(s);
       guardFinale(s);
       if (s.watered) fail('Already watered this month.');
@@ -882,6 +917,7 @@ export function dispatch(
     }
 
     case 'clearBlight': {
+      guardAway(s);
       guardIdle(s);
       guardFinale(s);
       const sq = s.grid[action.square];
@@ -898,6 +934,7 @@ export function dispatch(
     }
 
     case 'compostSquare': {
+      guardAway(s);
       guardIdle(s);
       guardFinale(s);
       const sq = s.grid[action.square];
@@ -914,6 +951,7 @@ export function dispatch(
     }
 
     case 'harvest': {
+      guardAway(s);
       guardIdle(s);
       if (s.finale?.harvested) fail("You've brought in the last harvest. Time for the festival.");
       const ready = s.grid.filter((sq) => sq.stage === 'F' && !sq.blight && sq.species);
@@ -934,6 +972,7 @@ export function dispatch(
     }
 
     case 'sell': {
+      guardAway(s);
       guardIdle(s);
       const have = s.storage[action.species] ?? 0;
       const n = Math.min(action.count, have);
@@ -948,6 +987,7 @@ export function dispatch(
     }
 
     case 'sellCompost': {
+      guardAway(s);
       guardIdle(s);
       const have = s.shed.filter((x) => x === 'compost').length;
       const n = Math.min(action.count, have);
@@ -962,6 +1002,7 @@ export function dispatch(
     }
 
     case 'fillOrder': {
+      guardAway(s);
       guardIdle(s);
       if (!s.orders.visible.includes(action.order)) fail('That order is not on the board.');
       const order = c.orders.find((o) => o.id === action.order)!;
@@ -983,6 +1024,7 @@ export function dispatch(
     }
 
     case 'swapOrder': {
+      guardAway(s);
       guardIdle(s);
       if (!s.orders.visible.includes(action.order)) fail('That order is not on the board.');
       if (!s.orders.deck.length) fail('No other orders are waiting.');
@@ -998,6 +1040,7 @@ export function dispatch(
     }
 
     case 'hireHand': {
+      guardAway(s);
       guardIdle(s);
       guardFinale(s);
       if (s.hiredRound === s.round) fail("You've already hired a hand this month.");
@@ -1011,6 +1054,7 @@ export function dispatch(
     }
 
     case 'buySubstrate': {
+      guardAway(s);
       guardIdle(s);
       guardFinale(s);
       const cost = c.rules.substrateCost[action.substrate] ?? fail("The stall doesn't sell that.");
@@ -1022,6 +1066,7 @@ export function dispatch(
     }
 
     case 'buySpawn': {
+      guardAway(s);
       guardIdle(s);
       guardFinale(s);
       const sp = c.species[action.species] ?? fail('Unknown species.');
@@ -1036,6 +1081,7 @@ export function dispatch(
     }
 
     case 'saveSpawn': {
+      guardAway(s);
       if (s.forage && s.forage.status === 'open') fail('Finish your forage trip first.');
       guardFinale(s);
       const sp = c.species[action.species] ?? fail('Unknown species.');
@@ -1048,6 +1094,7 @@ export function dispatch(
     }
 
     case 'cook': {
+      guardAway(s);
       guardIdle(s);
       guardFinale(s);
       const recipe = c.recipes.find((r) => r.id === action.recipe) ?? fail('Unknown dish.');
@@ -1062,6 +1109,7 @@ export function dispatch(
     }
 
     case 'buyGear': {
+      guardAway(s);
       guardIdle(s);
       const gear = c.gear.find((g) => g.id === action.gear) ?? fail('Unknown gear.');
       if (s.finale) fail("The shop isn't selling gear on festival day.");
@@ -1080,6 +1128,7 @@ export function dispatch(
     }
 
     case 'placeTent': {
+      guardAway(s);
       if (!s.gear.includes('growtent')) fail('You need the Grow Tent.');
       if (s.tentPlaced) fail('The tent is already pitched.');
       const sq = s.grid[action.square];
@@ -1090,6 +1139,7 @@ export function dispatch(
     }
 
     case 'moveTent': {
+      guardAway(s);
       guardIdle(s);
       guardFinale(s);
       if (!s.tentPlaced) fail('Pitch the tent first.');
@@ -1136,6 +1186,9 @@ export function dispatch(
       s.forage = null;
       s.market = null;
       s.stats.idleActions[s.round - 1] = s.actionsLeft;
+      const fell = s.recovery;
+      s.recovery = null;
+      s.away = false;
       const report = runGrowth(s, rng, c);
       s.meal = null;
       const final = s.round >= c.rules.rounds;
@@ -1174,10 +1227,24 @@ export function dispatch(
         s.actionsLeft = 0;
         s.watered = false;
         s.weather = 'clear';
+        // A fall in month 12 has no month to take: festival morning comes anyway. Only a month away costs the last harvest.
+        if (fell && recoveryCost(fell.layer, s.perks.sets, c) === 'month') {
+          s.finale.harvested = true;
+          report.events.push({ type: 'recovering', zone: fell.zone, layer: fell.layer, actions: 'month' });
+        }
       } else {
         if (seasonTurns) report.events.push({ type: 'season', season: seasonOf(s.round + 1, c) });
         s.round += 1;
-        s.actionsLeft = actionsPerMonth(s, c) - s.moldPenalty;
+        s.actionsLeft = Math.max(0, actionsPerMonth(s, c) - s.moldPenalty);
+        const cost = fell ? recoveryCost(fell.layer, s.perks.sets, c) : 0;
+        if (cost === 'month') {
+          s.away = true;
+          s.actionsLeft = 0;
+          s.stats.monthsAway += 1;
+        } else {
+          s.actionsLeft = Math.max(0, s.actionsLeft - cost);
+        }
+        if (fell && cost) report.events.push({ type: 'recovering', zone: fell.zone, layer: fell.layer, actions: cost });
         s.watered = false;
         s.stats.tendActions[s.round - 1] = 0;
         rollWeather(s, rng, c);

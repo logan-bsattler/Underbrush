@@ -349,7 +349,21 @@ Foraging goes deeper each generation. Every zone has three layers below it in
   after, through `perksFor` (`perks.sets`): the Drover's Purse (+2 starting coins), the Forager's
   Lantern (rare finds and artifacts glint face down), the Festival Ribbons (+2 festival points,
   `score().family`), the Mapmaker's Case (the way down lies in the first deep patch, not the last), the Mushroom Stones (a bust
-  keeps one more find) and the First Homestead (+1 basket).
+  keeps one more find, and a fall below lands one layer softer) and the First Homestead (+1 basket).
+- **Falls.** A bust below ground sends you home hurt, and the time comes off next month at the
+  homestead: 1 action for a first layer, 2 for a second, and the whole month away for a third
+  (`rules.recovery`, `recoveryCost`). The rest of the bust month is untouched. On the bust,
+  `s.recovery` holds the deepest fall that month (two falls don't add up); `endMonth` takes it off
+  after the Mold Bloom, never below 0, and the night report says so (`recovering`). A month away
+  starts with 0 actions and `s.away`: every homestead move fails ("You're out recovering this
+  month."), even the free ones, but the night runs in full, so unwatered beds dry, fruit goes
+  overripe and storage spoils at a season turn. Hiring a hand and Reishi Tea still buy back a lost
+  action. A fall in month 12 is forgiven, except a month away, which costs festival morning's last
+  harvest (the market visit stays). The Mushroom Stones soften every fall by one layer. There are
+  no dice in it, so a year with no fall plays out exactly as before, and daily years (generation 1)
+  can't reach it. `descendCost` gives the next layer's stakes so the screens can warn before going
+  down. The danger is meant to be mild, mostly flavor: the bust is the second hazard, so heading
+  home after the first one below never pays it. The rewards below were left as they were.
 - **Family lore.** Every layer has a clue in the family's voice ("Grandpa used to speak of...")
   and a payoff line. The zone picker shows the clue for the next layer down; the Almanac's Pass it
   on section tells the clue for a layer the generation just opened (`generationLore`, zones from
@@ -359,15 +373,27 @@ Foraging goes deeper each generation. Every zone has three layers below it in
 Daily years stay on the standard kit: generation 1, no layers, no set perks.
 
 `npm run sim -- 300 gen` plays Legend years with every gear owned, the bot diving on every other
-trip (a floor: it never chases sets or plans a descent):
+trip (a floor: it never chases sets or plans a descent). Each generation with layers is played
+twice: diving carelessly (`dive`) and carefully (`dive` + `careful`, home after the first counted
+hazard below). Falls are underground busts a year; actions lost and months away are what they
+cost (2026-10-28, with falls):
 
-| Generation | Bronze | Median | p90 | Tier reached | Artifacts/yr | Descents/yr | Bust rate |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 15 | 18 | 32 | 76% | 0.0 | 0.0 | 1% |
-| 2 | 20 | 32 | 43 | 96% | 2.6 | 12.6 | 2% |
-| 3 | 25 | 38 | 51 | 98% | 5.1 | 22.4 | 6% |
-| 4 | 30 | 46 | 58 | 98% | 6.9 | 30.9 | 16% |
-| 4, full cabinet | 30 | 48 | 60 | 99% | 6.9 | 30.8 | 17% |
+| Generation | Bot | Bronze | Median | p90 | Tier reached | Artifacts/yr | Descents/yr | Bust rate | Falls/yr | Actions lost/yr | Months away/yr |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | dive | 15 | 18 | 31 | 74% | 0.0 | 0.0 | 1% | 0.00 | 0.0 | 0.00 |
+| 2 | dive | 20 | 32 | 43 | 96% | 2.6 | 12.6 | 2% | 0.10 | 0.1 | 0.00 |
+| 2 | careful | 20 | 31 | 43 | 94% | 2.7 | 11.9 | 2% | 0.00 | 0.0 | 0.00 |
+| 3 | dive | 25 | 37 | 50 | 97% | 4.9 | 22.0 | 6% | 0.90 | 0.8 | 0.00 |
+| 3 | careful | 25 | 37 | 50 | 98% | 4.7 | 19.7 | 1% | 0.00 | 0.0 | 0.00 |
+| 4 | dive | 30 | 44 | 57 | 94% | 6.5 | 28.3 | 16% | 3.09 | 4.7 | 0.01 |
+| 4 | careful | 30 | 43 | 58 | 94% | 6.3 | 25.4 | 2% | 0.00 | 0.0 | 0.00 |
+| 4, full cabinet | dive | 30 | 46 | 60 | 98% | 6.5 | 29.1 | 18% | 3.52 | 2.3 | 0.00 |
+| 4, full cabinet | careful | 30 | 43 | 59 | 96% | 6.0 | 25.0 | 2% | 0.00 | 0.0 | 0.00 |
+
+Falls cost little, as intended: generation 4's careless diver loses about 5 actions a year and 2
+points of median (46 before falls, 44 now), and almost never spends a month away, since it rarely
+reaches a third layer. The careful diver never falls and scores the same, by leaving finds
+behind. The Mushroom Stones halve the actions lost. Generations 2 and 3 barely notice.
 
 With plain ground and the way-down card, the diving bot now walks to the zone's last patch and
 turns cards until it finds the way, picking up finds as it goes, and in later generations turns

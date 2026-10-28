@@ -210,6 +210,11 @@ export interface RulesDef {
   deepAt: number;
   bustAt: number;
   bustKeep: number;
+  /**
+   * What a bust below ground costs next month at the homestead: actions[d − 1] actions for a fall in
+   * layer d, and the whole month away from layer awayFrom on.
+   */
+  recovery: { actions: number[]; awayFrom: number };
   /** When a deep species is in season, the chance a deep find is the zone's cache of coins instead. */
   deepCoinChance: number;
   /** Discarded specimens on the compost pile that rot into one Compost tile overnight. */
@@ -436,7 +441,9 @@ export type NightEvent =
   | { type: 'windfall' }
   | { type: 'compost'; tiles: number }
   /** Beds picked at first light, and the squares they were on. */
-  | { type: 'autoHarvest'; gained: Record<string, number>; squares: number[] };
+  | { type: 'autoHarvest'; gained: Record<string, number>; squares: number[] }
+  /** Still sore from last month's fall below ground: the actions it costs this month, or the whole month away. */
+  | { type: 'recovering'; zone: string; layer: number; actions: number | 'month' };
 
 export interface NightReport {
   round: number;
@@ -461,6 +468,10 @@ export interface Stats {
   dishes: string[];
   /** Times you descended into a layer. */
   descents: number;
+  /** Busts below ground by layer (index 1 to 3; index 0 is unused). */
+  deepBusts: number[];
+  /** Months spent out recovering from a fall in a third layer. */
+  monthsAway: number;
 }
 
 /** What the homestead's progression brings into a year. Daily years use the standard kit. */
@@ -544,6 +555,10 @@ export interface GameState {
    */
   finale: { harvested: boolean; marketed: boolean } | null;
   moldPenalty: number;
+  /** A fall below ground this month, owed to next month's time at the homestead: the deepest one counts. */
+  recovery: { zone: string; layer: number } | null;
+  /** Out recovering this month from a fall in a third layer: no homestead moves until the month ends. */
+  away: boolean;
   nextUid: number;
   tripCount: number;
   stats: Stats;

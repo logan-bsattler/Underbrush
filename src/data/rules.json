@@ -24,6 +24,7 @@
   "deepAt": 3,
   "bustAt": 2,
   "bustKeep": 2,
+  "recovery": { "actions": [1, 2], "awayFrom": 3 },
   "deepCoinChance": 0.25,
   "scrapsPerCompost": 3,
   "compostValue": 1,

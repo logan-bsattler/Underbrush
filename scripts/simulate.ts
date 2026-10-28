@@ -3,9 +3,9 @@
  * the same things the prototype kit asks playtesters to log.
  *   npm run sim -- 300           single standard-kit years
  *   npm run sim -- 100 campaign  ten-year story campaigns with progression
- *   npm run sim -- 300 gen       Legend years in generations 1 to 4, diving underground
+ *   npm run sim -- 300 gen       Legend years in generations 1 to 4, diving underground carelessly and carefully
  */
-import { content, emptyJournal, heirloomChoices, heirloomSlots, levelFor, newGame, perksFor, score, tiersFor, type Journal } from '../src/core';
+import { content, emptyJournal, heirloomChoices, heirloomSlots, levelFor, newGame, perksFor, score, tiersFor, type Journal, type NightReport } from '../src/core';
 import { HEIRLOOM_PREFERENCE, playCampaign, playYear } from './bot';
 
 const n = Number(process.argv[2] ?? 300);
@@ -13,34 +13,45 @@ const pct = (xs: number[], p: number) => xs.slice().sort((a, b) => a - b)[Math.f
 
 if (process.argv[3] === 'gen') {
   // A Legend homestead with every gear owned, in each generation; the last row has every artifact set complete.
+  // Each generation with layers open is played twice: diving carelessly, and diving carefully (home after a hazard below).
   const top = content.progression.levels[content.progression.levels.length - 1].renown;
   const rows: [string, Journal][] = [1, 2, 3, 4].map((g) => [`${g}`, { ...emptyJournal(), renown: top, generation: g, gearOwned: content.gear.map((x) => x.id) }]);
   rows.push(['4, full cabinet', { ...rows[3][1], artifacts: content.artifacts.map((a) => a.id) }]);
   console.log(`${n} Legend years per generation with the bot diving underground on every other trip`);
-  console.log('generation       bronze  median  p90  tier reached  artifacts  descents  bust rate');
+  console.log('generation       bot      bronze  median  p90  tier reached  artifacts  descents  bust rate  falls  actions lost  months away');
   for (const [label, j] of rows) {
     const heirlooms = HEIRLOOM_PREFERENCE.filter((g) => heirloomChoices(j).includes(g)).slice(0, heirloomSlots(levelFor(j.renown).level));
-    const scores: number[] = [];
-    let tiered = 0;
-    let artifacts = 0;
-    let descents = 0;
-    let busts = 0;
-    let trips = 0;
-    let bronze = 0;
-    for (let i = 0; i < n; i++) {
-      const s = playYear(newGame({ seed: `gen-${label}-${i}`, perks: perksFor(j, heirlooms) }), { dive: true });
-      const sc = score(s);
-      bronze = tiersFor(s)[0].min;
-      scores.push(sc.total);
-      if (sc.tier) tiered += 1;
-      artifacts += s.artifacts.length;
-      descents += s.stats.descents;
-      busts += s.stats.busts;
-      trips += s.stats.trips;
+    for (const careful of j.generation > 1 ? [false, true] : [false]) {
+      const scores: number[] = [];
+      let tiered = 0;
+      let artifacts = 0;
+      let descents = 0;
+      let busts = 0;
+      let trips = 0;
+      let bronze = 0;
+      let falls = 0;
+      let lost = 0;
+      let away = 0;
+      const onNight = (report: NightReport) => {
+        for (const e of report.events) if (e.type === 'recovering' && e.actions !== 'month') lost += e.actions;
+      };
+      for (let i = 0; i < n; i++) {
+        const s = playYear(newGame({ seed: `gen-${label}-${i}`, perks: perksFor(j, heirlooms) }), { dive: true, careful, onNight });
+        const sc = score(s);
+        bronze = tiersFor(s)[0].min;
+        scores.push(sc.total);
+        if (sc.tier) tiered += 1;
+        artifacts += s.artifacts.length;
+        descents += s.stats.descents;
+        busts += s.stats.busts;
+        trips += s.stats.trips;
+        falls += s.stats.deepBusts.reduce((a, b) => a + b, 0);
+        away += s.stats.monthsAway;
+      }
+      console.log(
+        `${label.padEnd(15)}  ${(careful ? 'careful' : 'dive').padEnd(7)}  ${String(bronze).padStart(6)}  ${String(pct(scores, 0.5)).padStart(6)}  ${String(pct(scores, 0.9)).padStart(3)}  ${`${((100 * tiered) / n).toFixed(0)}%`.padStart(12)}  ${(artifacts / n).toFixed(1).padStart(9)}  ${(descents / n).toFixed(1).padStart(8)}  ${`${((100 * busts) / Math.max(trips, 1)).toFixed(0)}%`.padStart(9)}  ${(falls / n).toFixed(2).padStart(5)}  ${(lost / n).toFixed(1).padStart(12)}  ${(away / n).toFixed(2).padStart(11)}`,
+      );
     }
-    console.log(
-      `${label.padEnd(15)}  ${String(bronze).padStart(6)}  ${String(pct(scores, 0.5)).padStart(6)}  ${String(pct(scores, 0.9)).padStart(3)}  ${`${((100 * tiered) / n).toFixed(0)}%`.padStart(12)}  ${(artifacts / n).toFixed(1).padStart(9)}  ${(descents / n).toFixed(1).padStart(8)}  ${`${((100 * busts) / Math.max(trips, 1)).toFixed(0)}%`.padStart(9)}`,
-    );
   }
 } else if (process.argv[3] === 'campaign') {
   const YEARS = 10;
