@@ -1,6 +1,7 @@
 import { content, dailyBoard, masteryLevel, score } from '../core';
 import { Icon, Mushroom, Unknown } from './art';
 import { HomesteadCard } from './Progress';
+import { setAudio, useAudioSettings } from './sound';
 import type { Store } from './store';
 import { dailySeed } from './store';
 import { growthName, masteryName, seasonsText, substrateName } from './text';
@@ -61,8 +62,24 @@ export function Title({
             How to play
           </button>
         </div>
+        <AudioToggles />
       </div>
       <p class="disclaimer">Underbrush is a game, not a foraging guide. Never eat a wild mushroom because of anything you saw here.</p>
+    </div>
+  );
+}
+
+/** Sound effects and music, each switched on its own. */
+export function AudioToggles() {
+  const s = useAudioSettings();
+  return (
+    <div class="row">
+      <button class="btn small ghost grow" aria-pressed={s.sound} onClick={() => setAudio({ sound: !s.sound })}>
+        Sound {s.sound ? 'on' : 'off'}
+      </button>
+      <button class="btn small ghost grow" aria-pressed={s.music} onClick={() => setAudio({ music: !s.music })}>
+        Music {s.music ? 'on' : 'off'}
+      </button>
     </div>
   );
 }

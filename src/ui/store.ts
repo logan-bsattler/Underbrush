@@ -15,6 +15,7 @@ import {
   type GameState,
   type Journal,
 } from '../core';
+import { play, soundFor } from './sound';
 
 const SAVE_KEY = 'underbrush:save:v1';
 const JOURNAL_KEY = 'underbrush:journal:v1';
@@ -113,9 +114,12 @@ export function useStore(): Store {
         commit(state);
         setLast(result);
         setError(null);
+        const cue = soundFor(a, result, state);
+        if (cue) play(cue.sfx, cue.n);
         return result;
       } catch (e) {
         if (e instanceof GameError) {
+          play('nope');
           setError(e.message);
           return null;
         }

@@ -1,10 +1,11 @@
-import { useErrorBoundary, useState } from 'preact/hooks';
-import { boardsFor, heirloomChoices, heirloomSlots, isLegend, levelFor } from '../core';
+import { useEffect, useErrorBoundary, useState } from 'preact/hooks';
+import { boardsFor, heirloomChoices, heirloomSlots, isLegend, levelFor, seasonOf } from '../core';
 import { ArtDefs } from './art';
 import { Game } from './Game';
 import { PastFestivals } from './History';
 import { Almanac, Pack } from './Progress';
 import { HowTo, Journal, Title } from './Screens';
+import { setScene, type Scene } from './sound';
 import { clearSave, useStore } from './store';
 
 type View = 'title' | 'game' | 'journal' | 'help' | 'almanac' | 'history' | 'pack';
@@ -65,6 +66,22 @@ function Main() {
     store.start('story');
     setView('game');
   };
+
+  // The music follows the year: its season, the night, the layers underground and the festival.
+  const g = store.game;
+  const scene: Scene =
+    view !== 'game' || !g
+      ? 'title'
+      : g.over && !g.night
+        ? 'festival'
+        : g.night || g.pendingCrosses.length
+          ? 'night'
+          : g.forage && g.forage.layer > 0
+            ? 'under'
+            : g.finale
+              ? 'winter'
+              : seasonOf(g.round);
+  useEffect(() => setScene(scene), [scene]);
 
   let screen;
   if (view === 'game' && store.game)

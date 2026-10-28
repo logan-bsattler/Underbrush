@@ -31,6 +31,7 @@ import { Forage } from './Forage';
 import { Market } from './Market';
 import { Night } from './Night';
 import { Pantry } from './Pantry';
+import { AudioToggles } from './Screens';
 import { YearEnd } from './YearEnd';
 import type { Store } from './store';
 import { growthName, masteryName, name, seasonsText, squareName, stageName, substrateName, monthLabel } from './text';
@@ -824,6 +825,7 @@ function Menu({
         <button class="btn" onClick={onTitle}>
           Save and return to title
         </button>
+        <AudioToggles />
       </div>
       <p class="disclaimer">Underbrush is a game, not a foraging guide. Never eat a wild mushroom because of anything you saw here.</p>
     </SheetFrame>
