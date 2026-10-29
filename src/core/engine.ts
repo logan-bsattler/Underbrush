@@ -561,6 +561,15 @@ function takeCard(s: GameState, deck: string): Card | null {
   return s.decks[deck].draw.shift() ?? null;
 }
 
+/** Wild mushrooms out of season aren't dealt at all: they wait in the discard until the trip's restock shuffles them back. */
+function setAsideOutOfSeason(s: GameState, deck: string, c: Content) {
+  const season = seasonOf(s.round, c);
+  const d = s.decks[deck];
+  const out = (card: Card) => card.type === 'specimen' && c.species[card.species].kind === 'wild' && !inSeason(card.species, season, c);
+  d.discard.push(...d.draw.filter(out));
+  d.draw = d.draw.filter((card) => !out(card));
+}
+
 /** Whether a patch card came from the deck: deep finds, artifacts and the way down never did, so they never go back. */
 function fromDeck(p: PatchCard): boolean {
   return !p.deep && p.card.type !== 'entrance';
@@ -693,6 +702,7 @@ export function dispatch(
         deck.draw = rng.shuffle([...deck.draw, ...deck.discard]);
         deck.discard = [];
       }
+      setAsideOutOfSeason(s, zone.id, c);
       s.tripCount += 1;
       s.stats.trips += 1;
       s.forage = {
@@ -735,6 +745,7 @@ export function dispatch(
       const key = layerKey(trip.zone, trip.layer);
       if (!s.layersReached.includes(key)) s.layersReached.push(key);
       s.stats.descents += 1;
+      setAsideOutOfSeason(s, key, c);
       dealPatch(s, trip, rng, c);
       break;
     }

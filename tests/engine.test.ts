@@ -117,21 +117,32 @@ describe('foraging', () => {
     expect(s.basket).toHaveLength(1);
   });
 
-  it('leaves specimens behind when the basket is full, and wild ones out of season', () => {
+  it('leaves specimens behind when the basket is full', () => {
     let s = newGame({ seed: 'b' });
     s.weather = 'clear';
-    stackDeck(s, 'mixedwoods', [
-      { type: 'specimen', species: 'chanterelle' }, // spring: empty patch
-      ...Array.from({ length: 5 }, (): Card => ({ type: 'specimen', species: 'oyster' })),
-    ]);
+    stackDeck(s, 'mixedwoods', Array.from({ length: 5 }, (): Card => ({ type: 'specimen', species: 'oyster' })));
     s = run(s, { type: 'forage', zone: 'mixedwoods' });
     const outcomes = [];
-    for (let i = 0; i < 6; i++) {
+    for (let i = 0; i < 5; i++) {
       const r = dispatch(s, { type: 'flip', index: i });
       s = r.state;
       outcomes.push(r.result.kind === 'draw' ? r.result.outcome : '');
     }
-    expect(outcomes).toEqual(['emptyPatch', 'basket', 'basket', 'basket', 'basket', 'basketFull']);
+    expect(outcomes).toEqual(['basket', 'basket', 'basket', 'basket', 'basketFull']);
+  });
+
+  it("doesn't deal wild mushrooms out of season, and puts them back for the next trip", () => {
+    let s = newGame({ seed: 'b' });
+    s.weather = 'clear';
+    const printed = s.decks.mixedwoods.draw.length;
+    stackDeck(s, 'mixedwoods', [{ type: 'specimen', species: 'chanterelle' }]); // summer only; it's spring
+    s = run(s, { type: 'forage', zone: 'mixedwoods' });
+    const chanterelle = (cards: Card[]) => cards.filter((c) => c.type === 'specimen' && c.species === 'chanterelle').length;
+    expect(s.forage!.patch.some((p) => p.card.type === 'specimen' && p.card.species === 'chanterelle')).toBe(false);
+    expect(chanterelle(s.decks.mixedwoods.draw)).toBe(0);
+    s = run(s, { type: 'stopForage' });
+    expect(chanterelle(s.decks.mixedwoods.draw)).toBe(2);
+    expect(s.decks.mixedwoods.draw.length).toBe(printed + 1);
   });
 
   it('lets a wild find bump a cultivated one out of a full basket, and a rare find bump a wild one', () => {
