@@ -79,6 +79,7 @@ describe('a year with perks', () => {
 
   it('grows and spreads across the wider farm edges', () => {
     const s = newGame({ seed: 'edge', perks: { ...standardPerks(), size: 5 } });
+    s.weather = 'clear';
     s.watered = true;
     Object.assign(s.grid[24], { substrate: 'straw', species: 'oyster', stage: 'C' });
     s.grid[19].substrate = 'straw';

@@ -206,8 +206,8 @@ export function HowTo({ onBack }: { onBack: () => void }) {
           </li>
           <li>
             <b>Market:</b> sell mushrooms and spare Compost tiles, deliver festival orders (the first each visit is free, the
-            second {r.extraDeliveryCost} coins, and each one after that double the last), buy gear, spawn and substrate tiles, as much as you like in one visit. The visit lasts until you spend another action, so you can close the market and come back. Spawn of any cultivated species you've identified is ready to plant. Swap an order you can't fill for the next one for{' '}
-            {r.swapCost} coins, a coin more for each swap that year.
+            second {r.extraDeliveryCost} coins, and each one after that double the last), buy gear, spawn and substrate tiles, as much as you like in one visit. The visit lasts until you spend another action, so you can close the market and come back. Spawn of any cultivated species you've identified is ready to plant. Swap an order you can't fill for{' '}
+            {r.swapCost} coins, a coin more for each swap that year: you get the first waiting order your storage can fill, if there is one.
           </li>
           <li>
             <b>Hire a hand</b> for {r.hireCost} coins: +1 action this month, with no market visit needed. One a month, and each hand that year

@@ -187,6 +187,55 @@ describe('swapping festival orders', () => {
     expect(dealt).not.toContain('o-porcini2');
     expect([...newGame({ seed: 'orders' }).orders.deck, ...newGame({ seed: 'orders' }).orders.visible]).toContain('o-truffle');
   });
+
+  it('deals the first waiting order storage can fill, keeping the rest of the pile in its order', () => {
+    const s = fresh('swap3');
+    s.coins = 20;
+    s.storage = { morel: 1, stgeorge: 1 };
+    s.orders.visible = ['o-lion2', 'o-shii2', 'o-enoki2'];
+    s.orders.deck = ['o-reishii', 'o-hyb2', 'o-stgeorge', 'o-woods2', 'o-four'];
+    const a = run(s, { type: 'swapOrder', order: 'o-shii2' });
+    expect(a.orders.visible).toEqual(['o-lion2', 'o-stgeorge', 'o-enoki2']);
+    expect(a.orders.deck).toEqual(['o-reishii', 'o-hyb2', 'o-woods2', 'o-four', 'o-shii2']);
+  });
+
+  it('deals the top of the pile when nothing waiting can be filled', () => {
+    const s = fresh('swap4');
+    s.coins = 20;
+    s.storage = { puffball: 1 };
+    s.orders.visible = ['o-lion2', 'o-shii2', 'o-enoki2'];
+    s.orders.deck = ['o-reishii', 'o-hyb2', 'o-stgeorge'];
+    const a = run(s, { type: 'swapOrder', order: 'o-lion2' });
+    expect(a.orders.visible[0]).toBe('o-reishii');
+    expect(a.orders.deck).toEqual(['o-hyb2', 'o-stgeorge', 'o-lion2']);
+  });
+
+  it('deals below-ground orders only once a generation has a layer open', () => {
+    const dealt = (generation: number) => {
+      const s = newGame({ seed: 'below', perks: { ...standardPerks(), generation } });
+      return [...s.orders.visible, ...s.orders.deck];
+    };
+    expect(dealt(1)).not.toContain('o-below2');
+    expect(dealt(2)).toContain('o-below2');
+  });
+
+  it('gives every zone order the gear that opens its zone', () => {
+    for (const o of content.orders) {
+      if (o.need.kind !== 'zone') continue;
+      const zone = content.zones.find((z) => z.id === (o.need as { zone: string }).zone)!;
+      expect(o.requires ?? null, o.id).toBe(zone.unlock);
+    }
+  });
+
+  it('keeps a daily year the same for everyone on the same seed', () => {
+    const a = newGame({ seed: '2026-10-28', mode: 'daily' });
+    const b = newGame({ seed: '2026-10-28', mode: 'daily' });
+    a.coins = b.coins = 20;
+    a.storage = { morel: 1, stgeorge: 1, chanterelle: 2 };
+    b.storage = { ...a.storage };
+    const swap = (s: GameState) => run(s, { type: 'swapOrder', order: s.orders.visible[0] }, { type: 'swapOrder', order: s.orders.visible[1] });
+    expect(swap(a).orders).toEqual(swap(b).orders);
+  });
 });
 
 describe('spawn', () => {
@@ -503,6 +552,16 @@ describe('old saves', () => {
     expect(m.perks).toMatchObject({ autoHarvest: false, spawn: [] });
     expect(m.grid.filter((q: { damp: boolean }) => q.damp)).toHaveLength(4);
     expect(m.decks.hollow.draw.length).toBeGreaterThan(0);
+  });
+
+  it('plays on with an order pile dealt before the wild orders', () => {
+    const s = fresh('oldorders');
+    s.orders = { visible: ['o-oyster3', 'o-lion2', 'o-shii2'], deck: ['o-reishii', 'o-hyb2', 'o-four', 'o-morel2'], filled: [] };
+    s.coins = 20;
+    s.storage = { morel: 2 };
+    const m = run(migrateState(structuredClone(s)), { type: 'swapOrder', order: 'o-lion2' }, { type: 'fillOrder', order: 'o-morel2' });
+    expect(m.orders.filled).toEqual(['o-morel2']);
+    expect(m.orderPoints).toBe(6);
   });
 
   it('deals a deck afresh when its printed size has changed, but not during a trip there', () => {

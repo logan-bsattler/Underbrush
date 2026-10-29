@@ -7,6 +7,7 @@ import {
   migrateState,
   newGame,
   orderPayment,
+  orderSpecies,
   score,
   standardPerks,
   seasonOf,
@@ -754,6 +755,23 @@ describe('market and orders', () => {
     const order = content.orders.find((o) => o.id === 'o-four')!;
     expect(orderPayment({ oyster: 2, reishi: 1, puffball: 1 }, order)).toBeNull();
     expect(orderPayment({ oyster: 2, reishi: 1, puffball: 1, enoki: 1 }, order)).toEqual({ oyster: 1, puffball: 1, enoki: 1, reishi: 1 });
+  });
+
+  it('works out payment for "any wild from a zone" orders, cheapest first', () => {
+    const order = content.orders.find((o) => o.id === 'o-oldgrowth3')!;
+    expect(orderSpecies(order)).toEqual(['porcini', 'blacktrumpet', 'springking', 'yellowfoot']);
+    // Lion's Mane and Reishi grow in the Old-growth too, but they're cultivated; Morel grows elsewhere.
+    expect(orderPayment({ lionsmane: 3, reishi: 2, morel: 3, porcini: 2 }, order)).toBeNull();
+    expect(orderPayment({ springking: 2, porcini: 2, blacktrumpet: 1 }, order)).toEqual({ porcini: 2, blacktrumpet: 1 });
+    expect(orderPayment({ porcini: 3 }, order)).toEqual({ porcini: 3 });
+  });
+
+  it('works out payment for "any from below ground" orders', () => {
+    const order = content.orders.find((o) => o.id === 'o-below2')!;
+    expect(orderSpecies(order)).toContain('ghostfungus');
+    expect(orderSpecies(order)).not.toContain('morel');
+    expect(orderPayment({ morel: 2, earthstar: 1 }, order)).toBeNull();
+    expect(orderPayment({ ghostfungus: 1, earthstar: 1, morel: 2 }, order)).toEqual({ earthstar: 1, ghostfungus: 1 });
   });
 
   it('buys each gear once', () => {

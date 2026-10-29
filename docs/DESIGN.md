@@ -195,7 +195,13 @@ the valuable species, and something to aim for after level 7. All of it is data 
 - **Swapping orders.** At the market, swap a festival order for the next one for 2 coins, a coin
   more for each swap that year (`rules.swapCost`). A human playtest ended with 171 leftover coins;
   swaps and spawn give them somewhere to go besides the festival's coin points, which stop at 10. Orders that need a
-  zone the shop can't open (`requires` in `orders.json`) aren't dealt.
+  zone the shop can't open (`requires` in `orders.json`) aren't dealt. A swap deals the first waiting order that
+  storage can fill right now, or the top of the pile if none can, so a year spent foraging isn't stuck cycling
+  through farm orders.
+- **Wild orders.** A playtest year spent mostly foraging reached month 11 with full storage and no order it could
+  fill. So some orders name wild species, and some take any wild finds from one zone (`"kind": "zone"`: any wild
+  species on that zone's forest floor or in its deep patches) or any finds from below ground (`"kind": "below"`,
+  dealt only once a generation has a layer open).
 - **More ways to spend coins.** Once leftover coins stopped scoring past 10 points, a playtester
   still had coins with nowhere to go, so the market has three more uses for them, all in `rules.json`:
   - *Hire a hand* (`hireCost` 5, `hireStep` 2): +1 action this month for 5, 7, 9… coins, one a

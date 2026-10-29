@@ -11,9 +11,11 @@ import {
   levelFor,
   newGame,
   orderPayment,
+  orderSpecies,
   perksFor,
   recordYear,
   plantableSquares,
+  swapCost,
   zoneStatus,
   type Action,
   hazardsNear,
@@ -55,10 +57,12 @@ function safestCard(t: ForageTrip): { index: number; risk: number } | null {
  * way down, turns cards until it finds it, and goes underground; the baseline never does.
  * With `careful` as well, below ground it heads home after the first counted hazard and won't descend
  * with one already counted, so it never falls; without it, `dive` is the careless worst case.
+ * With `forager`, it plays a year mostly in the woods: it never plants a find (cultivated ones go on the
+ * compost). With `swap`, or `forager`, when no order on the board can be filled from storage it swaps one, once a month.
  */
 export function playYear(
   start: GameState,
-  opts: { greed?: number; dive?: boolean; careful?: boolean; onNight?: (report: NightReport) => void } = {},
+  opts: { greed?: number; dive?: boolean; careful?: boolean; forager?: boolean; swap?: boolean; onNight?: (report: NightReport) => void } = {},
 ): GameState {
   const greed = opts.greed ?? 3;
   let s = start;
@@ -68,6 +72,7 @@ export function playYear(
     if (r.result.kind === 'night') opts.onNight?.(r.result.report);
   };
   const value = (id: string | null) => (id ? content.species[id].value : 0);
+  let swappedIn = 0;
 
   let guard = 0;
   while (!s.over) {
@@ -122,23 +127,42 @@ export function playYear(
         act({ type: 'identify' });
         continue;
       }
-      const plantable = s.basket.find((b) => b.identified && plantableSquares(s, b.species).length);
-      if (plantable) {
-        act({ type: 'plant', uid: plantable.uid, square: plantableSquares(s, plantable.species)[0] });
-        continue;
+      if (opts.forager) {
+        for (const b of s.basket.filter((x) => x.identified)) act({ type: 'discard', uid: b.uid });
+      } else {
+        const plantable = s.basket.find((b) => b.identified && plantableSquares(s, b.species).length);
+        if (plantable) {
+          act({ type: 'plant', uid: plantable.uid, square: plantableSquares(s, plantable.species)[0] });
+          continue;
+        }
       }
-      const fillable = s.orders.visible.find((o) => orderPayment(s.storage, content.orders.find((x) => x.id === o)!));
+      const fillableNow = () => s.orders.visible.find((o) => orderPayment(s.storage, content.orders.find((x) => x.id === o)!));
+      const stored = Object.values(s.storage).reduce((a, b) => a + b, 0);
+      if (
+        (opts.swap || opts.forager) &&
+        !fillableNow() &&
+        swappedIn !== s.round &&
+        stored >= 2 &&
+        s.orders.deck.length &&
+        s.coins >= swapCost(s)
+      ) {
+        swappedIn = s.round;
+        act({ type: 'swapOrder', order: s.orders.visible[0] });
+      }
+      const fillable = fillableNow();
       const wanted = ['biggerbasket', 'knife', 'lantern', 'dehydrator', 'fieldguide', 'growtent', 'trailmap', 'blightspray', 'dripline', 'waders', 'compass'];
       const affordable = wanted.find(
         (g) => !s.gear.includes(g) && s.perks.shop.includes(g) && s.coins >= content.gear.find((x) => x.id === g)!.cost,
       );
       const lastMonthOfSeason = s.round % 3 === 0;
-      if (fillable || affordable || (lastMonthOfSeason && Object.keys(s.storage).length && !s.gear.includes('dehydrator'))) {
+      if (s.market || fillable || affordable || (lastMonthOfSeason && Object.keys(s.storage).length && !s.gear.includes('dehydrator'))) {
         if (fillable) act({ type: 'fillOrder', order: fillable });
         if (lastMonthOfSeason || affordable) {
           for (const id of Object.keys(s.storage)) {
             const neededSomewhere = s.orders.visible.some((o) => {
-              const need = content.orders.find((x) => x.id === o)!.need;
+              const order = content.orders.find((x) => x.id === o)!;
+              const need = order.need;
+              if (need.kind === 'zone' || need.kind === 'below') return orderSpecies(order)!.includes(id);
               return need.kind === 'species' && id in need.items;
             });
             if (!neededSomewhere || lastMonthOfSeason) act({ type: 'sell', species: id, count: s.storage[id] });

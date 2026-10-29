@@ -6,6 +6,7 @@ import {
   gearUnlockLevel,
   hireCost,
   orderPayment,
+  orderSpecies,
   saleValue,
   spawnCost,
   spawnStock,
@@ -60,6 +61,9 @@ export function Market({ g, store, onClose, onPantry }: { g: GameState; store: S
                 <span class="pts">{o.points} pts</span>
               </div>
               {pay && <div class="small muted">Uses {Object.entries(pay).map(([id, n]) => `${n} ${name(id)}`).join(', ')}</div>}
+              {!pay && (o.need.kind === 'zone' || o.need.kind === 'below') && (
+                <div class="small muted">Any of: {orderSpecies(o)!.map(name).join(', ')}</div>
+              )}
               <div class="order-card-actions">
                 <button
                   class="btn small primary"
@@ -90,7 +94,8 @@ export function Market({ g, store, onClose, onPantry }: { g: GameState; store: S
       </div>
       <p class="small muted">
         {g.orders.filled.length} delivered · {g.orderPoints} points · {g.orders.deck.length} more orders waiting. Swapping sends an order to
-        the bottom of the pile; each swap this year costs a coin more.
+        the bottom of the pile and deals the first waiting order your storage can fill, if there is one; each swap this year costs a
+        coin more.
       </p>
 
       <h3>

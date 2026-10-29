@@ -164,7 +164,11 @@ export interface WeatherDef {
 export type OrderNeed =
   | { kind: 'species'; items: Record<string, number> }
   | { kind: 'hybrids'; count: number }
-  | { kind: 'distinct'; count: number };
+  | { kind: 'distinct'; count: number }
+  /** Any wild mushrooms that grow in a zone, on its forest floor or in its deep patches. */
+  | { kind: 'zone'; zone: string; count: number }
+  /** Any mushrooms from below ground. Only dealt once a generation has a layer open. */
+  | { kind: 'below'; count: number };
 
 export interface OrderDef {
   id: string;

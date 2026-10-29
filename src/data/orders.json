@@ -16,5 +16,16 @@
   { "id": "o-hen", "label": "1 Hen of the Woods + 1 Shiitake", "points": 7, "need": { "kind": "species", "items": { "hen": 1, "shiitake": 1 } } },
   { "id": "o-shaggy2", "label": "2 Shaggy Mane", "points": 6, "need": { "kind": "species", "items": { "shaggymane": 2 } }, "requires": "waders" },
   { "id": "o-river", "label": "1 Dryad's Saddle + 2 Oyster", "points": 5, "need": { "kind": "species", "items": { "dryad": 1, "oyster": 2 } }, "requires": "waders" },
-  { "id": "o-truffle", "label": "1 Truffle + 1 Blewit", "points": 9, "need": { "kind": "species", "items": { "truffle": 1, "blewit": 1 } }, "requires": "compass" }
+  { "id": "o-truffle", "label": "1 Truffle + 1 Blewit", "points": 9, "need": { "kind": "species", "items": { "truffle": 1, "blewit": 1 } }, "requires": "compass" },
+  { "id": "o-chicken", "label": "1 Chicken of the Woods + 1 Chanterelle", "points": 7, "need": { "kind": "species", "items": { "chicken": 1, "chanterelle": 1 } } },
+  { "id": "o-stgeorge", "label": "1 St. George's + 1 Morel", "points": 7, "need": { "kind": "species", "items": { "stgeorge": 1, "morel": 1 } } },
+  { "id": "o-blewit2", "label": "2 Blewit", "points": 6, "need": { "kind": "species", "items": { "blewit": 2 } }, "requires": "compass" },
+  { "id": "o-matsutake", "label": "1 Matsutake", "points": 7, "need": { "kind": "species", "items": { "matsutake": 1 } }, "requires": "compass" },
+  { "id": "o-lobster", "label": "1 Lobster Mushroom + 1 Shaggy Mane", "points": 7, "need": { "kind": "species", "items": { "lobster": 1, "shaggymane": 1 } }, "requires": "waders" },
+  { "id": "o-woods2", "label": "Any 2 wild from the Mixed Woods", "points": 5, "need": { "kind": "zone", "zone": "mixedwoods", "count": 2 } },
+  { "id": "o-meadow2", "label": "Any 2 wild from the Meadow", "points": 6, "need": { "kind": "zone", "zone": "meadow", "count": 2 } },
+  { "id": "o-oldgrowth3", "label": "Any 3 wild from the Old-growth", "points": 7, "need": { "kind": "zone", "zone": "oldgrowth", "count": 3 }, "requires": "lantern" },
+  { "id": "o-river3", "label": "Any 3 wild from the Riverbank", "points": 6, "need": { "kind": "zone", "zone": "riverbank", "count": 3 }, "requires": "waders" },
+  { "id": "o-hollow3", "label": "Any 3 wild from the Hollow", "points": 8, "need": { "kind": "zone", "zone": "hollow", "count": 3 }, "requires": "compass" },
+  { "id": "o-below2", "label": "Any 2 from below ground", "points": 6, "need": { "kind": "below", "count": 2 } }
 ]

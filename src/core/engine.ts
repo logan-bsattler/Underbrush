@@ -222,6 +222,31 @@ export function bumpFor(s: GameState, wild: boolean, rare: boolean, c: Content =
   return lesser[0] ?? null;
 }
 
+/** The species an "any N of these" order takes, in content order; null for orders that name their species or take anything. */
+export function orderSpecies(order: OrderDef, c: Content = defaultContent): string[] | null {
+  const need = order.need;
+  if (need.kind === 'hybrids') return c.speciesOrder.filter((id) => c.species[id].kind === 'hybrid');
+  if (need.kind === 'zone') {
+    const zone = c.zones.find((z) => z.id === need.zone);
+    const cards = [...(zone?.deck.map((e) => e.card) ?? []), ...(zone?.deep ?? [])];
+    const found = new Set(cards.flatMap((card) => (card.type === 'specimen' ? [card.species] : [])));
+    return c.speciesOrder.filter((id) => found.has(id) && c.species[id].kind === 'wild');
+  }
+  if (need.kind === 'below') {
+    const cards = Object.values(c.underground).flatMap((layers) => layers.flatMap((l) => l.deck.map((e) => e.card)));
+    const found = new Set(cards.flatMap((card) => (card.type === 'specimen' ? [card.species] : [])));
+    return c.speciesOrder.filter((id) => found.has(id));
+  }
+  return null;
+}
+
+/** Whether an order may be dealt this year: its zone's gear is in the shop, and a below-ground order needs a layer open. */
+export function orderDealable(order: OrderDef, perks: Perks, c: Content = defaultContent): boolean {
+  if (order.requires && !perks.shop.includes(order.requires)) return false;
+  if (order.need.kind === 'below') return c.zones.some((z) => layersOpen(perks.generation, z.id, c) > 0);
+  return true;
+}
+
 /** Which stored mushrooms an order would take, picking the cheapest that fit; null if it can't be filled. */
 export function orderPayment(
   storage: Record<string, number>,
@@ -235,10 +260,11 @@ export function orderPayment(
     for (const [id, n] of Object.entries(need.items)) if (have(id) < n) return null;
     return { ...need.items };
   }
-  if (need.kind === 'hybrids') {
+  const pool = orderSpecies(order, c);
+  if (pool && 'count' in need) {
     const pay: Record<string, number> = {};
     let left = need.count;
-    for (const id of byValue(Object.keys(storage).filter((id) => c.species[id].kind === 'hybrid'))) {
+    for (const id of byValue(Object.keys(storage).filter((id) => pool.includes(id)))) {
       const take = Math.min(have(id), left);
       if (take > 0) pay[id] = take;
       left -= take;
@@ -411,7 +437,7 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
   }
   const decks: GameState['decks'] = {};
   for (const z of c.zones) decks[z.id] = { draw: rng.shuffle(buildDeck(z)), discard: [] };
-  const orderDeck = rng.shuffle(c.orders.filter((o) => !o.requires || perks.shop.includes(o.requires)).map((o) => o.id));
+  const orderDeck = rng.shuffle(c.orders.filter((o) => orderDealable(o, perks, c)).map((o) => o.id));
 
   const s: GameState = {
     version: 1,
@@ -1034,7 +1060,9 @@ export function dispatch(
       s.coins -= cost;
       s.orderSwaps += 1;
       const at = s.orders.visible.indexOf(action.order);
-      s.orders.visible[at] = s.orders.deck.shift()!;
+      // Deal the first waiting order that storage can fill right now, if any; otherwise the top of the pile.
+      const ready = s.orders.deck.findIndex((id) => orderPayment(s.storage, c.orders.find((o) => o.id === id)!, c));
+      s.orders.visible[at] = s.orders.deck.splice(Math.max(ready, 0), 1)[0];
       s.orders.deck.push(action.order);
       break;
     }

@@ -5,7 +5,7 @@
  *   npm run sim -- 100 campaign  ten-year story campaigns with progression
  *   npm run sim -- 300 gen       Legend years in generations 1 to 4, diving underground carelessly and carefully
  */
-import { content, emptyJournal, heirloomChoices, heirloomSlots, levelFor, newGame, perksFor, score, tiersFor, type Journal, type NightReport } from '../src/core';
+import { content, emptyJournal, heirloomChoices, heirloomSlots, levelFor, newGame, perksFor, score, tiersFor, type GameState, type Journal, type NightReport } from '../src/core';
 import { HEIRLOOM_PREFERENCE, playCampaign, playYear } from './bot';
 
 const n = Number(process.argv[2] ?? 300);
@@ -75,30 +75,51 @@ if (process.argv[3] === 'gen') {
     console.log(`${String(y + 1).padStart(4)}  ${lvl.toFixed(1).padStart(5)}  ${String(pct(r.score, 0.5)).padStart(12)}  ${String(pct(r.score, 0.9)).padStart(3)}  ${(100 * big).toFixed(0).padStart(8)}%`);
   });
 } else {
-  const tiers: Record<string, number> = {};
-  let tend = 0;
-  let idle = 0;
-  let busts = 0;
-  let hybrids = 0;
-  let trips = 0;
-  const scores: number[] = [];
-  for (let i = 0; i < n; i++) {
-    const s = playYear(newGame({ seed: `sim-${i}` }));
-    const sc = score(s);
-    scores.push(sc.total);
-    tiers[sc.tier?.name ?? 'None'] = (tiers[sc.tier?.name ?? 'None'] ?? 0) + 1;
-    tend += s.stats.tendActions.reduce((a, b) => a + b, 0);
-    idle += s.stats.idleActions.reduce((a, b) => a + b, 0);
-    busts += s.stats.busts;
-    trips += s.stats.trips;
-    hybrids += s.hybridsMade.length;
+  // The baseline bot, then a bot that spends the year foraging rather than farming: as a new player,
+  // and as a Legend with every gear (every zone open) in the first generation.
+  const top = content.progression.levels[content.progression.levels.length - 1].renown;
+  const legend: Journal = { ...emptyJournal(), renown: top, gearOwned: content.gear.map((x) => x.id) };
+  const legendHeirlooms = HEIRLOOM_PREFERENCE.filter((g) => heirloomChoices(legend).includes(g)).slice(0, heirloomSlots(levelFor(top).level));
+  const runs: [string, (i: number) => GameState][] = [
+    ['the baseline bot', (i) => playYear(newGame({ seed: `sim-${i}` }))],
+    ['the baseline bot, swapping when stuck', (i) => playYear(newGame({ seed: `sim-${i}` }), { swap: true })],
+    ['a bot that mostly forages', (i) => playYear(newGame({ seed: `sim-${i}` }), { forager: true })],
+    ['a Legend bot that mostly forages', (i) => playYear(newGame({ seed: `sim-${i}`, perks: perksFor(legend, legendHeirlooms) }), { forager: true })],
+  ];
+  for (const [label, play] of runs) {
+    const tiers: Record<string, number> = {};
+    let tend = 0;
+    let idle = 0;
+    let busts = 0;
+    let hybrids = 0;
+    let trips = 0;
+    let delivered = 0;
+    let orderPoints = 0;
+    let swaps = 0;
+    let none = 0;
+    const scores: number[] = [];
+    for (let i = 0; i < n; i++) {
+      const s = play(i);
+      const sc = score(s);
+      scores.push(sc.total);
+      tiers[sc.tier?.name ?? 'None'] = (tiers[sc.tier?.name ?? 'None'] ?? 0) + 1;
+      tend += s.stats.tendActions.reduce((a, b) => a + b, 0);
+      idle += s.stats.idleActions.reduce((a, b) => a + b, 0);
+      busts += s.stats.busts;
+      trips += s.stats.trips;
+      hybrids += s.hybridsMade.length;
+      delivered += s.orders.filled.length;
+      orderPoints += s.orderPoints;
+      swaps += s.orderSwaps;
+      if (!s.orders.filled.length) none += 1;
+    }
+    const mean = scores.reduce((a, b) => a + b, 0) / n;
+    const tierLine = ['None', ...content.rules.tiers.map((t) => t.name)].filter((k) => tiers[k]).map((k) => `${k} ${((100 * tiers[k]) / n).toFixed(0)}%`);
+    console.log(`${n} years with ${label}`);
+    console.log(`  score: mean ${mean.toFixed(1)}, p10 ${pct(scores, 0.1)}, median ${pct(scores, 0.5)}, p90 ${pct(scores, 0.9)}`);
+    console.log(`  tiers: ${tierLine.join(', ')}`);
+    console.log(`  orders delivered per year: ${(delivered / n).toFixed(2)} for ${(orderPoints / n).toFixed(1)} points; none at all in ${((100 * none) / n).toFixed(0)}% of years; ${(swaps / n).toFixed(1)} swaps`);
+    console.log(`  tend actions per month: ${(tend / n / 12).toFixed(2)} of 4; unused actions per year: ${(idle / n).toFixed(1)}`);
+    console.log(`  bust rate: ${((100 * busts) / Math.max(trips, 1)).toFixed(0)}% of ${(trips / n).toFixed(1)} trips a year; hybrids per year: ${(hybrids / n).toFixed(2)}`);
   }
-  const mean = scores.reduce((a, b) => a + b, 0) / n;
-  console.log(`${n} years with the baseline bot`);
-  console.log(`score: mean ${mean.toFixed(1)}, p10 ${pct(scores, 0.1)}, median ${pct(scores, 0.5)}, p90 ${pct(scores, 0.9)}`);
-  console.log(`tiers: ${Object.entries(tiers).map(([k, v]) => `${k} ${((100 * v) / n).toFixed(0)}%`).join(', ')}`);
-  console.log(`tend actions per month: ${(tend / n / 12).toFixed(2)} of 4`);
-  console.log(`unused actions per year: ${(idle / n).toFixed(1)}`);
-  console.log(`bust rate: ${((100 * busts) / Math.max(trips, 1)).toFixed(0)}% of ${(trips / n).toFixed(1)} trips a year`);
-  console.log(`hybrids per year: ${(hybrids / n).toFixed(2)}`);
 }
