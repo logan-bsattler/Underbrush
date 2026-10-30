@@ -13,6 +13,7 @@ import {
   type Specimen,
   type Stage,
   type Substrate,
+  type TonightEvent,
 } from '../core';
 
 export const seasonName: Record<Season, string> = { spring: 'Spring', summer: 'Summer', fall: 'Fall', winter: 'Winter' };
@@ -226,6 +227,53 @@ export function eventText(
     default:
       return null;
   }
+}
+
+/** A line of the tonight preview: what will happen, the beds it names, and the sheet that can stop it. */
+export interface TonightLine {
+  text: string;
+  squares: number[];
+  fix: 'water' | 'clear' | 'harvest' | 'market' | null;
+  /** Good news (a cross on offer) rather than a warning. */
+  good?: boolean;
+}
+
+/** The tonight preview in future tense, worst first, with like events folded into one line. */
+export function tonightLines(events: TonightEvent[], grid: { species: string | null }[]): TonightLine[] {
+  const sp = (i: number) => name(grid[i]?.species ?? '');
+  const beds = (sq: number[]) => (sq.length === 1 ? sp(sq[0]) : `${sq.length} beds`);
+  const will = (sq: number[]) => `${beds(sq)} will`;
+  const lines: TonightLine[] = [];
+  const of = <T extends TonightEvent['type']>(type: T) => events.filter((e): e is Extract<TonightEvent, { type: T }> => e.type === type);
+  const blight = (cause: 'dry' | 'crowding' | 'spread') => of('blight').filter((e) => e.cause === cause).map((e) => e.square);
+
+  for (const e of of('moldBloom'))
+    lines.push({ text: `Mold bloom: ${e.count} beds blighted. You'd lose an action next month.`, squares: [], fix: 'clear' });
+  const dried = blight('dry');
+  if (dried.length) lines.push({ text: `${will(dried)} dry out and catch blight.`, squares: dried, fix: 'water' });
+  const crowded = blight('crowding');
+  if (crowded.length)
+    lines.push({ text: `${crowded.length === 1 ? `${sp(crowded[0])} is` : `${crowded.length} beds are`} too crowded and will catch blight.`, squares: crowded, fix: null });
+  const crept = blight('spread');
+  if (crept.length)
+    lines.push({
+      text: crept.length === 1 ? `Blight will creep into a neighboring ${sp(crept[0])} bed.` : `Blight will creep into ${crept.length} neighboring beds.`,
+      squares: crept,
+      fix: 'clear',
+    });
+  const ripe = of('overripe').map((e) => e.square);
+  if (ripe.length) lines.push({ text: `${will(ripe)} go overripe unpicked.`, squares: ripe, fix: 'harvest' });
+  for (const e of of('spoil')) {
+    const n = Object.values(e.lost).reduce((a, b) => a + b, 0);
+    lines.push({ text: `The season turns: ${plural(n, 'stored mushroom')} will spoil.`, squares: [], fix: 'market' });
+  }
+  const marked = of('dry').map((e) => e.square).filter((i) => !dried.includes(i));
+  if (marked.length) lines.push({ text: `${will(marked)} take a dry mark.`, squares: marked, fix: 'water' });
+  const eaters = [...new Set(of('eat').map((e) => e.from))];
+  if (eaters.length) lines.push({ text: `${name('emberpuff')} will eat a tile beside it.`, squares: eaters, fix: null });
+  for (const e of of('cross'))
+    lines.push({ text: `${sp(e.a)} and ${sp(e.b)} will offer a cross.`, squares: [e.a, e.b], fix: null, good: true });
+  return lines;
 }
 
 export const waitText = {

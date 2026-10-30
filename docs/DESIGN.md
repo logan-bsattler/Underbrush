@@ -438,6 +438,54 @@ The bots never dig, so the sim numbers are unchanged.
   `cellarReady`). Before that the Yew is plain ground. The cabinet says when the marks say enough.
 - The bots don't buy the Spade (`wantedGear`), so the sim numbers are unchanged; the truffle odds are untested by sim.
 
+## The tonight preview
+
+What the night will do, shown before you rest (spec: `docs/tonight-preview-spec.md`). The month's
+weather is known by then, and growth is fixed apart from where spreaders land and what Ember Puff
+eats, so the preview is exact for everything it tells.
+
+- **Engine.** `previewNight` (`growth.ts`) runs `runGrowth` on a copy of what it writes, with a
+  throwaway RNG, and adds the season-turn spoilage `endMonth` adds. It keeps dry marks, blight,
+  overripe beds, Ember Puff eating, Mold Bloom, spoilage and crosses. It drops growth, waiting,
+  spreads, a cross on a bed a spread fills, and the eaten square. `s.rng` is never read.
+- **Panel.** The "Tap to rest" step of End month opens a Tonight panel over the tray: up to five
+  lines, worst first (`tonightLines`, `text.ts`), each with its fix (Water, Clear blight, Harvest,
+  Market) when an action is left for it. Named beds get a rust outline. A list of warnings stays
+  until you rest, fix or tap "Not yet"; a quiet night times out as before.
+- **At 0 actions** End month asks for the second tap only when there's a warning (crosses don't
+  count), since a hand or a Puffball Supper can still help. No preview on festival morning or while
+  away recovering.
+- **Balance.** No rules change and bots don't use it, so sims and tiers are untouched.
+
+## The tool wall
+
+The gear you own, hung on the shed's outside wall under the farm (spec: `docs/tool-wall-spec.md`).
+
+- **Pegs.** Ten, in a fixed order (`WALL`, `Game.tsx`): Lantern, Trail Map, Waders, Compass, Knife,
+  Spade, Bigger Basket, Field Guide, Blight Spray, Dehydrator. Drip Line and Grow Tent are left off
+  because the farm already draws them. Owned gear hangs in colour, heirlooms with a brass tag; gear
+  stocked this year shows as a pale painted outline; level-locked gear leaves a bare peg.
+- **Buying.** A new tool swings onto its peg once no sheet covers the farm. No motion under
+  `prefers-reduced-motion`.
+- **Sheet.** Tapping the wall opens Tool wall: every owned piece (Drip Line and Grow Tent too) with
+  its use and rule, then stocked gear with its cost, and a button to the Market.
+- **Layout.** The wall shares the farm's width (`--farm-w`) and takes its height from the farm, so it
+  never pushes the action bar off screen. Under 400 px of farm area it slims from 34 px to 24 px.
+- **Balance.** Art and one sheet only, so sims and tiers are untouched.
+
+## Hybrid hints
+
+Each hybrid you haven't made shows a riddle on its Field journal page (spec: `docs/hybrid-hints-spec.md`).
+
+- **Riddles.** A `hint` on each hybrid in `hybrids.json`. It names both parents by their journal
+  look (`group`, e.g. "Pale shelf"), says where they grow and a season they share, and never names
+  a species. `text.test.ts` holds every hybrid to both rules.
+- **Second step.** When both parents are in the journal, the page adds "You've grown both halves of
+  this one." No new saved state.
+- **Once made.** The page fills in as before, with its Parents row.
+- **Balance.** Riddles only bring the first discovery forward, and bots never plan hybrids, so sims
+  and tiers are untouched.
+
 ## Achievements
 
 Feats the field journal remembers across every year, listed in the Almanac and announced with a

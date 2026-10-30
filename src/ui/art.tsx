@@ -672,6 +672,77 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
           <path d="M9 20v-6h6v6" {...s} stroke="#5E4632" />
         </svg>
       );
+    case 'lantern':
+      return (
+        <svg {...p}>
+          <path d="M9.5 5 Q12 1.5 14.5 5" {...s} stroke="#2F261E" strokeWidth="1.4" />
+          <path d="M8 5 H16 L15 7.5 H9 Z" fill="#5E4632" stroke="#2F261E" strokeWidth="1.3" strokeLinejoin="round" />
+          <rect x="8.5" y="7.5" width="7" height="10.5" rx="1.5" fill="#F3C86A" stroke="#2F261E" strokeWidth="1.4" />
+          <path d="M12 10.5 Q14 13 12 15.5 Q10 13 12 10.5 Z" fill="#D9792A" />
+          <path d="M7.5 18 H16.5 V20.5 H7.5 Z" fill="#5E4632" stroke="#2F261E" strokeWidth="1.3" strokeLinejoin="round" />
+        </svg>
+      );
+    case 'trailmap':
+      return (
+        <svg {...p}>
+          <path d="M3 6 L9 4 L15 6 L21 4 V18 L15 20 L9 18 L3 20 Z" fill="#EAD9B0" stroke="#7A5A2C" strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="M9 4 V18 M15 6 V20" {...s} stroke="#7A5A2C" strokeWidth="1.1" />
+          <path d="M5 16 Q8 11 11 13 T17 9" {...s} stroke="#9A4E16" strokeWidth="1.4" strokeDasharray="1.6 1.8" />
+          <path d="M17.5 6.5 l2 2 M19.5 6.5 l-2 2" stroke="#9A4E16" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+      );
+    case 'waders':
+      return (
+        <svg {...p}>
+          <path d="M8 2.5 L9 8 M16 2.5 L15 8" {...s} stroke="#2F3A2A" strokeWidth="1.3" />
+          <path d="M8 8 H16 V12 L15.5 19 H12.8 L12 13.5 L11.2 19 H8.5 L8 12 Z" fill="#5F7A55" stroke="#2F3A2A" strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="M8.5 19 H11.2 L11.4 21.5 H6 Q6 19.5 8.5 19 Z M12.8 19 H15.5 Q18 19.5 18 21.5 H12.6 Z" fill="#2F3A2A" stroke="#2F3A2A" strokeWidth="1" strokeLinejoin="round" />
+        </svg>
+      );
+    case 'compass':
+      return (
+        <svg {...p}>
+          <circle cx="12" cy="3.6" r="1.5" fill="none" stroke="#6A4E14" strokeWidth="1.3" />
+          <circle cx="12" cy="13" r="8" fill="#C9A24B" stroke="#6A4E14" strokeWidth="1.5" />
+          <circle cx="12" cy="13" r="5.8" fill="#F6F1E4" stroke="#6A4E14" strokeWidth="1" />
+          <path d="M12 8.2 L13.6 13 H10.4 Z" fill="#9A4E16" />
+          <path d="M12 17.8 L10.4 13 H13.6 Z" fill="#4A5446" />
+        </svg>
+      );
+    case 'fieldguide':
+      return (
+        <svg {...p}>
+          <path d="M6.5 3 H18.5 Q19.5 3 19.5 4 V20 Q19.5 21 18.5 21 H6.5 Z" fill="#6E8B4E" stroke="#3E5228" strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="M6.5 3 Q4.5 3 4.5 5 V19 Q4.5 21 6.5 21" fill="#E7DCC2" stroke="#3E5228" strokeWidth="1.4" />
+          <path d="M9 11.5 Q9 7.5 13 7.5 Q17 7.5 17 11.5 Z" fill="#F6F1E4" />
+          <path d="M12.2 11.5 L12 15.5 H14 L13.8 11.5 Z" fill="#F6F1E4" />
+        </svg>
+      );
+    case 'blightspray':
+      return (
+        <svg {...p}>
+          <path d="M10 9 V6 H14 V9" fill="#5E4632" stroke="#2F261E" strokeWidth="1.2" strokeLinejoin="round" />
+          <path d="M10 6.5 H6.5 L5.5 8" {...s} stroke="#2F261E" strokeWidth="1.4" />
+          <path d="M9 9 H15 V19 Q15 21 13 21 H11 Q9 21 9 19 Z" fill="#9CB89A" stroke="#3E5228" strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="M9 13 H15" stroke="#3E5228" strokeWidth="1" />
+          <circle cx="3.2" cy="7" r="0.9" fill="#4A7A98" />
+          <circle cx="3.6" cy="10" r="0.9" fill="#4A7A98" />
+          <circle cx="2.4" cy="4.4" r="0.9" fill="#4A7A98" />
+        </svg>
+      );
+    case 'dehydrator':
+      return (
+        <svg {...p}>
+          <rect x="4" y="3" width="16" height="18" rx="1.5" fill="#E7DCC2" stroke="#5E4632" strokeWidth="1.5" />
+          <path d="M4 9 H20 M4 15 H20" {...s} stroke="#5E4632" strokeWidth="1.3" />
+          <ellipse cx="8.5" cy="7" rx="2" ry="1" fill="#8C5A2E" />
+          <ellipse cx="14" cy="7" rx="2" ry="1" fill="#C27A1C" />
+          <ellipse cx="10" cy="13" rx="2" ry="1" fill="#C27A1C" />
+          <ellipse cx="15.5" cy="13" rx="2" ry="1" fill="#8C5A2E" />
+          <ellipse cx="8" cy="19" rx="2" ry="1" fill="#8C5A2E" />
+          <ellipse cx="13.5" cy="19" rx="2" ry="1" fill="#C27A1C" />
+        </svg>
+      );
     default:
       return <svg {...p} />;
   }

@@ -147,6 +147,11 @@ export function Journal({ store, onBack }: { store: Store; onBack: () => void })
                     )}
                   </dl>
                 </>
+              ) : sp.kind === 'hybrid' && sp.hint ? (
+                <>
+                  <p class="hint">{sp.hint}</p>
+                  {sp.parents?.every((p) => j.discovered.includes(p)) && <p class="muted small">You've grown both halves of this one.</p>}
+                </>
               ) : (
                 <p class="muted small">{sp.kind === 'hybrid' ? 'Grow two compatible species side by side to discover it.' : 'Identify one to fill in this page.'}</p>
               )}

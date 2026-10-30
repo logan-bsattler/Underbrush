@@ -1,5 +1,5 @@
 import { crossKey, hybridFor, inSeason, isShaded, neighbors, seasonOf } from './board';
-import type { Rng } from './rng';
+import { Rng } from './rng';
 import type { Content, GameState, GrowthRate, NightEvent, NightReport, Square, Stage } from './types';
 
 /** Growing months a bed of this growth rate spends at a stage; 0 for a stage it skips. */
@@ -190,4 +190,36 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
   }
 
   return { round: s.round, events };
+}
+
+/** What a preview of the night keeps: the warnings and offers, never growth or waiting. */
+export type TonightEvent = Extract<NightEvent, { type: 'dry' | 'blight' | 'overripe' | 'eat' | 'cross' | 'moldBloom' | 'spoil' }>;
+
+/**
+ * What tonight will do if the month ends now, worked out on a copy so the real night is untouched.
+ * Growth is fixed once the month's weather is known, except where spreaders land and what a hungry bed eats:
+ * those use a throwaway RNG, and anything that would give them away (the spread itself, a cross on the bed it
+ * fills, the eaten square) is left out. Never reads `s.rng`.
+ */
+export function previewNight(s: GameState, c: Content): TonightEvent[] {
+  const copy: GameState = {
+    ...s,
+    grid: s.grid.map((sq) => ({ ...sq })),
+    compostPile: [...s.compostPile],
+    stats: { ...s.stats },
+    pendingCrosses: [],
+  };
+  const { events } = runGrowth(copy, new Rng(0), c);
+  const filled = new Set(events.flatMap((e) => (e.type === 'spread' || e.type === 'takeover' ? [e.to] : [])));
+  const kept: TonightEvent[] = [];
+  for (const e of events) {
+    if (e.type === 'grow' || e.type === 'wait' || e.type === 'spread' || e.type === 'takeover') continue;
+    if (e.type === 'cross' && (filled.has(e.a) || filled.has(e.b))) continue;
+    // Which square gets eaten is the throwaway RNG's pick, so it isn't told: -1.
+    kept.push(e.type === 'eat' ? { ...e, to: -1 } : (e as TonightEvent));
+  }
+  // The season-turn spoilage endMonth adds after growth.
+  const seasonTurns = s.round < c.rules.rounds && s.round % c.rules.roundsPerSeason === 0;
+  if (seasonTurns && !s.gear.includes('dehydrator') && Object.keys(s.storage).length) kept.push({ type: 'spoil', lost: { ...s.storage } });
+  return kept;
 }

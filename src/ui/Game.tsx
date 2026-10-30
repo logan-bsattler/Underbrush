@@ -1,6 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { lazy, memo } from 'preact/compat';
-import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   orderById,
   actionsPerMonth,
@@ -19,6 +19,7 @@ import {
   orderPayment,
   orderProgress,
   plantableSquares,
+  previewNight,
   score,
   seasonOf,
   stageLength,
@@ -40,7 +41,19 @@ import { Night } from './Night';
 import { Pantry } from './Pantry';
 import { AudioToggles } from './Screens';
 import type { Store } from './store';
-import { growthName, masteryName, name, orderProgressText, seasonsText, squareName, stageName, substrateName, monthLabel } from './text';
+import {
+  growthName,
+  masteryName,
+  name,
+  orderProgressText,
+  seasonsText,
+  squareName,
+  stageName,
+  substrateName,
+  monthLabel,
+  tonightLines,
+  type TonightLine,
+} from './text';
 
 const YearEnd = lazy(() => import('./YearEnd').then((m) => ({ default: m.YearEnd })));
 
@@ -60,6 +73,7 @@ type Sheet =
   | { kind: 'weather' }
   | { kind: 'pantry' }
   | { kind: 'tiers' }
+  | { kind: 'tools' }
   | { kind: 'menu' };
 
 export function SheetFrame({ title, onClose, children, tall }: { title: string; onClose: () => void; children: ComponentChildren; tall?: boolean }) {
@@ -360,6 +374,93 @@ function FarmView({
         })}
       </div>
     </div>
+  );
+}
+
+/** The pegs on the shed wall, in a fixed order so nothing shifts when you buy. Drip Line and Grow Tent are drawn on the farm instead. */
+const WALL = ['lantern', 'trailmap', 'waders', 'compass', 'knife', 'spade', 'biggerbasket', 'fieldguide', 'blightspray', 'dehydrator'];
+const gearIcon = (id: string) => ({ biggerbasket: 'basket', dripline: 'water', growtent: 'tent' })[id] ?? id;
+const gearName = (id: string) => content.gear.find((x) => x.id === id)!.name;
+
+/**
+ * The shed's outside wall under the farm: gear you own hangs on its peg, heirlooms with a brass tag, and gear the
+ * Market stocks this year shows as a painted outline. A tool bought while a sheet covers the farm swings onto its
+ * peg once the farm shows again.
+ */
+function ToolWall({ g, covered, onOpen }: { g: GameState; covered: boolean; onOpen: () => void }) {
+  const seen = useRef<Set<string> | null>(null);
+  if (!seen.current) seen.current = new Set(g.gear);
+  const [swing, setSwing] = useState<string[]>([]);
+  useEffect(() => {
+    if (covered) return;
+    const fresh = g.gear.filter((id) => !seen.current!.has(id));
+    if (!fresh.length) return;
+    fresh.forEach((id) => seen.current!.add(id));
+    setSwing(fresh);
+  }, [covered, g.gear]);
+  const hung = WALL.filter((id) => g.gear.includes(id));
+  const toBuy = content.gear.filter((x) => !g.gear.includes(x.id) && g.perks.shop.includes(x.id)).length;
+  const label = `Tool wall: ${
+    hung.length ? hung.map((id) => `${gearName(id)}${g.perks.heirlooms.includes(id) ? ' (heirloom)' : ''}`).join(', ') : 'nothing hung yet'
+  }.${toBuy ? ` ${toBuy} more at the Market.` : ''}`;
+  return (
+    <button class="toolwall" onClick={onOpen} aria-label={label}>
+      {WALL.map((id) => {
+        const owned = g.gear.includes(id);
+        const state = owned ? 'owned' : g.perks.shop.includes(id) ? 'outline' : 'bare';
+        return (
+          <span class={`peg ${state} ${owned && swing.includes(id) ? 'swing' : ''}`} aria-hidden="true">
+            {state !== 'bare' && <Icon name={gearIcon(id)} size={24} />}
+            {owned && g.perks.heirlooms.includes(id) && <span class="tag" />}
+          </span>
+        );
+      })}
+    </button>
+  );
+}
+
+function ToolWallSheet({ g, onClose, onMarket }: { g: GameState; onClose: () => void; onMarket: () => void }) {
+  const owned = content.gear.filter((x) => g.gear.includes(x.id));
+  const toBuy = content.gear.filter((x) => !g.gear.includes(x.id) && g.perks.shop.includes(x.id));
+  return (
+    <SheetFrame title="Tool wall" onClose={onClose}>
+      {owned.length === 0 && <p class="muted">Nothing on the wall yet. Gear you buy at the Market hangs here.</p>}
+      <ul class="tool-list">
+        {owned.map((x) => (
+          <li>
+            <Icon name={gearIcon(x.id)} size={30} />
+            <div>
+              <b>{x.name}</b>
+              {g.perks.heirlooms.includes(x.id) && <span class="heirloom-tag">Heirloom</span>}
+              <div class="small muted">{x.use}</div>
+              <div class="small">{x.rule}</div>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {toBuy.length > 0 && (
+        <>
+          <h3>At the Market</h3>
+          <ul class="tool-list buy">
+            {toBuy.map((x) => (
+              <li>
+                <Icon name={gearIcon(x.id)} size={30} />
+                <div>
+                  <b>{x.name}</b>
+                  <span class="cost">
+                    <Icon name="coin" size={14} /> {x.cost}
+                  </span>
+                  <div class="small">{x.rule}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <button class="btn wide" onClick={onMarket}>
+        Open the Market
+      </button>
+    </SheetFrame>
   );
 }
 
@@ -1027,11 +1128,18 @@ export function Game({
     return () => clearTimeout(t);
   }, [picked]);
 
+  // What tonight will do, for the panel over End month. Nothing to preview on festival morning or while away.
+  const tonight = useMemo(() => (g.finale || g.away || g.night ? [] : tonightLines(previewNight(g, content), g.grid)), [g]);
+  // Crosses are good news: only the rest make resting with no actions left ask twice.
+  const warned = tonight.some((l) => !l.good);
+
   useEffect(() => {
-    if (!confirmEnd) return;
+    // A list of warnings stays until it's dealt with; "Tap to rest" on its own times out.
+    if (!confirmEnd || warned) return;
     const t = setTimeout(() => setConfirmEnd(false), 2600);
     return () => clearTimeout(t);
-  }, [confirmEnd]);
+  }, [confirmEnd, warned]);
+  useEffect(() => setConfirmEnd(false), [sheet, mode]);
 
   // Leaving plant or placement mode when its subject disappears (e.g. after planting).
   useEffect(() => {
@@ -1077,13 +1185,25 @@ export function Game({
   // On festival morning, skipping the last harvest or market visit asks for a second tap, like resting with actions left.
   const finaleUnused = !!finale && (!finale.marketed || (ready > 0 && !finale.harvested));
   const endMonth = () => {
-    if ((finale ? finaleUnused : g.actionsLeft > 0) && !confirmEnd) {
+    if ((finale ? finaleUnused : g.actionsLeft > 0 || (warned && !g.away)) && !confirmEnd) {
       setConfirmEnd(true);
       return;
     }
     setConfirmEnd(false);
     setMode({ kind: 'none' });
     store.act(finale ? { type: 'festival' } : { type: 'endMonth' });
+  };
+
+  const showTonight = confirmEnd && !finale && !g.away;
+  const tonightMarks = useMemo(
+    () => Object.fromEntries(tonight.flatMap((l) => l.squares.map((i) => [i, 'tonight']))) as Record<number, string>,
+    [tonight],
+  );
+  const fixTonight = (fix: TonightLine['fix']) => {
+    setConfirmEnd(false);
+    if (fix === 'harvest') harvest();
+    else if (fix === 'market') setSheet({ kind: 'market' });
+    else setSheet({ kind: 'tend' });
   };
 
   if (g.over && !g.night) return <YearEnd store={store} onTitle={onTitle} onNewYear={onNewYear} />;
@@ -1147,7 +1267,8 @@ export function Game({
             </span>
           </div>
         )}
-        <Farm g={g} mode={mode} onSquare={onSquare} picked={picked ?? undefined} />
+        <Farm g={g} mode={mode} onSquare={onSquare} picked={picked ?? undefined} marks={showTonight ? tonightMarks : undefined} />
+        <ToolWall g={g} covered={!!sheet || !!g.forage || !!reveal || busy} onOpen={() => setSheet({ kind: 'tools' })} />
       </main>
 
       <Tray
@@ -1165,6 +1286,8 @@ export function Game({
         }}
       />
 
+      <div class="actions-wrap">
+      {showTonight && <Tonight lines={tonight} actions={g.actionsLeft} onFix={fixTonight} onClose={() => setConfirmEnd(false)} />}
       <nav class="actions" aria-label="Actions">
         <button class="act" disabled={g.actionsLeft < 1 || !!finale} onClick={() => setSheet({ kind: 'forage' })}>
           <Icon name="forage" size={26} />
@@ -1193,6 +1316,7 @@ export function Game({
           <span>{confirmEnd ? (finale ? 'Tap to go' : 'Tap to rest') : finale ? 'Festival' : 'End month'}</span>
         </button>
       </nav>
+      </div>
 
       {sheet?.kind === 'bed' && <BedSheet g={g} i={sheet.i} store={store} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'specimen' && (
@@ -1219,6 +1343,7 @@ export function Game({
       {sheet?.kind === 'market' && <Market g={g} store={store} onClose={() => setSheet(null)} onPantry={() => setSheet({ kind: 'pantry' })} />}
       {sheet?.kind === 'pantry' && <Pantry g={g} store={store} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'tiers' && <TiersSheet g={g} onClose={() => setSheet(null)} />}
+      {sheet?.kind === 'tools' && <ToolWallSheet g={g} onClose={() => setSheet(null)} onMarket={() => setSheet({ kind: 'market' })} />}
       {(sheet?.kind === 'forage' || g.forage) && <Forage g={g} store={store} onClose={() => setSheet(null)} />}
       {reveal && <Reveal r={reveal} g={g} onDone={() => setReveal(null)} onPlant={startPlant} />}
       {busy && <Night g={g} store={store} />}
@@ -1259,6 +1384,53 @@ function LoreToast({ ids, onDone }: { ids: string[]; onDone: () => void }) {
         ))}
       </span>
     </button>
+  );
+}
+
+const fixLabel = { water: 'Water', clear: 'Clear blight', harvest: 'Harvest', market: 'Market' } as const;
+
+/** Over End month while it asks for the second tap: what tonight will do, worst first, and what can stop it. */
+function Tonight({
+  lines,
+  actions,
+  onFix,
+  onClose,
+}: {
+  lines: TonightLine[];
+  actions: number;
+  onFix: (fix: TonightLine['fix']) => void;
+  onClose: () => void;
+}) {
+  const shown = lines.slice(0, 5);
+  return (
+    <section class="tonight" aria-label="Tonight" aria-live="polite">
+      <header>
+        <Icon name="moon" size={16} />
+        <b>Tonight</b>
+        {lines.length > 0 && (
+          <button class="btn small ghost" onClick={onClose}>
+            Not yet
+          </button>
+        )}
+      </header>
+      {lines.length === 0 ? (
+        <p class="small">A quiet night: nothing will go wrong.</p>
+      ) : (
+        <ul>
+          {shown.map((l) => (
+            <li key={l.text} class={l.good ? 'good' : ''}>
+              <span>{l.text}</span>
+              {l.fix && (l.fix === 'market' || actions > 0) && (
+                <button class="btn small" onClick={() => onFix(l.fix)}>
+                  {fixLabel[l.fix]}
+                </button>
+              )}
+            </li>
+          ))}
+          {lines.length > shown.length && <li class="muted small">and {lines.length - shown.length} more</li>}
+        </ul>
+      )}
+    </section>
   );
 }
 

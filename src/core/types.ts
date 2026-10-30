@@ -41,6 +41,8 @@ export interface SpeciesDef {
   group?: string;
   lookalike?: { name: string; on: number };
   parents?: [string, string];
+  /** A hybrid's riddle for the journal until it's made: its parents' looks, where they grow and when. */
+  hint?: string;
   traits: SpeciesTraits;
   rule: string;
   blurb: string;

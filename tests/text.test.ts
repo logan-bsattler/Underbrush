@@ -73,3 +73,20 @@ describe('artifact text', () => {
     expect(artifactText(g, set[2].id)).toMatch(/completes the Drover's Purse/);
   });
 });
+
+describe('hybrid riddles', () => {
+  const hybrids = content.speciesOrder.map((id) => content.species[id]).filter((sp) => sp.kind === 'hybrid');
+
+  it('gives every hybrid a riddle that names neither parent', () => {
+    expect(hybrids.length).toBeGreaterThan(0);
+    for (const sp of hybrids) {
+      expect(sp.hint, sp.id).toBeTruthy();
+      for (const p of sp.parents!) expect(sp.hint!.toLowerCase(), `${sp.id} names ${p}`).not.toContain(content.species[p].name.toLowerCase());
+    }
+  });
+
+  it("uses each parent's journal look", () => {
+    for (const sp of hybrids)
+      for (const p of sp.parents!) expect(sp.hint!.toLowerCase(), `${sp.id} hints at ${p}`).toContain(content.species[p].group!.toLowerCase());
+  });
+});

@@ -1,6 +1,6 @@
 # Review follow-up: the plan
 
-Status: Phases 1–5 are done. Phase 3 was signed off 2026-10-30, with Golden at 18–22% of planner years
+Status: Phases 1–5 are done; Phase 6 is under way (ranks 1–2 and the first half of 3 done). Phase 3 was signed off 2026-10-30, with Golden at 18–22% of planner years
 accepted by Ben. Next: Phase 6. Written 2026-10-30 from three
 reviews: balance, speed and features. Section 0's decisions are settled (see Progress).
 
@@ -193,6 +193,25 @@ Progress (2026-10-30):
   tier, the score so far by part, and how much level and generation raise the bars (`Game.tsx`). How to play
   points to it. Checked in the browser at 375px: L8 shows bronze 24, silver 34, gold 44, Golden 54, and the
   top bar doesn't overflow. `progression.test.ts` already pins the thresholds, so no new engine test.
+
+- **Phase 6, rank 1, tonight preview: done (2026-10-30).** Spec in `tonight-preview-spec.md`, approved by Ben.
+  `previewNight()` in `growth.ts`, `tonightLines()` in `text.ts`, the Tonight panel in `Game.tsx`.
+  `tonight.test.ts` replays 24 bot years and checks every night's preview against the real report (288
+  nights). Checked in the browser at 375 px: the quiet night, an overripe warning with its outline, and the
+  Harvest fix. No rules change, so no sim or tier re-check. **Next:** rank 2, gear on the farm.
+- **Phase 6, rank 2, gear on the farm: done (2026-10-30).** Spec in `tool-wall-spec.md`, approved by Ben with
+  both open choices as recommended (painted outlines; slimmer wall on short screens). `ToolWall` and
+  `ToolWallSheet` in `Game.tsx`, seven new gear icons in `art.tsx`. Checked in the browser at 375 × 812 (wall
+  34 px, farm still 343 px wide) and 375 × 667 (wall 24 px, farm 287 px, no scroll), plus a purchase that swings
+  onto its peg after the Market closes. No rules change, so no sim or tier re-check. **Next:** rank 3, hybrid
+  hints.
+- **Phase 6, rank 3, first half, hybrid hints: done (2026-10-30).** Spec in `hybrid-hints-spec.md`, approved by
+  Ben with both open choices as recommended. A `hint` riddle per hybrid in `hybrids.json`, shown on unknown
+  hybrid pages in the Field journal (`Screens.tsx`), plus "You've grown both halves" once both parents are known.
+  `text.test.ts` checks every riddle uses both parents' journal looks and names neither. Checked in the browser
+  at 375 px: a fresh journal, both parents grown, and a hybrid made. No rules change, so no sim or tier
+  re-check. **Next:** rank 3, second half, new hybrids (its own spec; Lion's Mane × Enoki and Reishi × Wine
+  Cap are the candidates).
 
 ## Bottom line
 
