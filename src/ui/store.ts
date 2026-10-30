@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   dispatch as apply,
   GameError,
@@ -171,19 +171,12 @@ export function useStore(): Store {
     return () => clearTimeout(t);
   }, [lore]);
 
-  return {
-    game,
-    journal,
-    freshThisYear,
-    error,
-    last,
-    achieved,
-    dismissAchieved: () => setAchieved([]),
-    lore,
-    dismissLore: () => setLore([]),
-    act,
-    start,
-    passItOn,
-    clearError: () => setError(null),
-  };
+  const dismissAchieved = useCallback(() => setAchieved([]), []);
+  const dismissLore = useCallback(() => setLore([]), []);
+  const clearError = useCallback(() => setError(null), []);
+  // The same object until something in it changes, so screens holding the store can skip a redraw.
+  return useMemo(
+    () => ({ game, journal, freshThisYear, error, last, achieved, dismissAchieved, lore, dismissLore, act, start, passItOn, clearError }),
+    [game, journal, freshThisYear, error, last, achieved, dismissAchieved, lore, dismissLore, act, start, passItOn, clearError],
+  );
 }

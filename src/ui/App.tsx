@@ -1,12 +1,22 @@
+import { lazy, Suspense } from 'preact/compat';
 import { useEffect, useErrorBoundary, useState } from 'preact/hooks';
 import { boardsFor, heirloomChoices, heirloomSlots, isLegend, levelFor, seasonOf } from '../core';
 import { ArtDefs } from './art';
 import { Game } from './Game';
-import { PastFestivals } from './History';
 import { Almanac, Pack } from './Progress';
 import { HowTo, Journal, Title } from './Screens';
 import { setScene, type Scene } from './sound';
 import { clearSave, useStore } from './store';
+
+// Screens seen once a year load after the first paint. They're fetched when the app goes idle, so the service worker
+// has them cached before the player might need them offline.
+const loadHistory = () => import('./History');
+const PastFestivals = lazy(() => loadHistory().then((m) => ({ default: m.PastFestivals })));
+const prefetch = () => {
+  loadHistory();
+  import('./YearEnd');
+};
+if (typeof window !== 'undefined') ('requestIdleCallback' in window ? requestIdleCallback(prefetch) : setTimeout(prefetch, 2000));
 
 type View = 'title' | 'game' | 'journal' | 'help' | 'almanac' | 'history' | 'pack';
 
@@ -129,7 +139,7 @@ function Main() {
   return (
     <div class="app">
       <ArtDefs />
-      {screen}
+      <Suspense fallback={null}>{screen}</Suspense>
     </div>
   );
 }
