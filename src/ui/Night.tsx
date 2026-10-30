@@ -29,14 +29,16 @@ export function Night({ g, store }: { g: GameState; store: Store }) {
     if (sq !== null && (marks[sq] !== 'blight' || t === 'blight')) marks[sq] = t;
   }
 
-  const lines = report.events.map((e) => eventText(e, g.grid)).filter((x): x is string => !!x);
+  // The apprentice's pick plays over the farm: each bed's mushroom lifts out in turn.
+  const auto = report.events.find((e) => e.type === 'autoHarvest');
+  const lines = report.events
+    .map((e) => eventText(e, g.grid, { picked: auto?.squares, finale: !!g.finale }))
+    .filter((x): x is string => !!x);
   const waits: Record<string, number> = {};
   for (const e of report.events) if (e.type === 'wait' && e.reason !== 'slow') waits[e.reason] = (waits[e.reason] ?? 0) + 1;
   const grew = report.events.filter((e) => e.type === 'grow').length;
   const dried = report.events.filter((e) => e.type === 'dry').length;
   const weather = content.weather.find((w) => w.id === g.weather)!;
-  // The apprentice's pick plays over the farm: each bed's mushroom lifts out in turn.
-  const auto = report.events.find((e) => e.type === 'autoHarvest');
   const picked = auto ? { squares: auto.squares ?? [], species: (auto.squares ?? []).map((i) => g.grid[i].species!), key: report.round } : undefined;
 
   return (
@@ -70,7 +72,8 @@ export function Night({ g, store }: { g: GameState; store: Store }) {
             <Icon name="spark" size={40} />
             <div>
               <div class="eyebrow">The year is done</div>
-              <b>Festival morning.</b> Time for one last harvest and a market visit before the festival.
+              <b>Festival morning.</b>{' '}
+              {g.finale.harvested ? 'Time for a market visit before the festival.' : 'Time for one last harvest and a market visit before the festival.'}
             </div>
           </div>
           <button class="btn primary big wide" onClick={() => store.act({ type: 'dismissNight' })}>

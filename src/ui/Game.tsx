@@ -16,6 +16,7 @@ import {
   masteryOf,
   mealEffect,
   orderPayment,
+  orderProgress,
   plantableSquares,
   seasonOf,
   stageLength,
@@ -23,6 +24,7 @@ import {
   type GameState,
   type GrowthRate,
   type IdentifyResult,
+  type OrderDef,
   type Specimen,
   type Stage,
   type Substrate,
@@ -35,7 +37,7 @@ import { Pantry } from './Pantry';
 import { AudioToggles } from './Screens';
 import { YearEnd } from './YearEnd';
 import type { Store } from './store';
-import { growthName, masteryName, name, seasonsText, squareName, stageName, substrateName, monthLabel } from './text';
+import { growthName, masteryName, name, orderProgressText, seasonsText, squareName, stageName, substrateName, monthLabel } from './text';
 
 export type Mode =
   | { kind: 'none' }
@@ -151,31 +153,44 @@ function DripLine({ g }: { g: GameState }) {
   );
 }
 
+/** One order in the strip, with a mark for each mushroom it takes: stored, in the basket, growing, or still to find. */
+function OrderCard({ g, order, commission, onOpen }: { g: GameState; order: OrderDef; commission?: boolean; onOpen: () => void }) {
+  const ready = !!orderPayment(g.storage, order);
+  const p = orderProgress(g, order);
+  const marks = [
+    ...Array<string>(p.stored).fill('stored'),
+    ...Array<string>(p.basket).fill('basket'),
+    ...Array<string>(p.growing).fill('growing'),
+    ...Array<string>(Math.max(0, p.need - p.stored - p.basket - p.growing)).fill(''),
+  ];
+  return (
+    <button
+      role="listitem"
+      class={`order ${commission ? 'commission' : ''} ${ready ? 'ready' : ''}`}
+      onClick={onOpen}
+      aria-label={`${order.label}, ${order.points} points. ${ready ? 'Ready to deliver.' : orderProgressText(p)}`}
+    >
+      <span class="order-main">
+        <span class="order-label">{order.label}</span>
+        <span class="order-marks" aria-hidden="true">
+          {marks.map((m) => (
+            <span class={`om ${m}`} />
+          ))}
+        </span>
+      </span>
+      <span class="order-pts">{order.points}</span>
+      {ready && <span class="order-ready">Ready</span>}
+    </button>
+  );
+}
+
 function Orders({ g, onOpen }: { g: GameState; onOpen: () => void }) {
   return (
     <div class="orders" role="list" aria-label="Festival orders">
-      {g.orders.visible.map((id) => {
-        const o = content.orders.find((x) => x.id === id)!;
-        const ready = !!orderPayment(g.storage, o);
-        return (
-          <button role="listitem" class={`order ${ready ? 'ready' : ''}`} onClick={onOpen}>
-            <span class="order-label">{o.label}</span>
-            <span class="order-pts">{o.points}</span>
-            {ready && <span class="order-ready">Ready</span>}
-          </button>
-        );
-      })}
-      {g.commission.open && (() => {
-        const o = orderById(g.commission.open)!;
-        const ready = !!orderPayment(g.storage, o);
-        return (
-          <button role="listitem" class={`order commission ${ready ? 'ready' : ''}`} onClick={onOpen}>
-            <span class="order-label">{o.label}</span>
-            <span class="order-pts">{o.points}</span>
-            {ready && <span class="order-ready">Ready</span>}
-          </button>
-        );
-      })()}
+      {g.orders.visible.map((id) => (
+        <OrderCard g={g} order={content.orders.find((x) => x.id === id)!} onOpen={onOpen} />
+      ))}
+      {g.commission.open && <OrderCard g={g} order={orderById(g.commission.open)!} commission onOpen={onOpen} />}
       {g.orders.visible.length === 0 && <div class="muted small">Every order is filled. What a festival this will be.</div>}
     </div>
   );
@@ -1003,6 +1018,10 @@ export function Game({
             <button class="btn small primary" onClick={() => setMode({ kind: 'tent' })}>
               Pitch it
             </button>
+          </div>
+        ) : g.away ? (
+          <div class="banner away">
+            <span>Out recovering from your fall this month. The homestead will keep: end the month when you're ready.</span>
           </div>
         ) : finale ? (
           <div class="banner festival">

@@ -373,6 +373,42 @@ button.chip {
   font-size: 18px;
   color: var(--rust);
 }
+.order-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+/* One mark per mushroom the order takes: filled once stored, half for the basket, a ring while it grows. */
+.order-marks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.om {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line);
+}
+.om.stored {
+  background: var(--moss);
+  border-color: var(--moss);
+}
+.om.basket {
+  background: linear-gradient(90deg, var(--moss) 50%, transparent 50%);
+  border-color: var(--moss);
+}
+.om.growing {
+  border-color: var(--moss);
+  border-style: dashed;
+}
+.order.ready .order-marks {
+  display: none;
+}
+.banner.away {
+  background: #5a4a3a;
+}
 .order-ready {
   position: absolute;
   bottom: -7px;
@@ -3620,6 +3656,18 @@ h3 .inline-link {
   border-color: var(--gold);
   color: #f3e3b5;
 }
+/* The stakes of going down, under the button's own words. */
+.btn.descend:has(.fall-cost) {
+  flex-wrap: wrap;
+  row-gap: 0;
+}
+.btn.descend .fall-cost {
+  display: block;
+  flex-basis: 100%;
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.85;
+}
 /* Plain forest floor, turned: nothing to take, so it sits back quietly. */
 .fc.ground .fc-front {
   background: #ece5d3;
@@ -3679,6 +3727,18 @@ h3 .inline-link {
   border-radius: 999px;
   background: var(--card);
   border: 1px solid var(--line);
+}
+/* Truffle ground: a faint tell on a truffle tree in truffle season. */
+.truffle-tag {
+  position: absolute;
+  bottom: 4px;
+  left: 0;
+  right: 0;
+  font-size: 9px;
+  font-style: italic;
+  color: #6b5a3c;
+  opacity: 0.8;
+  text-align: center;
 }
 .fc.diggable:active .fc-front {
   transform: scale(0.97);

@@ -175,7 +175,7 @@ export function HowTo({ onBack }: { onBack: () => void }) {
           {r.rounds} months, {r.roundsPerSeason} per season. Each month a weather card turns, you take{' '}
           {r.actionsPerRound} actions, then you sleep and the farm grows on its own. After the last night you get a festival morning: one last harvest and one
           market visit, free of actions. Then the village Harvest Festival scores your
-          delivered orders, +{r.hybridPoints} for every kind of hybrid you made, +{r.plantedPoints} for every species you planted and +1 for
+          delivered orders and commissions, the artifacts you brought home, +{r.hybridPoints} for every kind of hybrid you made, +{r.plantedPoints} for every species you planted and +1 for
           every {r.coinsPerPoint} coins you have left, up to {r.maxCoinPoints}.
         </p>
       </section>
@@ -267,8 +267,40 @@ export function HowTo({ onBack }: { onBack: () => void }) {
         </p>
       </section>
       <section>
+        <h2>Below ground</h2>
+        <p>
+          Each new generation of the family opens one more layer below every zone. In story years, the way down is a face-down card in a
+          zone's last patch; turn it, then tap it or swipe the deck to descend. Each layer is a single patch with more hazards the deeper you
+          go, and the way to the next layer down.
+        </p>
+        <p>
+          A bust below ground is a fall as well. You keep your first finds as usual, and you lose time at the homestead next month: an action
+          or two, or from the third layer the whole month out recovering. The Descend button tells you what a fall there would cost before you
+          go down.
+        </p>
+        <p>
+          Every layer hides one artifact. Get it home and it goes in the field journal's cabinet and scores at the festival. One that's
+          already in the cabinet scores again, at half its points. Complete a set and every story year after brings a small perk. Some
+          artifacts carry inscriptions, and together they point to a place worth digging.
+        </p>
+        <p>
+          With a Spade, you can dig under turned plain ground. Digging ends the trip. Truffles grow under{' '}
+          {r.dig.hosts.map((h) => h.replace(/ Scrub$/, '').toLowerCase()).join(' and ')} in {seasonsText(r.dig.species).toLowerCase()}, and those
+          cards are marked as truffle ground then.
+        </p>
+      </section>
+      <section>
+        <h2>Commissions</h2>
+        <p>
+          At higher levels the village brings commissions to the market: one bigger order at a time, paid for in coins up front. The market shows the next one's ask and reward before you pay. A commission not delivered by the festival is lost.
+        </p>
+      </section>
+      <section>
         <h2>Tiers</h2>
-        <p>{r.tiers.map((t) => `${t.name} ${t.min}+`).join(' · ')}</p>
+        <p>
+          {r.tiers.map((t) => t.name).join(' · ')}. Each tier's bar rises as your homestead levels up and with each new generation, so a
+          good year means something different later on. The festival screen shows where this year landed.
+        </p>
       </section>
       <p class="disclaimer">Underbrush is a game, not a foraging guide. Never eat a wild mushroom because of anything you saw here.</p>
     </div>

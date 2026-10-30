@@ -235,6 +235,7 @@ export type Sfx =
   | 'coins'
   | 'hazard'
   | 'bust'
+  | 'fall'
   | 'wayDown'
   | 'descend'
   | 'deal'
@@ -278,6 +279,12 @@ const effects: Record<Sfx, (c: BaseAudioContext, out: Out, t: number, n: number)
   bust: (c, out, t) => {
     noise(c, out, t, { dur: 0.3, gain: 0.6, f: 300, type: 'lowpass', q: 0.7 });
     [67, 64, 60, 55].forEach((m, i) => tone(c, out, t + 0.05 + i * 0.12, { f: hz(m), type: 'triangle', dur: 0.4, gain: 0.13, lp: 1400 }));
+  },
+  // A bust below ground: the bust, then a short low bump as you land. Soft: it's a scrape, not a disaster.
+  fall: (c, out, t) => {
+    effects.bust(c, out, t, 1);
+    noise(c, out, t + 0.55, { dur: 0.25, gain: 0.35, f: 180, type: 'lowpass' });
+    tone(c, out, t + 0.55, { f: 90, to: 55, dur: 0.35, gain: 0.16 });
   },
   // The way down: a hollow breath from somewhere below.
   wayDown: (c, out, t) => {
@@ -359,7 +366,7 @@ export interface Cue {
 /** The sound for an action the game just took, given its result and the state it left behind. */
 export function soundFor(a: Action, r: ActionResult, s: GameState): Cue | null {
   if (r.kind === 'draw') {
-    if (r.outcome === 'bust') return { sfx: 'bust' };
+    if (r.outcome === 'bust') return { sfx: s.forage?.layer ? 'fall' : 'bust' };
     if (r.outcome === 'hazard' || r.outcome === 'hazardIgnored') return { sfx: 'hazard' };
     if (r.outcome === 'wayDown') return { sfx: 'wayDown' };
     if (r.cleared || r.outcome === 'artifact' || s.forage?.patch[r.index]?.deep) return { sfx: 'rare' };

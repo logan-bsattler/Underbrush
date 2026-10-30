@@ -1,4 +1,19 @@
-import { content, seasonOf, monthOfSeason, type Card, type DrawOutcome, type NightEvent, type Season, type Specimen, type Stage, type Substrate } from '../core';
+import {
+  artifactPoints,
+  content,
+  seasonOf,
+  monthOfSeason,
+  type Card,
+  type DigFind,
+  type DrawOutcome,
+  type GameState,
+  type NightEvent,
+  type OrderProgress,
+  type Season,
+  type Specimen,
+  type Stage,
+  type Substrate,
+} from '../core';
 
 export const seasonName: Record<Season, string> = { spring: 'Spring', summer: 'Summer', fall: 'Fall', winter: 'Winter' };
 export const stageName: Record<Stage, string> = { S: 'Spawn', C: 'Colonized', P: 'Pinning', F: 'Fruiting' };
@@ -10,6 +25,81 @@ export function monthLabel(round: number) {
 }
 
 export const name = (id: string) => content.species[id]?.name ?? id;
+
+/** A name after "the": "the Hollow", not "the The Hollow". */
+export const bare = (name: string) => name.replace(/^The /, '');
+
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+/** The stakes of going down, named before descending: what a fall in the next layer would cost. */
+export function fallText(cost: number | 'month'): string {
+  if (cost === 'month') return 'A fall here: next month out recovering';
+  if (!cost) return 'A fall here costs nothing more than a bust';
+  return `A fall here: ${plural(cost, 'action')} next month`;
+}
+
+/** A bust: the finds kept, and below ground what the fall costs next month. Kept gentle: it's a scrape, not a disaster. */
+export function bustText(keep: number, cost: number | 'month' = 0): string {
+  const finds = `Bust! You scramble home with only your first ${plural(keep, 'find')}.`;
+  if (cost === 'month') return `${finds} It was a hard fall: you'll spend next month out recovering.`;
+  if (cost) return `${finds} You took a fall, too: next month you'll be ${plural(cost, 'action')} short.`;
+  return finds;
+}
+
+/**
+ * A spade's find. A miss under a truffle tree in season is just bad luck; anywhere else, once the family's
+ * marks say enough, it's the founder's riddle.
+ */
+export function digText(dug: DigFind, at: { host: boolean; inSeason: boolean; cellarReady: boolean }): string {
+  const { dig } = content.rules;
+  const truffle = name(dig.species);
+  switch (dug) {
+    case 'found':
+      return `The spade rings on oak, a hand's depth under the ${content.cache.card}.`;
+    case 'truffle':
+      return `A warty black knob among the roots: a ${truffle.toLowerCase()}!`;
+    case 'noRoom':
+      return `A ${truffle.toLowerCase()} among the roots, and no room in your basket for it. You leave it for the deer.`;
+    case 'empty':
+      if (at.host && at.inSeason) return `Nothing under this one. Roots and cold earth, and no ${truffle.toLowerCase()} today.`;
+      if (at.cellarReady) return content.cache.wrong;
+      if (!at.host) return `Roots and cold earth, and nothing else. ${truffle}s grow under ${hostNames()}.`;
+      return `Roots and cold earth. ${truffle}s only come up in ${seasonsText(dig.species).toLowerCase()}.`;
+  }
+}
+
+/** An order's progress in words, for the marks on its card: "Of 3: 1 stored, 1 in the basket, 1 growing." */
+export function orderProgressText(p: OrderProgress): string {
+  const parts = [p.stored && `${p.stored} stored`, p.basket && `${p.basket} in the basket`, p.growing && `${p.growing} growing`].filter(Boolean);
+  return parts.length ? `Of ${p.need}: ${parts.join(', ')}.` : 'Nothing toward it yet.';
+}
+
+/** The trees a spade finds truffles under, as a forager would say them: "oak and hazel". */
+export const hostNames = () => content.rules.dig.hosts.map((h) => h.replace(/ Scrub$/, '').toLowerCase()).join(' and ');
+
+/**
+ * An artifact turned up: what it is, what it's worth this year, and how far along its set is. One already
+ * in the cabinet scores less (see `artifactPoints`), so it says so.
+ */
+export function artifactText(g: GameState, id: string): string {
+  const a = content.artifacts.find((x) => x.id === id);
+  if (!a) return 'An artifact: something old. It counts as a find, so get it home safe.';
+  const points = artifactPoints(g, id);
+  const head = `An artifact: ${a.name}. ${a.blurb}`;
+  const tail = ' It counts as a find, so get it home safe.';
+  if (g.perks.clues.includes(id)) return `${head} Already in the cabinet: worth ${plural(points, 'point')} this year, not ${a.points}.${tail}`;
+  const trip = g.forage;
+  const held = new Set([id, ...g.perks.clues, ...g.artifacts, ...(trip?.relics.filter((r) => !trip.lost.includes(r.uid)).map((r) => r.artifact) ?? [])]);
+  const pieces = content.artifacts.filter((x) => x.set === a.set);
+  const have = pieces.filter((x) => held.has(x.id)).length;
+  const set = content.artifactSets.find((x) => x.id === a.set);
+  const progress = !set
+    ? ''
+    : have === pieces.length
+      ? ` It completes the ${bare(set.name)}, once it's home.`
+      : ` That's ${have} of ${pieces.length} for the ${bare(set.name)}.`;
+  return `${head} Worth ${plural(points, 'point')}.${progress}${tail}`;
+}
 
 export function seasonsText(id: string) {
   const s = content.species[id].seasons;
@@ -77,16 +167,32 @@ export function outcomeText(o: DrawOutcome, card: Card, dropped?: Specimen) {
       return `A way down${layer ? ` to the ${layer.name.replace(/^The /, '')}` : ''}! Tap it to go down, or turn more cards first.`;
     }
     case 'bust':
-      return `Bust! You scramble home with only your first ${content.rules.bustKeep} finds.`;
+      return bustText(content.rules.bustKeep);
   }
 }
 
-/** One line per night event, or null for events the summary folds together. */
-export function eventText(e: NightEvent, grid: { species: string | null }[]): string | null {
+/**
+ * One line per night event, or null for events the summary folds together. `picked` is the beds the
+ * apprentice harvested at first light, which no longer need harvesting; `finale` is festival morning.
+ */
+export function eventText(
+  e: NightEvent,
+  grid: { species: string | null }[],
+  night: { picked?: number[]; finale?: boolean } = {},
+): string | null {
   const sp = (i: number) => name(grid[i]?.species ?? '');
   switch (e.type) {
     case 'grow':
-      return e.to === 'F' ? `${sp(e.square)} is fruiting. Harvest it this month.` : null;
+      return e.to === 'F' && !night.picked?.includes(e.square) ? `${sp(e.square)} is fruiting. Harvest it this month.` : null;
+    case 'recovering': {
+      const layer = content.underground[e.zone]?.[e.layer - 1];
+      const where = layer ? `the ${bare(layer.name)}` : 'the layers below';
+      if (e.actions === 'month')
+        return night.finale
+          ? `Still out recovering from your fall in ${where}, so there's no last harvest. The festival comes anyway.`
+          : `You're out recovering from your fall in ${where}. The homestead will keep until next month.`;
+      return `Still stiff from your fall in ${where}: ${plural(e.actions, 'action')} fewer this month.`;
+    }
     case 'blight':
       return {
         dry: `${sp(e.square)} dried out and caught blight.`,

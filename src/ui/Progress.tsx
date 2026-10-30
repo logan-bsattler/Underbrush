@@ -27,17 +27,18 @@ import {
 import { Icon, Mushroom, Unknown } from './art';
 import { Farm } from './Game';
 import type { Store } from './store';
-import { masteryName, name } from './text';
+import { bare, masteryName, name } from './text';
 
 const gearName = (id: string) => content.gear.find((g) => g.id === id)?.name ?? id;
-const zoneName = (id: string) => content.zones.find((z) => z.id === id)?.name ?? id;
+/** A zone's name for "below the …": "the Hollow", not "the The Hollow". */
+const zoneName = (id: string) => bare(content.zones.find((z) => z.id === id)?.name ?? id);
 const ordinal = (n: number) => ['first', 'second', 'third', 'fourth', 'fifth'][n - 1] ?? `${n}th`;
 
 export function unlockText(u: Unlock): string {
   switch (u.type) {
     case 'gear': {
       const zone = content.zones.find((z) => z.unlock === u.id);
-      return zone ? `${gearName(u.id)} in the shop, which opens the ${zone.name}` : `${gearName(u.id)} in the shop`;
+      return zone ? `${gearName(u.id)} in the shop, which opens the ${bare(zone.name)}` : `${gearName(u.id)} in the shop`;
     }
     case 'heirloomSlot':
       return 'One more heirloom to carry into each year';

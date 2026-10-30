@@ -5,6 +5,7 @@ import {
   bustKeep,
   cellarReady,
   content,
+  descendCost,
   descendStatus,
   digStatus,
   gearUnlockLevel,
@@ -15,6 +16,7 @@ import {
   layerDef,
   layersOpen,
   nextClue,
+  recoveryCost,
   seasonOf,
   zoneStatus,
   type Card,
@@ -24,7 +26,7 @@ import {
 import { Icon, Mushroom, SubstrateArt, Unknown } from './art';
 import { SheetFrame } from './Game';
 import type { Store } from './store';
-import { cardTitle, name, outcomeText } from './text';
+import { artifactText, bare, bustText, cardTitle, digText, fallText, name, outcomeText } from './text';
 
 function buzz(ms: number | number[]) {
   try {
@@ -111,12 +113,6 @@ function lockedText(unlock: string | null, st: { reason: string; notStocked?: bo
 }
 
 const ordinal = (n: number) => ['first', 'second', 'third', 'fourth', 'fifth'][n - 1] ?? `${n}th`;
-/** The trees a spade finds truffles under, as a forager would say them: "oak and hazel". */
-const hostNames = () => content.rules.dig.hosts.map((h) => h.replace(/ Scrub$/, '').toLowerCase()).join(' and ');
-const seasonsOf = (species: string) => {
-  const seasons = content.species[species].seasons;
-  return seasons === 'any' ? 'any season' : seasons.join(' and ');
-};
 /** "the Badger Setts", but "The Old Well" as it's named. */
 const the = (name: string) => (name.startsWith('The ') ? name : `the ${name}`);
 
@@ -276,6 +272,8 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   const layer = under ? layerDef(trip.zone, trip.layer) : null;
   const down = descendStatus(g);
   const next = down.open ? layerDef(trip.zone, trip.layer + 1) : null;
+  // The stakes of the next layer, named before going down.
+  const fallNext = next ? descendCost(g) : null;
   const start = useRef<number | null>(null);
   const [dragging, setDragging] = useState(false);
   const floor = useRef<HTMLDivElement>(null);
@@ -351,7 +349,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   const way = trip.patch.find((p) => p.card.type === 'entrance');
   const below = layersOpen(g.perks.generation, trip.zone) > trip.layer;
   const wayDown = next
-    ? ` A way leads down to ${the(next.name)}.`
+    ? ` A way leads down to ${the(next.name)}.${fallNext !== null ? ` ${fallText(fallNext)}.` : ''}`
     : way
       ? ` ${deepHere ? 'Another' : 'One card'} hides the way down.`
       : below && !under
@@ -361,36 +359,35 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   const { dig: digRule } = content.rules;
   const truffle = name(digRule.species);
   const digResult = store.last?.kind === 'dig' ? store.last : null;
-  const emptyDig = () => {
-    // Once the family's marks say enough, a wrong spot is the founder's riddle; before that, it's just a hole.
-    if (cellarReady(g)) return content.cache.wrong;
-    if (!dugUnder || !digRule.hosts.includes(dugUnder)) return `Roots and cold earth, and nothing else. ${truffle}s grow under ${hostNames()}.`;
-    return inSeason(digRule.species, seasonOf(g.round))
-      ? `Roots and cold earth. No ${truffle.toLowerCase()} under this one today.`
-      : `Roots and cold earth. ${truffle}s only come up in ${seasonsOf(digRule.species)}.`;
-  };
-  const message = trip.dug === 'found'
-    ? `The spade rings on oak, a hand's depth under the ${content.cache.card}.`
-    : trip.dug === 'truffle'
-      ? `A warty black knob among the roots: a ${truffle.toLowerCase()}! ${digResult?.outcome ? outcomeText(digResult.outcome, { type: 'specimen', species: digRule.species }, digResult.dropped) : ''}`
-      : trip.dug === 'noRoom'
-        ? `A ${truffle.toLowerCase()} among the roots, and no room in your basket for it. You leave it for the deer.`
-        : trip.dug === 'empty'
-          ? emptyDig()
-          : justCleared
-    ? `Nothing left unturned: every card in the ${zone.name} but its hazards.`
+  const inTruffleSeason = inSeason(digRule.species, seasonOf(g.round));
+  // Truffle ground: a turned truffle tree in truffle season, once a Spade is in the shop, hints where to dig.
+  const truffleGround = (card: Card) =>
+    !under && card.type === 'ground' && digRule.hosts.includes(card.name) && inTruffleSeason && (g.gear.includes('spade') || g.perks.shop.includes('spade'));
+  const dugText = trip.dug
+    ? digText(trip.dug, { host: !!dugUnder && digRule.hosts.includes(dugUnder), inSeason: inTruffleSeason, cellarReady: cellarReady(g) })
+    : '';
+  // A fall below ground costs time next month: the worst one this month, if there's been more than one.
+  const fall = trip.layer && g.recovery ? recoveryCost(g.recovery.layer, g.perks.sets) : 0;
+  const message = trip.dug === 'truffle'
+    ? `${dugText} ${digResult?.outcome ? outcomeText(digResult.outcome, { type: 'specimen', species: digRule.species }, digResult.dropped) : ''}`
+    : trip.dug
+      ? dugText
+      : justCleared
+    ? `Nothing left unturned: every card in the ${bare(zone.name)} but its hazards.`
     : last && lastWasDeep
       ? last.card.type === 'coins'
         ? `Rare find! A forager's cache, tucked under a root: ${last.card.amount} coins.`
         : last.card.type === 'artifact'
-          ? outcomeText(last.outcome, last.card)
+          ? artifactText(g, last.card.artifact)
           : `Rare find! ${outcomeText(last.outcome, last.card, last.dropped)}`
       : last && (turnedHere || trip.status === 'busted')
         ? last.outcome === 'hazard' && limit - trip.hazards > 1
           ? `A hazard. ${limit - trip.hazards} more this trip and you bust.`
           : last.outcome === 'bust'
-            ? `Bust! You scramble home with only your first ${bustKeep(g)} finds.`
-            : outcomeText(last.outcome, last.card, last.dropped)
+            ? bustText(bustKeep(g), fall)
+            : last.outcome === 'wayDown' && fallNext !== null
+              ? `${outcomeText(last.outcome, last.card)} ${fallText(fallNext)}.`
+              : outcomeText(last.outcome, last.card, last.dropped)
         : !open
           ? 'The faded cards are what you walked past.'
           : layer
@@ -409,7 +406,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
       <header class="forage-head">
         <div>
           <div class="eyebrow">
-            {layer ? `Below the ${zone.name} · ${ordinal(trip.layer)} layer` : `Foraging${trip.depth > 1 ? ` · ${trip.depth} patches deep` : ''}`}
+            {layer ? `Below the ${bare(zone.name)} ·${ordinal(trip.layer)} layer` : `Foraging${trip.depth > 1 ? ` · ${trip.depth} patches deep` : ''}`}
           </div>
           <h2>{layer ? layer.name : zone.name}</h2>
         </div>
@@ -446,12 +443,15 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             const door = open && p.flipped && p.card.type === 'entrance' && !!next;
             // With a Spade, turned plain ground can be dug.
             const spade = open && p.flipped && p.card.type === 'ground' && digStatus(g, i).open;
+            const truffly = p.flipped && truffleGround(p.card);
+            // An artifact the family already has: it still scores, at less.
+            const again = p.card.type === 'artifact' && g.perks.clues.includes(p.card.artifact);
             const label = p.flipped
               ? door
                 ? `${cardLabel(p.card, p.outcome)}: descend into ${the(next!.name)}`
                 : spade
-                  ? `${cardLabel(p.card, p.outcome)}, ${near} hazard${near === 1 ? '' : 's'} beside it: dig here`
-                : `${cardLabel(p.card, p.outcome)}${p.card.type === 'hazard' ? '' : `, ${near} hazard${near === 1 ? '' : 's'} beside it`}`
+                  ? `${cardLabel(p.card, p.outcome)}${truffly ? ', truffle ground' : ''}, ${near} hazard${near === 1 ? '' : 's'} beside it: dig here`
+                : `${cardLabel(p.card, p.outcome)}${truffly ? ', truffle ground' : ''}${again ? ', already in the cabinet' : ''}${p.card.type === 'hazard' ? '' : `, ${near} hazard${near === 1 ? '' : 's'} beside it`}`
               : open
                 ? `Face-down card, row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}`
                 : `Passed by: ${p.deep && p.card.type !== 'artifact' ? 'a rare find, ' : ''}${cardLabel(p.card, null)}`;
@@ -475,9 +475,10 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
                   <span class="fc-front" aria-hidden="true">
                     {rare && (
                       <span class="rare-tag">
-                        <Icon name="spark" size={11} /> {p.card.type === 'artifact' ? 'Artifact' : 'Rare'}
+                        <Icon name="spark" size={11} /> {p.card.type === 'artifact' ? (again ? 'In cabinet' : 'Artifact') : 'Rare'}
                       </span>
                     )}
+                    {truffly && <span class="truffle-tag">truffle ground</span>}
                     <CardArt card={p.card} outcome={p.outcome} />
                     {hold?.index === i && <HazardFx kind={hold.kind} />}
                     <span class="fc-title">{cardLabel(p.card, p.outcome)}</span>
@@ -510,7 +511,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             aria-disabled={end && !next}
             aria-label={
               next
-                ? `Descend into ${the(next.name)}. ${hidden} unturned card${hidden === 1 ? '' : 's'} stay behind.`
+                ? `Descend into ${the(next.name)}. ${hidden} unturned card${hidden === 1 ? '' : 's'} stay behind.${fallNext !== null ? ` ${fallText(fallNext)}.` : ''}`
                 : (under || (way && end)) && !down.open
                   ? down.reason
                   : end
@@ -576,6 +577,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
               <button class="btn small descend" onClick={descend}>
                 Descend to {the(next.name)}
                 {hidden ? ` (${hidden} unturned left behind)` : ''}
+                {fallNext !== null && <small class="fall-cost">{fallText(fallNext)}</small>}
               </button>
             )}
             {!end && (
