@@ -85,7 +85,7 @@ describe('starting boards', () => {
   it('opens boards as the homestead levels up', () => {
     expect(boardsFor(emptyJournal())).toEqual(['streamside', 'meadowedge']);
     expect(boardsFor({ ...emptyJournal(), renown: 150 })).toContain('woodlot');
-    expect(boardsFor({ ...emptyJournal(), renown: 480 })).toHaveLength(content.boards.length);
+    expect(boardsFor({ ...emptyJournal(), renown: 420 })).toHaveLength(content.boards.length);
   });
 
   it('gives a daily year the same board for everyone that day', () => {

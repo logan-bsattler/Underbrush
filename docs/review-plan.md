@@ -1,7 +1,8 @@
 # Review follow-up: the plan
 
-Status: in progress. Written 2026-10-30 from three reviews: balance, speed and features. Section 0's decisions are
-settled (see Progress).
+Status: Phases 1–3 and 5 are done, and Phase 4 is done except item 5. Phase 3 was signed off 2026-10-30, with
+Golden above target as a flag for Ben. Next: Phase 4 item 5, then Phase 6. Written 2026-10-30 from three
+reviews: balance, speed and features. Section 0's decisions are settled (see Progress).
 
 Progress (2026-10-30):
 
@@ -16,12 +17,12 @@ Progress (2026-10-30):
   - The 4-year gap is the Compass: the Hollow needs it, it unlocks at L8, and gear resets each generation. A
     player who keeps the Compass as an heirloom could dig as soon as the marks are in.
   - The cache is 15% of that year's score and 0.4% of the saga's renown. No balance concern.
-- **Still open in Phase 2:** the bot's commission changes, which wait for 3f, since the bot can't see a
-  commission before taking it.
+- **Still open in Phase 2:** planning hybrids for the botanist. The bot's other commission changes were made
+  with 3f (below).
 - **Decisions (Ben, 2026-10-30):** D1–D4 as recommended. A repeat artifact scores half (rounded up), a skilled
   generation-2 Legend year targets 35–40 with Golden Chanterelle in at most 10% of years, the planner reaches
   level 10 around year 19, and the tonight preview and order progress are fine.
-- **Phase 3, in progress.** Baseline sims from before any tuning are in the session scratchpad at
+- **Phase 3: done, signed off 2026-10-30 (3h below).** Baseline sims from before any tuning are in the session scratchpad at
   `phase3/base/` (session 5cee1633). The `gen` sim now also has a planner row (plan, dive, careful), a top-tier
   column and an artifact points column, so D2 can be read off it directly.
   - **3a: code done, sim pending.** `artifactPoints()` in `engine.ts` halves a repeat artifact (rounded up), and
@@ -132,8 +133,62 @@ Progress (2026-10-30):
       square, so many beds never grew. The planner now plants shade-needing species beside a tree and spreads
       same-species beds apart. This affects every level. L1–L6 tier rates are now 48, 85, 76, 63, 84 and 75%
       (3c had 72, 68, 65, 70 and 69% for L2–L6).
-  - **Next:** 3h (sign-off), with the commission pile order and the 1/yr target as Ben's calls first. The Market
-    browser check for 3f step 1 is still open.
+  - **3f: accepted as is (Ben, 2026-10-30).** 50–75% of commissions taken get filled, and a planner taking
+    0.2–0.4 a year from L7 is fine. The one-a-year target is dropped, and the pile order stays as it is.
+  - **3h: signed off, with one flag: Golden is above target again.** Final sims, all on the committed code,
+    in this session's scratchpad (session d62dd55a) as `sim-*.txt`. `progression.test.ts` now pins the tier
+    table below, and the L10 renown in both tier tests is 420.
+    - **Flag: the planner reaches Golden in 18–22% of generation 2–4 years**, against the accepted 10–15% (3b
+      had 13/15/11%). Content is unchanged since 3b. The divers' rows match 3b exactly. Only the planner moved,
+      because of the 3f bot work (Lion's Mane beside a tree, planning for commissions). The bot is now closer
+      to a skilled player, so this is the truer number. The lever if Ben wants 10–15% back is `tierStep`
+      (8 now) or Golden's `min`. Not changed here.
+
+      | Generation (300 Legend years) | Planner median / p90 | Tier reached | Golden | 3b median / Golden |
+      | --- | --- | --- | --- | --- |
+      | 1 | 27 / 44 | 45% | 0% | 26 / 0% |
+      | 2 | 56 / 73 | 97% | 19% | 52 / 13% |
+      | 3 | 64 / 82 | 94% | 22% | 59 / 15% |
+      | 4 | 68 / 89 | 92% | 18% | 64 / 11% |
+      | 4, full cabinet | 63 / 85 | 80% | 13% | 59 / 6% |
+
+      Divers stay at median 31–44 and reach a tier in 6–31% of years. Generation-4 artifact points with a full
+      cabinet are 7.4–10.1 (3a's target of about 8 holds).
+    - **Tiers by level** (generation 1; add 8 per generation): bronze is 15 at L1–L4, then 16, 21, 22, 24, 25
+      and 29 at L5–L10. At L10, generation 2 has 37/47/57/67 for bronze, silver, gold and Golden. The planner's
+      tier rate at L1–L10 is 48, 85, 76, 63, 84, 75, 74, 73, 70 and 73% (`sim-plan.txt`, 20 × 30 years).
+      **Against 3c:** L4 dips to 63% (3c had 70%) and L1 is 48%. Both come from the bot fix in 3f, not from
+      tiers. Median scores by level are 14, 19, 19, 17, 21, 28, 25, 31, 30 and 39, so the L3 → L4 and L6 → L7
+      dips from play remain.
+    - **Pace:** the planner starts L10 around year 19.0 on average (360 years below L10 over 20 campaigns), a
+      bit sooner than 3d's 19.6. D3 met. The baseline bot reaches level 4.7 by year 10 and scores 12–14 a
+      year throughout (`sim-campaign.txt`), as before.
+    - **Spade, story years** (`sim-truffle.txt`; mean score against no Spade at the same level):
+
+      | Level | None | Way home | Hunting |
+      | --- | --- | --- | --- |
+      | L6 | 29.8 | 30.2 (+0.4) | 30.7 (+0.9) |
+      | L7 | 33.1 | 31.9 (−1.2) | 33.4 (+0.3) |
+      | L8 | 28.5 | 32.3 (+3.8) | 30.9 (+2.4) |
+      | L9 | 32.8 | 32.5 (−0.3) | 34.6 (+1.8) |
+      | L10 | 38.5 | 37.5 (−1.0) | 40.8 (+2.3) |
+
+      **Against 3e:** L7 on the way home went from +1.7 to −1.2. With 35–50 years in each cell, the swing
+      is within noise (L8 shows +3.8 the other way). Read it as break-even on the way home, and a gain of 1–2
+      for hunting from L8.
+    - **Spade, daily years** (planner, 500 seeds, `sim-daily-spade.txt`): none 13.46, way home 12.65 (−0.81),
+      hunting 12.95 (−0.51). 0.15 truffles a year on the way home. Same as 3e: a daily player should skip it.
+    - **Commissions:** unchanged from 3f. Taken and delivered a year: 0.2/0.1 at L7, 0.4/0.3 at L8, 0.3/0.2
+      at L9 and 0.4/0.3 at L10.
+    - **Founder's Cache** (`sim-cache.txt`, 30 sagas of 60 years): every mark is in by saga year 22 (p10 20,
+      p90 25), and the cellar is found in year 26 (p10 23, p90 28). It's always found in generation 2 at L8,
+      and it's 15% of that year's score and 0.4% of the saga's renown. That's 3 years sooner than in Phase 2
+      (25 and 29), from the same bot fix. Not a concern.
+    - **Standard-kit years** (`sim-full.txt`, baseline bot): mean 11.0, median 11, and a tier in 21% of years.
+      Daily-year tiers were left alone (3g).
+  - **Next:** Phase 4 item 5 (show this year's tiers on the farm), which was waiting for these numbers. Then
+    Phase 6. Ben's call on the Golden flag above comes first if it changes the tiers. The Market browser
+    check for 3f step 1 is still open.
 
 ## Bottom line
 

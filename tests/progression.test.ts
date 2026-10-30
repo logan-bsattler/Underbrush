@@ -16,6 +16,7 @@ import {
   saleValue,
   score,
   standardPerks,
+  tiersFor,
   zoneStatus,
   type Card,
   type GameState,
@@ -57,7 +58,7 @@ describe('homestead levels', () => {
     expect(elder.heirlooms).toHaveLength(3);
     expect(elder.shop).toHaveLength(content.gear.length - 1);
     expect(elder.autoHarvest).toBe(false);
-    const legend = perksFor(journalAt(480, owned), []);
+    const legend = perksFor(journalAt(420, owned), []);
     expect(legend.shop).toHaveLength(content.gear.length);
     expect(legend.autoHarvest).toBe(true);
   });
@@ -245,6 +246,14 @@ describe('the end game', () => {
     expect(score(s).tier).toBeNull();
     s.orderPoints = bronze;
     expect(score(s).tier?.id).toBe('bronze');
+  });
+
+  it('holds the festival tiers signed off in Phase 3: flat to L4, then rising, and 8 more a generation', () => {
+    const tiers = (level: number, generation = 1) =>
+      tiersFor(newGame({ seed: 'tiers', perks: perksFor(journalAt(content.progression.levels[level - 1].renown, { generation }), []) })).map((t) => t.min);
+    expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((l) => tiers(l)[0])).toEqual([15, 15, 15, 15, 16, 21, 22, 24, 25, 29]);
+    expect([2, 3, 4].map((g) => tiers(10, g)[0])).toEqual([37, 45, 53]);
+    expect(tiers(10, 2)).toEqual([37, 47, 57, 67]);
   });
 
   it('applies Legend challenges, only for a Legend, and pays extra renown', () => {
