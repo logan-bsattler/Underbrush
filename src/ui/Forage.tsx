@@ -5,6 +5,7 @@ import {
   bustKeep,
   content,
   descendStatus,
+  digStatus,
   gearUnlockLevel,
   glints,
   hasSetEffect,
@@ -232,6 +233,29 @@ function Descent({ from, layer, depth, onInside, onDone }: { from: DOMRect; laye
   );
 }
 
+/** The Founder's Cellar, found: the place, then the family's story, ending. */
+function Cellar({ onHome }: { onHome: () => void }) {
+  const { cache } = content;
+  const wrap = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => wrap.current?.focus(), []);
+  return (
+    <div class="cellar" ref={wrap} tabIndex={-1} role="dialog" aria-label={cache.name}>
+      <div class="cellar-page">
+        <div class="eyebrow">Found at last</div>
+        <h2>{cache.name}</h2>
+        <p>{cache.place}</p>
+        <p class="lore-line">{cache.ending}</p>
+        <p class="small cellar-points">
+          <Icon name="spark" size={14} /> {cache.points} festival points this year, and a place in the field journal for good.
+        </p>
+        <button class="btn primary big wide" onClick={onHome}>
+          Back to the homestead
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () => void }) {
   const trip = g.forage!;
   const zone = content.zones.find((z) => z.id === trip.zone)!;
@@ -255,7 +279,20 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   const [hold, setHold] = useState<{ index: number; kind: string; bust: boolean } | null>(null);
   const holding = useRef<ReturnType<typeof setTimeout>>();
   useEffect(() => () => clearTimeout(holding.current), []);
+  // A dig for the Founder's Cellar asks first, since it ends the trip; once found, the cellar opens full screen.
+  const [digAsk, setDigAsk] = useState<number | null>(null);
+  const [cellar, setCellar] = useState(false);
   const busy = !!descent || !!hold;
+  const home = () => {
+    if (busy) return;
+    store.act({ type: 'closeTrip' });
+    onClose();
+  };
+  const dig = (index: number) => {
+    setDigAsk(null);
+    const r = store.act({ type: 'dig', index });
+    if (r?.kind === 'dig' && r.found) buzz([40, 60, 40]);
+  };
 
   const flip = (index: number) => {
     if (busy) return;
@@ -310,7 +347,11 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
         ? ` The way down lies in the ${hasSetEffect(g.perks.sets, 'shortcut') ? 'first deep' : 'last'} patch.`
         : '';
   const relics = trip.relics.filter((r) => !trip.lost.includes(r.uid)).map((r) => cardTitle({ type: 'artifact', artifact: r.artifact }));
-  const message = justCleared
+  const message = trip.dug === 'found'
+    ? `The spade rings on oak, a hand's depth under the ${content.cache.card}.`
+    : trip.dug === 'empty'
+      ? content.cache.wrong
+      : justCleared
     ? `Nothing left unturned: every card in the ${zone.name} but its hazards.`
     : last && lastWasDeep
       ? last.card.type === 'coins'
@@ -377,9 +418,13 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             const near = hazardsNear(trip, i);
             // The way down, once turned, is a door: tap it to go down.
             const door = open && p.flipped && p.card.type === 'entrance' && !!next;
+            // Turned plain ground can be dug, once the family has a clue to the Founder's Cellar.
+            const spade = open && p.flipped && p.card.type === 'ground' && digStatus(g, i).open;
             const label = p.flipped
               ? door
                 ? `${cardLabel(p.card, p.outcome)}: descend into ${the(next!.name)}`
+                : spade
+                  ? `${cardLabel(p.card, p.outcome)}, ${near} hazard${near === 1 ? '' : 's'} beside it: dig here`
                 : `${cardLabel(p.card, p.outcome)}${p.card.type === 'hazard' ? '' : `, ${near} hazard${near === 1 ? '' : 's'} beside it`}`
               : open
                 ? `Face-down card, row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}`
@@ -391,10 +436,10 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             return (
               <button
                 key={`${trip.depth}-${trip.layer}-${i}`}
-                class={`fc ${p.card.type} ${p.outcome ?? ''} ${shown ? 'up' : ''} ${!p.flipped && !open ? 'passed' : ''} ${rare ? 'deep' : ''} ${rare && p.flipped ? 'found' : ''} ${glint ? 'glint' : ''} ${door ? 'door' : ''} ${door && descent ? 'lifted' : ''} ${hold?.index === i ? `hz-${hold.kind}` : ''}`}
+                class={`fc ${p.card.type} ${p.outcome ?? ''} ${shown ? 'up' : ''} ${!p.flipped && !open ? 'passed' : ''} ${rare ? 'deep' : ''} ${rare && p.flipped ? 'found' : ''} ${glint ? 'glint' : ''} ${door ? 'door' : ''} ${door && descent ? 'lifted' : ''} ${spade ? 'diggable' : ''} ${hold?.index === i ? `hz-${hold.kind}` : ''}`}
                 style={{ '--i': i } as any}
-                disabled={!open || (p.flipped && !door)}
-                onClick={() => (door ? descend() : flip(i))}
+                disabled={!open || (p.flipped && !door && !spade)}
+                onClick={() => (door ? descend() : spade ? !busy && setDigAsk(i) : flip(i))}
                 aria-label={label}
               >
                 <span class="fc-inner">
@@ -411,6 +456,11 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
                     {hold?.index === i && <HazardFx kind={hold.kind} />}
                     <span class="fc-title">{cardLabel(p.card, p.outcome)}</span>
                     {door && <span class="door-tag">Tap to go down</span>}
+                    {spade && (
+                      <span class="dig-tag" title="Dig here">
+                        <Icon name="spade" size={12} />
+                      </span>
+                    )}
                     {p.flipped && p.card.type !== 'hazard' && (
                       <span class={`near n${near}`} title={`${near} hazard${near === 1 ? '' : 's'} beside this card`}>
                         <Icon name="hazard" size={12} />
@@ -511,8 +561,8 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
         </footer>
       ) : (
         <footer class="forage-foot done">
-          <div class={`trip-end ${trip.status}`}>
-            <h3>{trip.status === 'busted' ? 'Busted!' : 'Heading home'}</h3>
+          <div class={`trip-end ${trip.status} ${trip.dug ?? ''}`}>
+            <h3>{trip.status === 'busted' ? 'Busted!' : trip.dug === 'found' ? content.cache.name : trip.dug === 'empty' ? 'Nothing here' : 'Heading home'}</h3>
             <p>
               {kept.length ? `${kept.length} specimen${kept.length === 1 ? '' : 's'}` : 'No specimens'}
               {coins ? `, ${coins} coins` : ''}
@@ -520,18 +570,31 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
               {relics.length ? `, and the ${relics.join(' and the ')}` : ''}.{trip.lost.length ? ` Lost in the scramble: ${trip.lost.length}.` : ''}
             </p>
           </div>
-          <button
-            class="btn primary big wide"
-            onClick={() => {
-              if (busy) return;
-              store.act({ type: 'closeTrip' });
-              onClose();
-            }}
-          >
-            Back to the homestead
-          </button>
+          {trip.dug === 'found' ? (
+            <button class="btn primary big wide" onClick={() => setCellar(true)}>
+              Into {content.cache.name.replace(/^The /, 'the ')}
+            </button>
+          ) : (
+            <button class="btn primary big wide" onClick={home}>
+              Back to the homestead
+            </button>
+          )}
         </footer>
       )}
+      {digAsk !== null && trip.patch[digAsk] && (
+        <SheetFrame title={`Dig under the ${cardTitle(trip.patch[digAsk].card)}?`} onClose={() => setDigAsk(null)}>
+          <p>If nothing's there, the day is spent and you head home with what you've found.</p>
+          <div class="foot-actions">
+            <button class="btn primary big" onClick={() => dig(digAsk)}>
+              <Icon name="spade" size={18} /> Dig here
+            </button>
+            <button class="btn ghost" onClick={() => setDigAsk(null)}>
+              Not here
+            </button>
+          </div>
+        </SheetFrame>
+      )}
+      {cellar && <Cellar onHome={home} />}
       {hold && <div class={`hazard-hold ${hold.bust ? 'bust' : ''}`} aria-hidden="true" />}
       {descent && <Descent {...descent} onInside={inside} onDone={() => setDescent(null)} />}
       {store.error && (

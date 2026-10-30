@@ -192,7 +192,7 @@ describe('recording a year', () => {
       hybrids: [hybrid],
       artifacts: [content.artifacts[0].id],
     });
-    expect(y.breakdown).toEqual({ orders: 9, hybrids: sc.hybrids, planted: sc.planted, coins: sc.coins, feast: 3, artifacts: sc.artifacts, family: 0 });
+    expect(y.breakdown).toEqual({ orders: 9, hybrids: sc.hybrids, planted: sc.planted, coins: sc.coins, feast: 3, artifacts: sc.artifacts, family: 0, cache: 0 });
     expect(Object.values(y.breakdown!).reduce((a, b) => a + b, 0)).toBe(y.score);
     // The record holds its own copies, so the next year can't change it.
     s.orders.filled.push('later');

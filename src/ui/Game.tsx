@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import {
+  orderById,
   actionsPerMonth,
   basketCapacity,
   boardDef,
@@ -128,6 +129,28 @@ function Hud({ g, onWeather, onPantry, onMenu }: { g: GameState; onWeather: () =
   );
 }
 
+/** The Drip Line, laid along every row of the farm with an emitter at each square that isn't a tree. */
+function DripLine({ g }: { g: GameState }) {
+  const n = g.size;
+  const cell = 100 / n;
+  return (
+    <svg class="dripline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      {Array.from({ length: n }, (_, r) => {
+        const y = (r + 0.86) * cell;
+        return <path d={`M0 ${y} Q25 ${y - 0.8} 50 ${y} T100 ${y}`} class="hose" />;
+      })}
+      {g.grid.map((sq, i) =>
+        sq.tree ? null : (
+          <g>
+            <rect class="emitter" x={(i % n + 0.5) * cell - 1.4} y={(Math.floor(i / n) + 0.86) * cell - 1.2} width="2.8" height="2.4" rx="0.7" />
+            <circle class="drop" cx={(i % n + 0.5) * cell} cy={(Math.floor(i / n) + 0.86) * cell + 2} r="1" style={{ animationDelay: `${(i * 0.37) % 2.4}s` }} />
+          </g>
+        ),
+      )}
+    </svg>
+  );
+}
+
 function Orders({ g, onOpen }: { g: GameState; onOpen: () => void }) {
   return (
     <div class="orders" role="list" aria-label="Festival orders">
@@ -142,6 +165,17 @@ function Orders({ g, onOpen }: { g: GameState; onOpen: () => void }) {
           </button>
         );
       })}
+      {g.commission.open && (() => {
+        const o = orderById(g.commission.open)!;
+        const ready = !!orderPayment(g.storage, o);
+        return (
+          <button role="listitem" class={`order commission ${ready ? 'ready' : ''}`} onClick={onOpen}>
+            <span class="order-label">{o.label}</span>
+            <span class="order-pts">{o.points}</span>
+            {ready && <span class="order-ready">Ready</span>}
+          </button>
+        );
+      })()}
       {g.orders.visible.length === 0 && <div class="muted small">Every order is filled. What a festival this will be.</div>}
     </div>
   );
@@ -186,6 +220,7 @@ export function Farm({
         </div>
       )}
       <div class="grid">
+        {g.gear.includes('dripline') && <DripLine g={g} />}
         {g.grid.map((sq, i) => {
           const isTarget = targets.has(i);
           const months = sq.species && sq.stage ? stageLength(sq.stage, content.species[sq.species].growth) : 0;

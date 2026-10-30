@@ -4,6 +4,7 @@
       "level": 1,
       "title": "Newcomer",
       "renown": 0,
+      "tierLift": 0,
       "blurb": "A borrowed basket, two zones and the basic kit.",
       "unlocks": [
         {
@@ -36,6 +37,7 @@
       "level": 2,
       "title": "Gatherer",
       "renown": 15,
+      "tierLift": 0,
       "blurb": "The village knows your name. Carry a favorite tool into the new year.",
       "unlocks": [
         {
@@ -51,6 +53,7 @@
       "level": 3,
       "title": "Forager",
       "renown": 40,
+      "tierLift": 2,
       "blurb": "The chandler starts stocking lanterns and blight spray for you.",
       "unlocks": [
         {
@@ -67,6 +70,7 @@
       "level": 4,
       "title": "Grower",
       "renown": 70,
+      "tierLift": 2,
       "blurb": "You clear the brambles behind the shed and run a drip line to it, and the first year's profits come back to you.",
       "unlocks": [
         {
@@ -87,6 +91,7 @@
       "level": 5,
       "title": "Mycophile",
       "renown": 105,
+      "tierLift": 3,
       "blurb": "An old forester sketches you a map of last summer's fire.",
       "unlocks": [
         {
@@ -102,6 +107,7 @@
       "level": 6,
       "title": "Steward",
       "renown": 150,
+      "tierLift": 6,
       "blurb": "A neighbor's kid starts helping out on the farm, and the woodlot up the lane is yours to farm if you like.",
       "unlocks": [
         {
@@ -118,8 +124,12 @@
       "level": 7,
       "title": "Elder of the Wood",
       "renown": 210,
-      "blurb": "People bring you mushrooms to identify now, and a fisherman sells you his old waders.",
+      "tierLift": 7,
+      "blurb": "People bring you mushrooms to identify now, and commissions for the bigger tables in the valley. A fisherman sells you his old waders.",
       "unlocks": [
+        {
+          "type": "commissions"
+        },
         {
           "type": "heirloomSlot"
         },
@@ -133,6 +143,7 @@
       "level": 8,
       "title": "Pathfinder",
       "renown": 280,
+      "tierLift": 9,
       "blurb": "A charcoal burner shows you the path into the Hollow.",
       "unlocks": [
         {
@@ -145,6 +156,7 @@
       "level": 9,
       "title": "Lorekeeper",
       "renown": 370,
+      "tierLift": 10,
       "blurb": "Your apprentice picks every ripe bed at first light.",
       "unlocks": [
         {
@@ -156,6 +168,7 @@
       "level": 10,
       "title": "Legend of the Valley",
       "renown": 480,
+      "tierLift": 14,
       "blurb": "The miller's family offers you the old orchard, and the village sings about your festivals.",
       "unlocks": [
         {

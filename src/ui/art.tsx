@@ -494,6 +494,13 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
           <path d="M12 9v5M12 17v.5" {...s} stroke="#7A3D10" strokeWidth="2.2" />
         </svg>
       );
+    case 'spade':
+      return (
+        <svg {...p}>
+          <path d="M12 2 V11 M9 2.5 H15" {...s} stroke="#5E4632" strokeWidth="2.4" />
+          <path d="M7 11 H17 V15 Q17 21 12 22 Q7 21 7 15 Z" fill="#C9CFC4" stroke="#4A5446" strokeWidth="1.4" strokeLinejoin="round" />
+        </svg>
+      );
     case 'knife':
       return (
         <svg {...p}>

@@ -60,10 +60,12 @@ export interface Journal {
   artifacts: string[];
   /** Underground layers the family has reached, as "zone:depth". */
   layers: string[];
+  /** The family found the Founder's Cellar: the saga's one puzzle, solved for good. */
+  cacheFound: boolean;
 }
 
 export function emptyJournal(): Journal {
-  return { version: 1, discovered: [], lookalikes: [], hybrids: [], years: [], best: 0, renown: 0, idCounts: {}, gearOwned: [], achievements: [], zonesCleared: [], generation: 1, lineage: [], artifacts: [], layers: [] };
+  return { version: 1, discovered: [], lookalikes: [], hybrids: [], years: [], best: 0, renown: 0, idCounts: {}, gearOwned: [], achievements: [], zonesCleared: [], generation: 1, lineage: [], artifacts: [], layers: [], cacheFound: false };
 }
 
 /** Fills in fields added after a journal was first saved. */
@@ -102,7 +104,9 @@ export function mergeDiscoveries(j: Journal, s: GameState): { journal: Journal; 
     zonesCleared: Array.from(new Set([...j.zonesCleared, ...s.zonesCleared])),
     artifacts: add(j.artifacts, s.artifacts ?? [], 'artifact:'),
     layers: add(j.layers, s.layersReached ?? [], 'layer:'),
+    cacheFound: j.cacheFound || !!s.cacheFound,
   };
+  if (journal.cacheFound && !j.cacheFound) fresh.push('cache:cellar');
   const before = completedSets(j.artifacts);
   for (const id of completedSets(journal.artifacts)) if (!before.includes(id)) fresh.push(`set:${id}`);
   return { journal, fresh };
@@ -125,8 +129,11 @@ export function recordYear(j: Journal, s: GameState, c: Content = defaultContent
     idCounts[id] = (idCounts[id] ?? 0) + n;
     if (masteryLevel(idCounts[id], c) > before) masteryUps.push(id);
   }
+  // An Expert knows a species on sight, and so knows its lookalike too, though it never comes home to fool them.
+  const known = Object.keys(idCounts).filter((id) => masteryLevel(idCounts[id], c) >= 2 && c.species[id]?.lookalike);
   return {
     ...journal,
+    lookalikes: Array.from(new Set([...journal.lookalikes, ...known])),
     renown,
     idCounts,
     gearOwned: Array.from(new Set([...journal.gearOwned, ...s.gear])),

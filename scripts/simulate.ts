@@ -3,9 +3,10 @@
  * the same things the prototype kit asks playtesters to log.
  *   npm run sim -- 300           single standard-kit years
  *   npm run sim -- 100 campaign  ten-year story campaigns with progression
+ *   npm run sim -- 20 plan 30    thirty-year story campaigns with the planner bot, by homestead level
  *   npm run sim -- 300 gen       Legend years in generations 1 to 4, diving underground carelessly and carefully
  */
-import { content, emptyJournal, heirloomChoices, heirloomSlots, levelFor, newGame, perksFor, score, tiersFor, type GameState, type Journal, type NightReport } from '../src/core';
+import { content, emptyJournal, recordYear, heirloomChoices, heirloomSlots, levelFor, newGame, perksFor, score, tiersFor, type GameState, type Journal, type NightReport } from '../src/core';
 import { HEIRLOOM_PREFERENCE, playCampaign, playYear } from './bot';
 
 const n = Number(process.argv[2] ?? 300);
@@ -52,6 +53,37 @@ if (process.argv[3] === 'gen') {
         `${label.padEnd(15)}  ${(careful ? 'careful' : 'dive').padEnd(7)}  ${String(bronze).padStart(6)}  ${String(pct(scores, 0.5)).padStart(6)}  ${String(pct(scores, 0.9)).padStart(3)}  ${`${((100 * tiered) / n).toFixed(0)}%`.padStart(12)}  ${(artifacts / n).toFixed(1).padStart(9)}  ${(descents / n).toFixed(1).padStart(8)}  ${`${((100 * busts) / Math.max(trips, 1)).toFixed(0)}%`.padStart(9)}  ${(falls / n).toFixed(2).padStart(5)}  ${(lost / n).toFixed(1).padStart(12)}  ${(away / n).toFixed(2).padStart(11)}`,
       );
     }
+  }
+} else if (process.argv[3] === 'plan') {
+  // Long story campaigns with the planner, which chases orders, read by the homestead level at the start of each year.
+  const YEARS = Number(process.argv[4] ?? 30);
+  const rows: Record<number, { score: number[]; tier: number; orders: number; left: number[]; earned: number[]; hires: number; taken: number; done: number }> = {};
+  for (let i = 0; i < n; i++) {
+    let j = emptyJournal();
+    for (let y = 0; y < YEARS; y++) {
+      const level = levelFor(j.renown).level;
+      const heirlooms = HEIRLOOM_PREFERENCE.filter((g) => heirloomChoices(j).includes(g)).slice(0, heirloomSlots(level));
+      const s = playYear(newGame({ seed: `plan-${i}-y${y}`, perks: perksFor(j, heirlooms) }), { plan: true });
+      j = recordYear(j, s);
+      const sc = score(s);
+      const r = (rows[level] ??= { score: [], tier: 0, orders: 0, left: [], earned: [], hires: 0, taken: 0, done: 0 });
+      r.score.push(sc.total);
+      if (sc.tier) r.tier += 1;
+      r.orders += s.orders.filled.length;
+      r.left.push(s.coins);
+      r.earned.push(s.stats.coinsEarned);
+      r.hires += s.hires;
+      r.taken += s.commission.taken;
+      r.done += s.orders.filled.filter((id) => id.startsWith('c-')).length;
+    }
+  }
+  console.log(`${n} ${YEARS}-year campaigns with the planner, by level at the start of the year`);
+  console.log('level  years  median  p90  tiers now  orders/yr  hires/yr  coins left (median, p90)  coins earned (median)  commissions taken, delivered /yr');
+  for (const [level, r] of Object.entries(rows)) {
+    const k = r.score.length;
+    console.log(
+      `${level.padStart(5)}  ${String(k).padStart(5)}  ${String(pct(r.score, 0.5)).padStart(6)}  ${String(pct(r.score, 0.9)).padStart(3)}  ${`${((100 * r.tier) / k).toFixed(0)}%`.padStart(9)}  ${(r.orders / k).toFixed(1).padStart(9)}  ${(r.hires / k).toFixed(1).padStart(8)}  ${`${pct(r.left, 0.5)}, ${pct(r.left, 0.9)}`.padStart(24)}  ${String(pct(r.earned, 0.5)).padStart(21)}  ${(r.taken / k).toFixed(1)}, ${(r.done / k).toFixed(1)}`,
+    );
   }
 } else if (process.argv[3] === 'campaign') {
   const YEARS = 10;

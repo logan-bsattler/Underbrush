@@ -408,6 +408,26 @@ the generation: generation 4 has three layers to search through. The tiers were 
 were. On the standard kit the baseline bot fell from 15.0 to 11.9 a year (1,000 years), with
 Bronze or better from 49% to 28%, since 13 of every zone's 32 cards now give nothing.
 
+## The Founder's Cache
+
+One puzzle for the whole saga (spec: `docs/founders-cache-spec.md`). Every artifact carries an
+inscription (`artifacts.json`, `inscription`) pointing at a tree, a place or a season; together
+they say: dig under the Yew in the Hollow, in winter (`artifacts.json`, `cache`). The six
+first-layer inscriptions are enough for a sharp player; the third-layer ones are nearly direct.
+
+- **Digging.** In a story year, once the family has any artifact (`perks.clues`, or one brought
+  home this year), a turned surface ground card can be dug (`dig`, `digStatus`). The trip screen
+  marks those cards with a spade and asks first. Right or wrong, the trip ends as if you headed
+  home: finds and pocketed artifacts kept, no bust, no action spent. Daily years, layers below,
+  and years after the cellar is found can't dig.
+- **Found.** `s.cacheFound`: 10 festival points that year (`score().cache`), the journal's
+  `cacheFound` for good (`perks.cacheFound` stops further digging), and a full-screen scene with
+  the place and the family's story ending.
+- **The cabinet** shows the premise and each found artifact's inscription under "The founder's
+  riddle", and the ending to re-read once solved.
+
+The bots never dig, so the sim numbers are unchanged.
+
 ## Achievements
 
 Feats the field journal remembers across every year, listed in the Almanac and announced with a
@@ -448,3 +468,29 @@ nothing else. It never cooks, goes deep or plans for orders, so those are for pe
 Monetization and store builds (a natural demo cut is year one, levels 1–2), async co-op, expansion biomes, Burn Bed,
 endless homestead mode. The spec's engine ("Court's stack") isn't available here; the rules
 core is plain TypeScript with no DOM, so it can be ported or embedded.
+
+## Late-game coins and tiers
+
+The baseline bot never plans, so tiers tuned against it were too easy for anyone who does. `playYear(..., { plan: true })`
+chases orders: it forages the zone most likely to deal what the board wants, holds order mushrooms back from sale, buys
+spawn and substrate for a cultivated order, delivers every order it can afford on a visit, swaps orders it can no longer
+fill, hires a hand with coins past the cap, takes a commission when coins sit idle, and cooks Truffle Shavings.
+`npm run sim -- 20 plan 30` plays thirty-year campaigns with it and reads them by level (2026-10-29, before the lift):
+
+| Level | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Median score | 15 | 17 | 19 | 16 | 19 | 27 | 25 | 29 | 29 | 37 |
+| Tier reached | 55% | 72% | 68% | 65% | 75% | 90% | 90% | 93% | 89% | 95% |
+| Coins earned | 33 | 35 | 32 | 42 | 56 | 79 | 80 | 85 | 95 | 106 |
+
+- **Tiers rise with level** (`tierLift` on each level in `progression.json`, added to the generation lift in `tiersFor`):
+  0, 0, 2, 2, 3, 6, 7, 9, 10, 14. That is about two thirds of the planner's gain over level 1, so a level still feels like
+  a lift while Legend years stop clearing every tier. Daily years stay level 1.
+- **Commissions** (`commissions.json`, stocked from Elder of the Wood): at the market, pay coins up front for one bigger
+  order at a time (12 to 14 points), dealt from its own pile. The first costs 10 coins, each after that in the year double
+  (`commissionCost`, `commissionGrowth`), and an undelivered commission is simply lost at the festival. It turns a hoard
+  into points only through more mushroom work. The planner holds about 30 coins mid-year and so almost never takes one;
+  the sink is for the human years that earned 400+ coins, and the playtest log is the signal to watch.
+- **Experts know the lookalike**: a species at Expert comes home identified and can't fool you, so the field journal now
+  counts its lookalike as known.
+- **The Drip Line shows on the farm**: a hose along each row with a drip at every bed square.

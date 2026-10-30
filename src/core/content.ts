@@ -4,6 +4,7 @@ import zonesJson from '../data/zones.json';
 import gearJson from '../data/gear.json';
 import weatherJson from '../data/weather.json';
 import ordersJson from '../data/orders.json';
+import commissionsJson from '../data/commissions.json';
 import rulesJson from '../data/rules.json';
 import progressionJson from '../data/progression.json';
 import boardsJson from '../data/boards.json';
@@ -16,6 +17,7 @@ import type {
   ArtifactDef,
   ArtifactSetDef,
   BoardDef,
+  CacheDef,
   Content,
   GearDef,
   LayerDef,
@@ -42,12 +44,14 @@ export function loadContent(): Content {
     gear: gearJson as GearDef[],
     weather: weatherJson as WeatherDef[],
     orders: ordersJson as OrderDef[],
+    commissions: commissionsJson as OrderDef[],
     boards: boardsJson as BoardDef[],
     recipes: recipesJson as unknown as RecipeDef[],
     achievements: achievementsJson as AchievementDef[],
     underground: undergroundJson as Record<string, LayerDef[]>,
     artifacts: artifactsJson.artifacts as ArtifactDef[],
     artifactSets: artifactsJson.sets as ArtifactSetDef[],
+    cache: artifactsJson.cache as CacheDef,
   };
 }
 

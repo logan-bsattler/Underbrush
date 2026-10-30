@@ -36,6 +36,8 @@
   "plantedPoints": 1,
   "coinsPerPoint": 5,
   "maxCoinPoints": 10,
+  "commissionCost": 10,
+  "commissionGrowth": 2,
   "tiers": [
     {
       "id": "bronze",

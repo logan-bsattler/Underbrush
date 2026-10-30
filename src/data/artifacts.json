@@ -1,23 +1,23 @@
 {
   "artifacts": [
-    { "id": "droverspenny", "name": "Drover's Penny", "set": "purse", "points": 2, "blurb": "A copper penny worn smooth on one side by a thumb." },
-    { "id": "sixpence", "name": "Silver Sixpence", "set": "purse", "points": 2, "blurb": "Bent once for luck, and straightened again." },
-    { "id": "guinea", "name": "Worn Guinea", "set": "purse", "points": 2, "blurb": "Gold, and older than anyone's grandmother." },
-    { "id": "lanternframe", "name": "Lantern Frame", "set": "lantern", "points": 2, "blurb": "Blackened iron, still square, still sound." },
-    { "id": "lanternglass", "name": "Lantern Glass", "set": "lantern", "points": 2, "blurb": "A pane of wavy glass, wrapped in oilcloth and tucked out of the water." },
-    { "id": "lanternwick", "name": "Lantern Wick", "set": "lantern", "points": 2, "blurb": "A coil of wick in a tin that kept it dry for a hundred years." },
-    { "id": "blueribbon", "name": "Faded Blue Ribbon", "set": "ribbons", "points": 3, "blurb": "First Prize, Harvest Festival. The year is too faded to read." },
-    { "id": "rosette", "name": "Prize Rosette", "set": "ribbons", "points": 3, "blurb": "Red and gold silk folds: Best Basket in the Valley." },
-    { "id": "medal", "name": "Judge's Medal", "set": "ribbons", "points": 3, "blurb": "A brass medal stamped with a chanterelle, given only once a generation." },
-    { "id": "compassrose", "name": "Brass Compass Rose", "set": "maps", "points": 3, "blurb": "The needle still swings north, then thinks better of it and points down." },
-    { "id": "maptube", "name": "Sealed Map Tube", "set": "maps", "points": 3, "blurb": "Waxed shut. Inside, a chart of tunnels no one alive has walked." },
-    { "id": "surveyorschain", "name": "Surveyor's Chain", "set": "maps", "points": 3, "blurb": "A hundred iron links, each exactly as long as the last." },
-    { "id": "stonecap", "name": "Stone Cap", "set": "stones", "points": 4, "blurb": "The cap of a mushroom carved in pale stone, broken clean at the stem." },
-    { "id": "stonestem", "name": "Stone Stem", "set": "stones", "points": 4, "blurb": "A stone stem, broken at both ends, smooth from handling." },
-    { "id": "stonering", "name": "Stone Ring", "set": "stones", "points": 4, "blurb": "A carved ring that once sat under a stone cap." },
-    { "id": "doorkey", "name": "Iron Door Key", "set": "homestead", "points": 4, "blurb": "Heavy as a trowel, with the family mark on the bow." },
-    { "id": "baskethandle", "name": "Willow Basket Handle", "set": "homestead", "points": 4, "blurb": "Plaited willow, dark with age and still supple." },
-    { "id": "hearthtile", "name": "Hearth Tile", "set": "homestead", "points": 4, "blurb": "A fired tile painted with a ring of little mushrooms." }
+    { "id": "droverspenny", "name": "Drover's Penny", "set": "purse", "points": 2, "blurb": "A copper penny worn smooth on one side by a thumb.", "inscription": "Scratched on the worn side: a little tree, green all year." },
+    { "id": "sixpence", "name": "Silver Sixpence", "set": "purse", "points": 2, "blurb": "Bent once for luck, and straightened again.", "inscription": "Pricked into the silver: a bowl, a dip in the land." },
+    { "id": "guinea", "name": "Worn Guinea", "set": "purse", "points": 2, "blurb": "Gold, and older than anyone's grandmother.", "inscription": "Stamped over the old king's head: a tiny six-pointed star." },
+    { "id": "lanternframe", "name": "Lantern Frame", "set": "lantern", "points": 2, "blurb": "Blackened iron, still square, still sound.", "inscription": "Scratched in the soot: \"Light it on the longest night.\"" },
+    { "id": "lanternglass", "name": "Lantern Glass", "set": "lantern", "points": 2, "blurb": "A pane of wavy glass, wrapped in oilcloth and tucked out of the water.", "inscription": "Painted on the glass in faded red: berries, and the words \"not for eating\"." },
+    { "id": "lanternwick", "name": "Lantern Wick", "set": "lantern", "points": 2, "blurb": "A coil of wick in a tin that kept it dry for a hundred years.", "inscription": "A label on the tin, in the founder's hand: \"For the walk down into the hollow.\"" },
+    { "id": "blueribbon", "name": "Faded Blue Ribbon", "set": "ribbons", "points": 3, "blurb": "First Prize, Harvest Festival. The year is too faded to read.", "inscription": "Embroidered on the tail: a sprig of holly and the word \"Midwinter\"." },
+    { "id": "rosette", "name": "Prize Rosette", "set": "ribbons", "points": 3, "blurb": "Red and gold silk folds: Best Basket in the Valley.", "inscription": "Stitched on the back: \"Under the tree that was old when the house was new.\"" },
+    { "id": "medal", "name": "Judge's Medal", "set": "ribbons", "points": 3, "blurb": "A brass medal stamped with a chanterelle, given only once a generation.", "inscription": "On the reverse: \"When nothing else will fruit.\"" },
+    { "id": "compassrose", "name": "Brass Compass Rose", "set": "maps", "points": 3, "blurb": "The needle still swings north, then thinks better of it and points down.", "inscription": "Engraved round the rim: \"Low ground, where the walls are.\"" },
+    { "id": "maptube", "name": "Sealed Map Tube", "set": "maps", "points": 3, "blurb": "Waxed shut. Inside, a chart of tunnels no one alive has walked.", "inscription": "Inked on the chart: a churchyard tree, drawn where the walls stood." },
+    { "id": "surveyorschain", "name": "Surveyor's Chain", "set": "maps", "points": 3, "blurb": "A hundred iron links, each exactly as long as the last.", "inscription": "A brass tag on the last link: \"Measured from the Old Hearth: forty links.\"" },
+    { "id": "stonecap", "name": "Stone Cap", "set": "stones", "points": 4, "blurb": "The cap of a mushroom carved in pale stone, broken clean at the stem.", "inscription": "Carved under the cap: \"I built the first house in the hollow, beside a tree older than the valley's name.\"" },
+    { "id": "stonestem", "name": "Stone Stem", "set": "stones", "points": 4, "blurb": "A stone stem, broken at both ends, smooth from handling.", "inscription": "Carved round the stem: \"Dig when the ground is white.\"" },
+    { "id": "stonering", "name": "Stone Ring", "set": "stones", "points": 4, "blurb": "A carved ring that once sat under a stone cap.", "inscription": "Carved inside the ring: a needled tree hung with red berries." },
+    { "id": "doorkey", "name": "Iron Door Key", "set": "homestead", "points": 4, "blurb": "Heavy as a trowel, with the family mark on the bow.", "inscription": "Filed into the bow, beside the family mark: a sprig of yew." },
+    { "id": "baskethandle", "name": "Willow Basket Handle", "set": "homestead", "points": 4, "blurb": "Plaited willow, dark with age and still supple.", "inscription": "Woven in darker willow: \"Gathered in winter, when the basket is empty.\"" },
+    { "id": "hearthtile", "name": "Hearth Tile", "set": "homestead", "points": 4, "blurb": "A fired tile painted with a ring of little mushrooms.", "inscription": "On the back, written before firing: \"The house stood in the hollow. Look above it, not below.\"" }
   ],
   "sets": [
     {
@@ -68,5 +68,16 @@
       "payoff": "Key, basket and hearth: the first homestead, remembered. Its basket, rewoven, holds one more find.",
       "effect": { "type": "basket", "amount": 1 }
     }
-  ]
+  ],
+  "cache": {
+    "name": "The Founder's Cellar",
+    "zone": "hollow",
+    "card": "Yew",
+    "season": "winter",
+    "points": 10,
+    "premise": "Every heirloom the founder left is marked. Put the marks together and dig: the right spot, in the right place, at the right time of year.",
+    "wrong": "Roots and cold earth, and nothing else. The founder never dug here. The day is spent, so you head home.",
+    "place": "A hand's depth under the Yew, the spade rings on oak. A trapdoor, and under it a cellar no bigger than a larder, dry as the day it was dug. Empty jars on the shelves. A basket on a hook. And on a stone ledge, wrapped in oilcloth, a field journal older than any in the family.",
+    "ending": "It's the founder's. It begins the winter they came over the hills with a basket and nothing else, and built a house in the hollow beside the Yew. Page after page of mushrooms in a careful hand: where they grew, when, and what they were mistaken for. Every name in it is one the family still uses. The last page is for whoever found it: \"I hid our things all over the valley, so whoever came after me would have to walk all of it. If you are reading this, you know these woods the way I did. The homestead is yours. It always was.\" You carry the journal home and shelve it beside your own."
+  }
 }

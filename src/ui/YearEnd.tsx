@@ -59,6 +59,12 @@ export function ScoreTable({
             <td>{sc.artifacts}</td>
           </tr>
         )}
+        {sc.cache > 0 && (
+          <tr>
+            <td>{content.cache.name}, found at last</td>
+            <td>{sc.cache}</td>
+          </tr>
+        )}
         {sc.family > 0 && (
           <tr>
             <td>Family ribbons: the judges remember the family</td>

@@ -1,10 +1,12 @@
 import {
   basketCapacity,
+  commissionCost,
   compostSaleValue,
   content,
   deliveryCost,
   gearUnlockLevel,
   hireCost,
+  orderById,
   orderPayment,
   orderSpecies,
   saleValue,
@@ -18,6 +20,61 @@ import { Icon, Mushroom, SubstrateArt } from './art';
 import { SheetFrame } from './Game';
 import type { Store } from './store';
 import { name, substrateName } from './text';
+
+/** The commission slot: one bigger order at a time, paid for up front and lost if it isn't delivered by the festival. */
+function Commission({ g, store, canTrade, extra }: { g: GameState; store: Store; canTrade: boolean; extra: number }) {
+  const cost = commissionCost(g);
+  const open = g.commission.open ? orderById(g.commission.open)! : null;
+  const pay = open ? orderPayment(g.storage, open) : null;
+  return (
+    <>
+      <h3>Commission</h3>
+      {open ? (
+        <div class={`order-card commission ${pay ? 'ready' : ''}`}>
+          <div class="order-card-top">
+            <span>{open.label}</span>
+            <span class="pts">{open.points} pts</span>
+          </div>
+          {pay && <div class="small muted">Uses {Object.entries(pay).map(([id, n]) => `${n} ${name(id)}`).join(', ')}</div>}
+          {!pay && (open.need.kind === 'zone' || open.need.kind === 'below') && <div class="small muted">Any of: {orderSpecies(open)!.map(name).join(', ')}</div>}
+          <div class="order-card-actions">
+            <button class="btn small primary" disabled={!pay || !canTrade || g.coins < extra} onClick={() => store.act({ type: 'fillOrder', order: open.id })}>
+              Deliver
+              {extra > 0 && (
+                <>
+                  {' · '}
+                  <Icon name="coin" size={13} /> {extra}
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <ul class="storage">
+          <li>
+            <Icon name="coin" size={40} />
+            <span class="grow">
+              <b>Take a commission</b>
+              <small class="muted"> · a bigger order from somewhere in the valley</small>
+            </span>
+            <button
+              class="btn small"
+              disabled={!!g.finale || !canTrade || g.coins < cost || !g.commission.deck.length}
+              onClick={() => store.act({ type: 'takeCommission' })}
+              aria-label={`Take a commission, ${cost} coins`}
+            >
+              <Icon name="coin" size={14} /> {cost}
+            </button>
+          </li>
+        </ul>
+      )}
+      <p class="small muted">
+        Paid up front, one at a time, and the coins are gone if it isn't delivered by the festival. Each one this year costs double the
+        last. {g.commission.taken ? `${g.commission.taken} taken this year.` : ''}
+      </p>
+    </>
+  );
+}
 
 export function Market({ g, store, onClose, onPantry }: { g: GameState; store: Store; onClose: () => void; onPantry: () => void }) {
   // Closing the sheet keeps the visit open: it ends when you next spend an action, so coming back to trade is free.
@@ -36,7 +93,7 @@ export function Market({ g, store, onClose, onPantry }: { g: GameState; store: S
 
   return (
     <SheetFrame title="Village market" onClose={close} tall>
-      <p class={`market-visit ${g.market ? 'on' : ''}`}>
+      <p class={`market-visit ${g.market ? 'on' : g.finale ? '' : g.actionsLeft > 0 ? 'off' : 'closed'}`}>
         {g.market
           ? `You're at the market. Trade as much as you like${g.market.deliveries ? `; another delivery costs ${extra} coins` : ''}. Your visit lasts until you spend another action.`
           : g.finale
@@ -44,8 +101,8 @@ export function Market({ g, store, onClose, onPantry }: { g: GameState; store: S
               ? "You've had your last market visit. The festival is next."
               : `Festival morning: one last market visit, no action needed. Deliver an order free, more for ${content.rules.extraDeliveryCost} coins and doubling after that, and sell what you like.`
             : g.actionsLeft > 0
-            ? `A market visit takes 1 action, spent on your first trade. The first order you deliver is free; the next that visit costs ${content.rules.extraDeliveryCost} coins, and each one after costs double the last.`
-            : 'No actions left to visit the market this month.'}
+            ? `You're not at the market right now. Your next trade opens a visit for 1 action (${g.actionsLeft} left), and the visit ends when you spend an action on anything else. The first order you deliver on a visit is free; the next costs ${content.rules.extraDeliveryCost} coins, and each one after costs double the last.`
+            : `You're not at the market, and opening a visit takes an action: you have none left this month. Hiring a hand needs no visit${hired ? ", but you've hired one this month" : ''}.`}
       </p>
 
       <h3>Festival orders</h3>
@@ -97,6 +154,8 @@ export function Market({ g, store, onClose, onPantry }: { g: GameState; store: S
         the bottom of the pile and deals the first waiting order your storage can fill, if there is one; each swap this year costs a
         coin more.
       </p>
+
+      {g.perks.commissions && <Commission g={g} store={store} canTrade={canTrade} extra={extra} />}
 
       <h3>
         Your storage

@@ -89,11 +89,13 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
   let bonusCoins = (j.generation - 1) * c.progression.legacy.startCoins + setBonus(sets, 'coins', c);
   let bonusActions = 0;
   let autoHarvest = false;
+  let commissions = false;
   for (const u of unlocks) {
     if (u.type === 'farmSize') size = Math.max(size, u.size);
     if (u.type === 'startCoins') bonusCoins += u.amount;
     if (u.type === 'actions') bonusActions += u.amount;
     if (u.type === 'autoHarvest') autoHarvest = true;
+    if (u.type === 'commissions') commissions = true;
   }
   return {
     shop,
@@ -105,8 +107,12 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
     autoHarvest,
     spawn: j.discovered.filter((id) => c.species[id]?.kind === 'cultivated'),
     generation: j.generation,
+    level,
     challenges: isLegend(j, c) ? challenges.filter((id) => c.progression.challenges.some((x) => x.id === id)) : [],
     sets,
+    clues: j.artifacts.length,
+    cacheFound: j.cacheFound,
+    commissions,
   };
 }
 

@@ -1,0 +1,12 @@
+[
+  { "id": "c-mill", "label": "The miller's harvest supper: 3 Shiitake + 2 Lion's Mane", "points": 12, "need": { "kind": "species", "items": { "shiitake": 3, "lionsmane": 2 } } },
+  { "id": "c-apothecary", "label": "The apothecary's shelf: 2 Reishi + 1 Lion's Mane", "points": 12, "need": { "kind": "species", "items": { "reishi": 2, "lionsmane": 1 } } },
+  { "id": "c-inn", "label": "The inn's tasting menu: 6 different species, 1 each", "points": 12, "need": { "kind": "distinct", "count": 6 } },
+  { "id": "c-wedding", "label": "A wedding feast: 4 Oyster + 2 Chanterelle", "points": 12, "need": { "kind": "species", "items": { "oyster": 4, "chanterelle": 2 } } },
+  { "id": "c-botanist", "label": "The botanist's study: any 3 hybrid mushrooms", "points": 14, "need": { "kind": "hybrids", "count": 3 } },
+  { "id": "c-forester", "label": "The forester's collection: any 4 wild from the Old-growth", "points": 13, "need": { "kind": "zone", "zone": "oldgrowth", "count": 4 }, "requires": "lantern" },
+  { "id": "c-fair", "label": "The spring fair: 4 Morel", "points": 13, "need": { "kind": "species", "items": { "morel": 4 } }, "requires": "trailmap" },
+  { "id": "c-stew", "label": "The fishermen's stew: 2 Shaggy Mane + 2 Dryad's Saddle", "points": 12, "need": { "kind": "species", "items": { "shaggymane": 2, "dryad": 2 } }, "requires": "waders" },
+  { "id": "c-manor", "label": "The manor kitchen: 2 Truffle", "points": 14, "need": { "kind": "species", "items": { "truffle": 2 } }, "requires": "compass" },
+  { "id": "c-museum", "label": "The county museum: any 4 from below ground", "points": 13, "need": { "kind": "below", "count": 4 } }
+]

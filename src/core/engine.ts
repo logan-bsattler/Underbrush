@@ -108,6 +108,21 @@ export function swapCost(s: GameState, c: Content = defaultContent): number {
   return c.rules.swapCost + s.orderSwaps;
 }
 
+/** Coins to take on a commission: dearer with every one taken this year. */
+export function commissionCost(s: GameState, c: Content = defaultContent): number {
+  return c.rules.commissionCost * c.rules.commissionGrowth ** s.commission.taken;
+}
+
+/** The commissions a year can deal, shuffled from their own seed so the rest of the year's dealing is untouched. */
+function commissionDeck(seed: string, perks: Perks, c: Content): string[] {
+  return new Rng(hashSeed(`${seed}:commissions`)).shuffle(c.commissions.filter((o) => orderDealable(o, perks, c)).map((o) => o.id));
+}
+
+/** An order or the open commission, by id. */
+export function orderById(id: string, c: Content = defaultContent): OrderDef | undefined {
+  return c.orders.find((o) => o.id === id) ?? c.commissions.find((o) => o.id === id);
+}
+
 /** Coins to hire a hand: dearer with every hand hired this year. */
 export function hireCost(s: GameState, c: Content = defaultContent): number {
   return c.rules.hireCost + c.rules.hireStep * s.hires;
@@ -141,9 +156,16 @@ export function actionsPerMonth(s: GameState, c: Content = defaultContent): numb
   return c.rules.actionsPerRound + s.perks.bonusActions + challengeEffect(s.perks, 'actions', c);
 }
 
-/** The festival tiers for this year: every threshold rises with each generation the homestead has been passed on. */
+/** How far this year's festival tiers sit above the printed ones: the homestead's level, and each generation it has been passed on. */
+export function tierLift(perks: Perks, c: Content = defaultContent): { level: number; generation: number } {
+  const level = c.progression.levels.find((l) => l.level === perks.level)?.tierLift ?? 0;
+  return { level, generation: (perks.generation - 1) * c.progression.legacy.tierStep };
+}
+
+/** The festival tiers for this year: every threshold rises with the homestead's level and with each generation. */
 export function tiersFor(s: GameState, c: Content = defaultContent) {
-  const lift = (s.perks.generation - 1) * c.progression.legacy.tierStep;
+  const { level, generation } = tierLift(s.perks, c);
+  const lift = level + generation;
   return c.rules.tiers.map((t) => ({ ...t, min: t.min + lift }));
 }
 
@@ -189,6 +211,20 @@ export function descendStatus(s: GameState, c: Content = defaultContent): ZoneSt
  * What a fall in the next layer down would cost next month, so the stakes can be named before descending.
  * Null when this trip can't go any deeper.
  */
+/** Whether this trip can dig for the Founder's Cellar under a patch card: a turned ground card on the surface, in a story year with a clue. */
+export function digStatus(s: GameState, index: number): ZoneStatus {
+  const trip = s.forage;
+  if (!trip || trip.status !== 'open') return { open: false, reason: 'You are not out foraging.' };
+  // The Founder's Cellar belongs to the family's story, and the family has to have found one of the founder's marks.
+  if (s.mode !== 'story') return { open: false, reason: 'Digging is for story years.' };
+  if (s.perks.cacheFound || s.cacheFound) return { open: false, reason: "The family has already found the Founder's Cellar." };
+  if (!s.perks.clues && !s.artifacts.length) return { open: false, reason: 'Nothing to go on yet.' };
+  if (trip.layer) return { open: false, reason: 'Dig on the surface, not below it.' };
+  const spot = trip.patch[index];
+  if (!spot?.flipped || spot.card.type !== 'ground') return { open: false, reason: 'Dig under a turned card of plain ground.' };
+  return { open: true };
+}
+
 export function descendCost(s: GameState, c: Content = defaultContent): number | 'month' | null {
   const trip = s.forage;
   if (!trip || trip.status !== 'open' || trip.layer >= layersOpen(s.perks.generation, trip.zone, c)) return null;
@@ -284,9 +320,10 @@ export function score(s: GameState, c: Content = defaultContent) {
   const artifacts = s.artifacts.reduce((sum, id) => sum + (artifactDef(id, c)?.points ?? 0), 0);
   // The Festival Ribbons: the judges remember the family.
   const family = setBonus(s.perks.sets, 'points', c);
-  const total = s.orderPoints + hybrids + planted + coins + feast + artifacts + family;
+  const cache = s.cacheFound ? c.cache.points : 0;
+  const total = s.orderPoints + hybrids + planted + coins + feast + artifacts + family + cache;
   const tier = [...tiersFor(s, c)].reverse().find((t) => total >= t.min) ?? null;
-  return { orders: s.orderPoints, hybrids, planted, coins, feast, artifacts, family, total, tier };
+  return { orders: s.orderPoints, hybrids, planted, coins, feast, artifacts, family, cache, total, tier };
 }
 
 // ── Setup ────────────────────────────────────────────────────────────────
@@ -316,8 +353,12 @@ export function standardPerks(c: Content = defaultContent): Perks {
     autoHarvest: false,
     spawn: [],
     generation: 1,
+    level: 1,
     challenges: [],
     sets: [],
+    clues: 0,
+    cacheFound: false,
+    commissions: false,
   };
 }
 
@@ -329,12 +370,17 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   s.perks.autoHarvest ??= false;
   s.perks.spawn ??= [];
   s.perks.generation ??= 1;
+  s.perks.level ??= 1;
   s.perks.challenges ??= [];
   s.perks.sets ??= [];
+  s.perks.clues ??= 0;
+  s.perks.cacheFound ??= false;
   // Saves from before boards were all on Streamside, with the stream down the left column.
   s.board ??= 'streamside';
   s.grid.forEach((sq, i) => (sq.damp ??= i % s.size === 0));
   s.orderSwaps ??= 0;
+  s.perks.commissions ??= false;
+  s.commission ??= { open: null, deck: commissionDeck(s.seed, s.perks, c), taken: 0 };
   s.hires ??= 0;
   s.hiredRound ??= 0;
   s.meal ??= null;
@@ -353,6 +399,7 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   dealLayerDecks(s, c);
   s.artifacts ??= [];
   s.layersReached ??= [];
+  s.cacheFound ??= false;
   s.stats.descents ??= 0;
   if (!s.stats.identified) s.stats.identified = {};
   s.compostPile ??= [];
@@ -462,6 +509,7 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     orders: { visible: orderDeck.slice(0, r.ordersVisible), deck: orderDeck.slice(r.ordersVisible), filled: [] },
     orderPoints: 0,
     orderSwaps: 0,
+    commission: { open: null, deck: commissionDeck(seed, perks, c), taken: 0 },
     hires: 0,
     hiredRound: 0,
     meal: null,
@@ -473,6 +521,7 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     zonesCleared: [],
     artifacts: [],
     layersReached: [],
+    cacheFound: false,
     watered: false,
     market: null,
     forage: null,
@@ -848,6 +897,23 @@ export function dispatch(
       break;
     }
 
+    case 'dig': {
+      const status = digStatus(s, action.index);
+      if (!status.open) fail(status.reason);
+      const trip = s.forage!;
+      const spot = trip.patch[action.index];
+      const { cache } = c;
+      const found = trip.zone === cache.zone && spot.card.type === 'ground' && spot.card.name === cache.card && seasonOf(s.round, c) === cache.season;
+      // Right or wrong, the day is spent: the trip ends as if you headed home, finds and all.
+      bankRelics(s, trip);
+      restockDeck(s, trip, rng);
+      trip.status = 'stopped';
+      trip.dug = found ? 'found' : 'empty';
+      if (found) s.cacheFound = true;
+      result = { kind: 'dig', found };
+      break;
+    }
+
     case 'closeTrip': {
       if (s.forage && s.forage.status === 'open') fail('Head home first.');
       s.forage = null;
@@ -1041,8 +1107,9 @@ export function dispatch(
     case 'fillOrder': {
       guardAway(s);
       guardIdle(s);
-      if (!s.orders.visible.includes(action.order)) fail('That order is not on the board.');
-      const order = c.orders.find((o) => o.id === action.order)!;
+      const commission = s.commission.open === action.order;
+      if (!s.orders.visible.includes(action.order) && !commission) fail('That order is not on the board.');
+      const order = orderById(action.order, c)!;
       const pay = orderPayment(s.storage, order, c);
       if (!pay) fail("You don't have what this order needs.");
       const extra = deliveryCost(s, c);
@@ -1053,9 +1120,13 @@ export function dispatch(
       s.market!.deliveries += 1;
       s.orderPoints += order.points;
       s.orders.filled.push(order.id);
-      s.orders.visible = s.orders.visible.filter((o) => o !== order.id);
-      const next = s.orders.deck.shift();
-      if (next) s.orders.visible.push(next);
+      if (commission) {
+        s.commission.open = null;
+      } else {
+        s.orders.visible = s.orders.visible.filter((o) => o !== order.id);
+        const next = s.orders.deck.shift();
+        if (next) s.orders.visible.push(next);
+      }
       result = { kind: 'order', points: order.points };
       break;
     }
@@ -1075,6 +1146,22 @@ export function dispatch(
       const ready = s.orders.deck.findIndex((id) => orderPayment(s.storage, c.orders.find((o) => o.id === id)!, c));
       s.orders.visible[at] = s.orders.deck.splice(Math.max(ready, 0), 1)[0];
       s.orders.deck.push(action.order);
+      break;
+    }
+
+    case 'takeCommission': {
+      guardAway(s);
+      guardIdle(s);
+      guardFinale(s);
+      if (!s.perks.commissions) fail("The village doesn't bring you commissions yet.");
+      if (s.commission.open) fail('Deliver the commission you have first.');
+      if (!s.commission.deck.length) fail('No more commissions this year.');
+      const cost = commissionCost(s, c);
+      if (s.coins < cost) fail(`A commission costs ${cost} coins this time.`);
+      openMarketVisit(s);
+      s.coins -= cost;
+      s.commission.taken += 1;
+      s.commission.open = s.commission.deck.shift()!;
       break;
     }
 

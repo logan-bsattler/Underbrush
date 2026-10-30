@@ -99,6 +99,26 @@ export interface ArtifactDef {
   set: string;
   points: number;
   blurb: string;
+  /** The founder's mark on it: one clue to where the Founder's Cellar lies. */
+  inscription?: string;
+}
+
+/** The one puzzle of the saga: the artifacts' inscriptions point to a spot to dig, in one zone, in one season. */
+export interface CacheDef {
+  name: string;
+  zone: string;
+  /** The surface ground card to dig under. */
+  card: string;
+  season: Season;
+  /** Festival points the year it's found. */
+  points: number;
+  premise: string;
+  /** What a dig in the wrong spot turns up. */
+  wrong: string;
+  /** The place, as it's found... */
+  place: string;
+  /** ...and the family's story, ending. */
+  ending: string;
 }
 
 /** Artifacts that belong together. A full set in the cabinet brings a small perk to every story year after. */
@@ -235,6 +255,10 @@ export interface RulesDef {
   coinsPerPoint: number;
   /** The most festival points leftover coins can score. */
   maxCoinPoints: number;
+  /** The first commission of a year costs this many coins... */
+  commissionCost: number;
+  /** ...and each one after costs this many times the one before. */
+  commissionGrowth: number;
   tiers: TierDef[];
 }
 
@@ -283,7 +307,8 @@ export type Unlock =
   | { type: 'startCoins'; amount: number }
   | { type: 'actions'; amount: number }
   | { type: 'board'; id: string }
-  | { type: 'autoHarvest' };
+  | { type: 'autoHarvest' }
+  | { type: 'commissions' };
 
 export interface LevelDef {
   level: number;
@@ -291,6 +316,8 @@ export interface LevelDef {
   renown: number;
   blurb: string;
   unlocks: Unlock[];
+  /** How far every festival tier sits above the printed thresholds at this level, before any generation lift. */
+  tierLift: number;
 }
 
 export interface MasteryDef {
@@ -339,6 +366,8 @@ export interface Content {
   gear: GearDef[];
   weather: WeatherDef[];
   orders: OrderDef[];
+  /** Bigger orders a homestead can pay to take on at the market, one at a time, once a level stocks them. */
+  commissions: OrderDef[];
   boards: BoardDef[];
   recipes: RecipeDef[];
   achievements: AchievementDef[];
@@ -346,6 +375,7 @@ export interface Content {
   underground: Record<string, LayerDef[]>;
   artifacts: ArtifactDef[];
   artifactSets: ArtifactSetDef[];
+  cache: CacheDef;
 }
 
 // ── State ────────────────────────────────────────────────────────────────
@@ -406,6 +436,8 @@ export interface ForageTrip {
   missed: number;
   /** Every non-hazard card in the zone's deck has been turned this trip. */
   cleared: boolean;
+  /** The trip ended in a dig for the Founder's Cellar: what it turned up. */
+  dug?: 'found' | 'empty';
 }
 
 export type DrawOutcome =
@@ -495,10 +527,18 @@ export interface Perks {
   spawn: string[];
   /** How many times the homestead has been passed on, plus one. Raises the tier thresholds. */
   generation: number;
+  /** The homestead's level this year: higher levels raise the tier thresholds too. Daily years are level 1. */
+  level: number;
   /** Legend challenges taken on this year. */
   challenges: string[];
   /** Artifact sets complete in the field journal's cabinet. */
   sets: string[];
+  /** Artifacts in the cabinet: with any at all, a story year can dig for the Founder's Cellar. */
+  clues: number;
+  /** The family found the Founder's Cellar in an earlier year: there's nothing left to dig for. */
+  cacheFound: boolean;
+  /** The market takes commissions this year. */
+  commissions: boolean;
 }
 
 export interface GameState {
@@ -528,6 +568,8 @@ export interface GameState {
   orderPoints: number;
   /** Orders swapped off the board this year; each swap costs a coin more than the last. */
   orderSwaps: number;
+  /** The commission on the board, if one has been taken and not yet delivered, and the ones still waiting. */
+  commission: { open: string | null; deck: string[]; taken: number };
   /** Hands hired this year; each costs more than the last. */
   hires: number;
   /** The month a hand was last hired (0 if never): one a month. */
@@ -546,6 +588,8 @@ export interface GameState {
   artifacts: string[];
   /** Underground layers reached this year, as "zone:depth". */
   layersReached: string[];
+  /** The Founder's Cellar was found this year. */
+  cacheFound: boolean;
   watered: boolean;
   /** An open market visit and the orders delivered on it so far. */
   market: { deliveries: number } | null;
@@ -576,6 +620,8 @@ export type Action =
   /** Goes down into the next underground layer below the zone, from its deep patches or a layer above. */
   | { type: 'descend' }
   | { type: 'stopForage' }
+  /** Digs under a turned surface ground card for the Founder's Cellar. Right or wrong, the trip ends. */
+  | { type: 'dig'; index: number }
   | { type: 'closeTrip' }
   /** Identifies every unidentified specimen in the basket, for one action. */
   | { type: 'identify' }
@@ -596,6 +642,7 @@ export type Action =
   | { type: 'swapOrder'; order: string }
   /** Hires a hand for the month: +1 action, for coins. One a month; no market visit needed. */
   | { type: 'hireHand' }
+  | { type: 'takeCommission' }
   /** Buys a substrate tile for the shed. */
   | { type: 'buySubstrate'; substrate: Substrate }
   /** Buys spawn of a cultivated species you've identified: an identified specimen for your basket. */
@@ -630,4 +677,5 @@ export type ActionResult =
   | { kind: 'harvest'; gained: Record<string, number>; squares: number[] }
   | { kind: 'sell'; coins: number }
   | { kind: 'order'; points: number }
-  | { kind: 'night'; report: NightReport };
+  | { kind: 'night'; report: NightReport }
+  | { kind: 'dig'; found: boolean };

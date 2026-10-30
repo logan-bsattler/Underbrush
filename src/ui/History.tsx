@@ -1,12 +1,12 @@
 import { useState } from 'preact/hooks';
-import { content, type YearRecord } from '../core';
+import { content, orderById, type YearRecord } from '../core';
 import type { Store } from './store';
 import { name } from './text';
 import { ScoreTable } from './YearEnd';
 
 const tierName = (id: string | null) => (id ? content.rules.tiers.find((t) => t.id === id)?.name ?? id : 'A quiet year');
 const levelTitle = (n: number) => content.progression.levels.find((l) => l.level === n)?.title ?? `Level ${n}`;
-const orderName = (id: string) => content.orders.find((o) => o.id === id)?.label ?? id;
+const orderName = (id: string) => orderById(id)?.label ?? id;
 const challengeName = (id: string) => content.progression.challenges.find((x) => x.id === id)?.name ?? id;
 
 function yearName(y: YearRecord) {

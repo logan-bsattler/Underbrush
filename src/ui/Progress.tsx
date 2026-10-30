@@ -8,6 +8,7 @@ import {
   completedSets,
   content,
   generationLore,
+  tierLift,
   heirloomChoices,
   heirloomSlots,
   isLegend,
@@ -50,6 +51,8 @@ export function unlockText(u: Unlock): string {
       return `The ${content.boards.find((b) => b.id === u.id)?.name ?? u.id} farm to start a year on`;
     case 'autoHarvest':
       return 'Fruiting beds are picked into storage every morning';
+    case 'commissions':
+      return 'Take paid commissions at the market: bigger orders for more points';
   }
 }
 
@@ -262,7 +265,43 @@ function Cabinet({ j }: { j: Journal }) {
           );
         })}
       </ul>
+      {j.artifacts.length > 0 && <Riddle j={j} />}
     </>
+  );
+}
+
+/** The founder's riddle: the mark on every artifact found so far, and once the cellar is found, its story to read again. */
+function Riddle({ j }: { j: Journal }) {
+  const { cache } = content;
+  const marked = j.artifacts.flatMap((id) => content.artifacts.filter((a) => a.id === id && a.inscription));
+  return (
+    <section class={`riddle ${j.cacheFound ? 'solved' : ''}`}>
+      <h3>The founder's riddle</h3>
+      <p class="small lore-line">{cache.premise}</p>
+      <ul class="relics">
+        {marked.map((a) => (
+          <li class="found">
+            <Icon name="relic" size={20} />
+            <span>
+              <b>{a.name}</b>
+              <small>{a.inscription}</small>
+            </span>
+          </li>
+        ))}
+      </ul>
+      {j.cacheFound ? (
+        <div class="riddle-end">
+          <b>{cache.name}, found</b>
+          <p class="small">{cache.place}</p>
+          <p class="small lore-line">{cache.ending}</p>
+        </div>
+      ) : (
+        <p class="small muted">
+          {marked.length} of {content.artifacts.length} marks found. On a story year's forage trip, tap a turned card of plain ground to dig
+          under it. A wrong guess ends the trip.
+        </p>
+      )}
+    </section>
   );
 }
 
@@ -443,7 +482,8 @@ export function Pack({
         <li>{newGame({ seed: 'pack', perks }).actionsLeft} actions a month</li>
         <li>{lean ? 'No coins and no heirlooms to start' : `${content.rules.startCoins + perks.bonusCoins} coins to start`}</li>
         {bonus > 0 && <li>+{Math.round(bonus * 100)}% renown from challenges</li>}
-        {perks.generation > 1 && <li>Generation {perks.generation}: festival tiers {(perks.generation - 1) * content.progression.legacy.tierStep} points higher</li>}
+        {tierLift(perks).level > 0 && <li>Level {perks.level}: festival tiers {tierLift(perks).level} points higher</li>}
+        {perks.generation > 1 && <li>Generation {perks.generation}: festival tiers {tierLift(perks).generation} points higher</li>}
         {layers > 0 && (
           <li>
             {layers} layer{layers === 1 ? '' : 's'} open below every zone
