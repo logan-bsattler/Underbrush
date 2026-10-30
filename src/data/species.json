@@ -243,7 +243,7 @@
     "art": { "shape": "cluster", "cap": "#EFE3C2", "shade": "#C7B07C", "gill": "#F6EED8", "stem": "#E3D3A8" }
   },
   {
-    "id": "earthstar", "name": "Collared Earthstar", "latin": "Geastrum triplex", "kind": "wild", "value": 5,
+    "id": "earthstar", "name": "Collared Earthstar", "latin": "Geastrum triplex", "kind": "wild", "value": 3,
     "substrates": [], "seasons": "any", "growth": "none",
     "group": "Star puffball", "lookalike": { "name": "Barometer Earthstar", "on": 1 },
     "traits": {},
@@ -252,7 +252,7 @@
     "art": { "shape": "ball", "cap": "#B89A74", "shade": "#7E6448", "gill": "#E0CDAE", "stem": "#C9AE88", "star": true }
   },
   {
-    "id": "charcoalburner", "name": "Charcoal Burner", "latin": "Russula cyanoxantha", "kind": "wild", "value": 5,
+    "id": "charcoalburner", "name": "Charcoal Burner", "latin": "Russula cyanoxantha", "kind": "wild", "value": 3,
     "substrates": [], "seasons": "any", "growth": "none",
     "group": "Smoky cap", "lookalike": { "name": "The Sickener", "on": 1 },
     "traits": {},
@@ -261,7 +261,7 @@
     "art": { "shape": "cap", "cap": "#6C5F7E", "shade": "#43394F", "gill": "#F1EDE4", "stem": "#F3F0EA" }
   },
   {
-    "id": "bleedingtooth", "name": "Bleeding Tooth", "latin": "Hydnellum peckii", "kind": "wild", "value": 6,
+    "id": "bleedingtooth", "name": "Bleeding Tooth", "latin": "Hydnellum peckii", "kind": "wild", "value": 4,
     "substrates": [], "seasons": "any", "growth": "none",
     "group": "Weeping tooth", "lookalike": { "name": "Scaly Tooth", "on": 1 },
     "traits": {},
@@ -270,7 +270,7 @@
     "art": { "shape": "tooth", "cap": "#F1E9E2", "shade": "#B9A7A0", "gill": "#E7DCD5", "stem": "#8C6E62", "drops": true }
   },
   {
-    "id": "bitteroyster", "name": "Bitter Oyster", "latin": "Panellus stipticus", "kind": "wild", "value": 5,
+    "id": "bitteroyster", "name": "Bitter Oyster", "latin": "Panellus stipticus", "kind": "wild", "value": 3,
     "substrates": [], "seasons": "any", "growth": "none",
     "group": "Glowing fan", "lookalike": { "name": "Tiny Oyster", "on": 1 },
     "traits": {},
@@ -279,7 +279,7 @@
     "art": { "shape": "shelf", "cap": "#C8A27A", "shade": "#8E6C4B", "gill": "#DDE9B8", "stem": "#C8A27A", "glow": true }
   },
   {
-    "id": "ghostfungus", "name": "Ghost Fungus", "latin": "Omphalotus nidiformis", "kind": "wild", "value": 7,
+    "id": "ghostfungus", "name": "Ghost Fungus", "latin": "Omphalotus nidiformis", "kind": "wild", "value": 4,
     "substrates": [], "seasons": "any", "growth": "none",
     "group": "Glowing funnel", "lookalike": { "name": "Jack-o'-lantern", "on": 2 },
     "traits": {},
@@ -288,7 +288,7 @@
     "art": { "shape": "funnel", "cap": "#E9E6D4", "shade": "#A9B39A", "gill": "#D5F0C0", "stem": "#DCD8C2", "glow": true }
   },
   {
-    "id": "scarletelfcup", "name": "Scarlet Elf Cup", "latin": "Sarcoscypha austriaca", "kind": "wild", "value": 5,
+    "id": "scarletelfcup", "name": "Scarlet Elf Cup", "latin": "Sarcoscypha austriaca", "kind": "wild", "value": 3,
     "substrates": [], "seasons": "any", "growth": "none",
     "group": "Red cup", "lookalike": { "name": "Orange Peel Fungus", "on": 1 },
     "traits": {},
@@ -297,7 +297,7 @@
     "art": { "shape": "funnel", "cap": "#C7302A", "shade": "#8A1C18", "gill": "#E2554A", "stem": "#E9DCC8" }
   },
   {
-    "id": "violetwebcap", "name": "Violet Webcap", "latin": "Cortinarius violaceus", "kind": "wild", "value": 7,
+    "id": "violetwebcap", "name": "Violet Webcap", "latin": "Cortinarius violaceus", "kind": "wild", "value": 4,
     "substrates": [], "seasons": "any", "growth": "none",
     "group": "Deep violet cap", "lookalike": { "name": "Lilac Fibrecap", "on": 2 },
     "traits": {},

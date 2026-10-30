@@ -6,6 +6,7 @@ import {
   deliveryCost,
   gearUnlockLevel,
   hireCost,
+  nextCommission,
   orderById,
   orderPayment,
   orderSpecies,
@@ -26,6 +27,9 @@ function Commission({ g, store, canTrade, extra }: { g: GameState; store: Store;
   const cost = commissionCost(g);
   const open = g.commission.open ? orderById(g.commission.open)! : null;
   const pay = open ? orderPayment(g.storage, open) : null;
+  // What taking one would deal, so the ask and the reward are known before paying.
+  const nextId = open ? null : nextCommission(g);
+  const next = nextId ? orderById(nextId)! : null;
   return (
     <>
       <h3>Commission</h3>
@@ -55,11 +59,18 @@ function Commission({ g, store, canTrade, extra }: { g: GameState; store: Store;
             <Icon name="coin" size={40} />
             <span class="grow">
               <b>Take a commission</b>
-              <small class="muted"> · a bigger order from somewhere in the valley</small>
+              {next ? (
+                <small class="muted">
+                  {' '}
+                  · {next.label}, {next.points} pts
+                </small>
+              ) : (
+                <small class="muted"> · nothing more the valley needs this year</small>
+              )}
             </span>
             <button
               class="btn small"
-              disabled={!!g.finale || !canTrade || g.coins < cost || !g.commission.deck.length}
+              disabled={!!g.finale || !canTrade || g.coins < cost || !next}
               onClick={() => store.act({ type: 'takeCommission' })}
               aria-label={`Take a commission, ${cost} coins`}
             >

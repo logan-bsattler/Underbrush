@@ -5,27 +5,113 @@
  *   npm run sim -- 100 campaign  ten-year story campaigns with progression
  *   npm run sim -- 20 plan 30    thirty-year story campaigns with the planner bot, by homestead level
  *   npm run sim -- 300 gen       Legend years in generations 1 to 4, diving underground carelessly and carefully
+ *   npm run sim -- 20 truffle 30 thirty-year planner campaigns without the Spade, digging on the way home, and hunting truffles
+ *   npm run sim -- 50 cache 60   sixty-year sagas with a careful planner that passes the homestead on and digs the Founder's Cache on schedule
  */
-import { content, emptyJournal, recordYear, heirloomChoices, heirloomSlots, levelFor, newGame, perksFor, score, tiersFor, type GameState, type Journal, type NightReport } from '../src/core';
+import { cacheMarks, content, emptyJournal, isLegend, passItOn, recordYear, heirloomChoices, heirloomSlots, levelFor, newGame, perksFor, score, tiersFor, type GameState, type Journal, type NightReport } from '../src/core';
 import { HEIRLOOM_PREFERENCE, playCampaign, playYear } from './bot';
 
 const n = Number(process.argv[2] ?? 300);
 const pct = (xs: number[], p: number) => xs.slice().sort((a, b) => a - b)[Math.floor((xs.length - 1) * p)];
 
-if (process.argv[3] === 'gen') {
+if (process.argv[3] === 'cache') {
+  // Whole sagas: the planner dives carefully, passes the homestead on as soon as it's a Legend, and digs the
+  // Founder's Cache the first winter it has every mark, a Spade and the Hollow open.
+  const YEARS = Number(process.argv[4] ?? 60);
+  const { cache } = content;
+  type Saga = { found: number | null; generation: number; marked: number | null; level: number; share: number; renown: number; cacheRenown: number };
+  const sagas: Saga[] = [];
+  for (let i = 0; i < n; i++) {
+    let j = emptyJournal();
+    const saga: Saga = { found: null, generation: 0, marked: null, level: 0, share: 0, renown: 0, cacheRenown: 0 };
+    for (let y = 0; y < YEARS; y++) {
+      if (isLegend(j)) j = passItOn(j);
+      const level = levelFor(j.renown).level;
+      const heirlooms = HEIRLOOM_PREFERENCE.filter((g) => heirloomChoices(j).includes(g)).slice(0, heirloomSlots(level));
+      const start = newGame({ seed: `cache-${i}-y${y}`, perks: perksFor(j, heirlooms) });
+      if (saga.marked === null && cacheMarks(start).length === 3) saga.marked = y + 1;
+      const s = playYear(start, { plan: true, dive: true, careful: true, cache: true });
+      j = recordYear(j, s);
+      const sc = score(s);
+      saga.renown += sc.total;
+      if (s.cacheFound) {
+        Object.assign(saga, { found: y + 1, generation: j.generation, level, share: sc.cache / sc.total });
+        saga.cacheRenown += sc.cache;
+      }
+    }
+    sagas.push(saga);
+  }
+  const found = sagas.filter((x) => x.found !== null);
+  const marked = sagas.filter((x) => x.marked !== null);
+  const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+  const spread = (xs: number[]) => (xs.length ? `median ${pct(xs, 0.5)}, p10 ${pct(xs, 0.1)}, p90 ${pct(xs, 0.9)}` : '-');
+  console.log(`${n} sagas of ${YEARS} years with a careful diving planner; the cache is under the ${cache.card} in ${cache.zone}, in ${cache.season}, for ${cache.points} points`);
+  console.log(`  every mark in at the start of a year: ${((100 * marked.length) / n).toFixed(0)}% of sagas; year ${spread(marked.map((x) => x.marked!))}`);
+  console.log(`  cellar found: ${((100 * found.length) / n).toFixed(0)}% of sagas; year ${spread(found.map((x) => x.found!))}`);
+  console.log(`  years from every mark to the cellar: ${spread(found.filter((x) => x.marked !== null).map((x) => x.found! - x.marked!))}`);
+  const gens = [...new Set(found.map((x) => x.generation))].sort((a, b) => a - b);
+  console.log(`  found in generation: ${gens.map((g) => `${g}: ${found.filter((x) => x.generation === g).length}`).join(', ') || '-'}; homestead level then: ${spread(found.map((x) => x.level))}`);
+  console.log(`  share of that year's score: ${(100 * mean(found.map((x) => x.share))).toFixed(0)}%; share of the saga's renown: ${(100 * mean(found.map((x) => x.cacheRenown / x.renown))).toFixed(1)}%`);
+} else if (process.argv[3] === 'truffle') {
+  // Story campaigns with the planner, played on the same seeds without the Spade, digging only on the way home,
+  // and hunting oak and hazel in winter; read by the homestead level at the start of each year, from the Spade's level on.
+  const YEARS = Number(process.argv[4] ?? 30);
+  const truffle = content.species[content.rules.dig.species];
+  const from = content.progression.levels.findIndex((l) => l.unlocks.some((u) => u.type === 'gear' && u.id === 'spade')) + 1;
+  console.log(`${n} planner campaigns of ${YEARS} years per Spade setting; truffles at ${truffle.value} coins, a ${content.rules.dig.chance} chance under ${content.rules.dig.hosts.join(' or ')} in winter`);
+  console.log('level  spade  years  median  mean   spade owned  digs/yr  truffles/yr  hit rate  truffle coins/yr');
+  const rows: Record<string, { score: number[]; owned: number; digs: number; truffles: number }> = {};
+  for (const spade of [undefined, 'exit', 'hunt'] as const) {
+    for (let i = 0; i < n; i++) {
+      let j = emptyJournal();
+      for (let y = 0; y < YEARS; y++) {
+        const level = levelFor(j.renown).level;
+        const heirlooms = HEIRLOOM_PREFERENCE.filter((g) => heirloomChoices(j).includes(g)).slice(0, heirloomSlots(level));
+        const r = (rows[`${level}:${spade ?? 'none'}`] ??= { score: [], owned: 0, digs: 0, truffles: 0 });
+        const s = playYear(newGame({ seed: `truffle-${i}-y${y}`, perks: perksFor(j, heirlooms) }), {
+          plan: true,
+          spade,
+          onResult: (_a, res) => {
+            if (res.kind !== 'dig') return;
+            r.digs += 1;
+            if (res.dug === 'truffle') r.truffles += 1;
+          },
+        });
+        j = recordYear(j, s);
+        r.score.push(score(s).total);
+        if (s.gear.includes('spade')) r.owned += 1;
+      }
+    }
+  }
+  for (let level = from; level <= content.progression.levels.length; level++) {
+    for (const spade of ['none', 'exit', 'hunt']) {
+      const r = rows[`${level}:${spade}`];
+      if (!r) continue;
+      const y = r.score.length;
+      const mean = r.score.reduce((a, b) => a + b, 0) / y;
+      console.log(
+        `${`L${level}`.padEnd(5)}  ${spade.padEnd(5)}  ${String(y).padStart(5)}  ${String(pct(r.score, 0.5)).padStart(6)}  ${mean.toFixed(1).padStart(5)}  ${`${((100 * r.owned) / y).toFixed(0)}%`.padStart(11)}  ${(r.digs / y).toFixed(2).padStart(7)}  ${(r.truffles / y).toFixed(2).padStart(11)}  ${`${r.digs ? ((100 * r.truffles) / r.digs).toFixed(0) : '-'}%`.padStart(8)}  ${((r.truffles * truffle.value) / y).toFixed(1).padStart(16)}`,
+      );
+    }
+  }
+} else if (process.argv[3] === 'gen') {
   // A Legend homestead with every gear owned, in each generation; the last row has every artifact set complete.
-  // Each generation with layers open is played twice: diving carelessly, and diving carefully (home after a hazard below).
+  // Each generation with layers open is played three ways: diving carelessly, diving carefully (home after a hazard
+  // below), and by the planner diving carefully; generation 1 has no layers, so only carelessly and by the planner.
   const top = content.progression.levels[content.progression.levels.length - 1].renown;
   const rows: [string, Journal][] = [1, 2, 3, 4].map((g) => [`${g}`, { ...emptyJournal(), renown: top, generation: g, gearOwned: content.gear.map((x) => x.id) }]);
   rows.push(['4, full cabinet', { ...rows[3][1], artifacts: content.artifacts.map((a) => a.id) }]);
   console.log(`${n} Legend years per generation with the bot diving underground on every other trip`);
-  console.log('generation       bot      bronze  median  p90  tier reached  artifacts  descents  bust rate  falls  actions lost  months away');
+  console.log('generation       bot      bronze  median  p90  tier reached  top tier  artifacts  artifact pts  descents  bust rate  falls  actions lost  months away');
   for (const [label, j] of rows) {
     const heirlooms = HEIRLOOM_PREFERENCE.filter((g) => heirloomChoices(j).includes(g)).slice(0, heirloomSlots(levelFor(j.renown).level));
-    for (const careful of j.generation > 1 ? [false, true] : [false]) {
+    for (const bot of j.generation > 1 ? (['dive', 'careful', 'planner'] as const) : (['dive', 'planner'] as const)) {
+      const careful = bot !== 'dive';
       const scores: number[] = [];
       let tiered = 0;
+      let top = 0;
       let artifacts = 0;
+      let artifactPoints = 0;
       let descents = 0;
       let busts = 0;
       let trips = 0;
@@ -37,12 +123,14 @@ if (process.argv[3] === 'gen') {
         for (const e of report.events) if (e.type === 'recovering' && e.actions !== 'month') lost += e.actions;
       };
       for (let i = 0; i < n; i++) {
-        const s = playYear(newGame({ seed: `gen-${label}-${i}`, perks: perksFor(j, heirlooms) }), { dive: true, careful, onNight });
+        const s = playYear(newGame({ seed: `gen-${label}-${i}`, perks: perksFor(j, heirlooms) }), { dive: true, careful, plan: bot === 'planner', onNight });
         const sc = score(s);
         bronze = tiersFor(s)[0].min;
         scores.push(sc.total);
         if (sc.tier) tiered += 1;
+        if (sc.tier?.id === content.rules.tiers[content.rules.tiers.length - 1].id) top += 1;
         artifacts += s.artifacts.length;
+        artifactPoints += sc.artifacts;
         descents += s.stats.descents;
         busts += s.stats.busts;
         trips += s.stats.trips;
@@ -50,7 +138,7 @@ if (process.argv[3] === 'gen') {
         away += s.stats.monthsAway;
       }
       console.log(
-        `${label.padEnd(15)}  ${(careful ? 'careful' : 'dive').padEnd(7)}  ${String(bronze).padStart(6)}  ${String(pct(scores, 0.5)).padStart(6)}  ${String(pct(scores, 0.9)).padStart(3)}  ${`${((100 * tiered) / n).toFixed(0)}%`.padStart(12)}  ${(artifacts / n).toFixed(1).padStart(9)}  ${(descents / n).toFixed(1).padStart(8)}  ${`${((100 * busts) / Math.max(trips, 1)).toFixed(0)}%`.padStart(9)}  ${(falls / n).toFixed(2).padStart(5)}  ${(lost / n).toFixed(1).padStart(12)}  ${(away / n).toFixed(2).padStart(11)}`,
+        `${label.padEnd(15)}  ${bot.padEnd(7)}  ${String(bronze).padStart(6)}  ${String(pct(scores, 0.5)).padStart(6)}  ${String(pct(scores, 0.9)).padStart(3)}  ${`${((100 * tiered) / n).toFixed(0)}%`.padStart(12)}  ${`${((100 * top) / n).toFixed(0)}%`.padStart(8)}  ${(artifacts / n).toFixed(1).padStart(9)}  ${(artifactPoints / n).toFixed(1).padStart(12)}  ${(descents / n).toFixed(1).padStart(8)}  ${`${((100 * busts) / Math.max(trips, 1)).toFixed(0)}%`.padStart(9)}  ${(falls / n).toFixed(2).padStart(5)}  ${(lost / n).toFixed(1).padStart(12)}  ${(away / n).toFixed(2).padStart(11)}`,
       );
     }
   }

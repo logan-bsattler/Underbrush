@@ -78,6 +78,27 @@ describe('setup', () => {
     dispatch(s, { type: 'water' });
     expect(s).toEqual(copy);
   });
+
+  it('never mutates the input state over a forage trip, and copies only the decks the trip walks', () => {
+    let s = newGame({ seed: 'b' });
+    const steps: Action[] = [{ type: 'forage', zone: 'meadow' }];
+    for (let i = 0; i < 40 && steps.length; i++) {
+      const prev = s;
+      const copy = structuredClone(prev);
+      s = dispatch(prev, steps.shift()!).state;
+      expect(prev).toEqual(copy);
+      expect(s.decks.hollow).toBe(prev.decks.hollow);
+      const trip = s.forage;
+      if (trip?.status !== 'open') {
+        if (trip) steps.push({ type: 'closeTrip' });
+        continue;
+      }
+      const next = trip.patch.findIndex((p) => !p.flipped);
+      steps.push(next >= 0 ? { type: 'flip', index: next } : i < 20 ? { type: 'deeper' } : { type: 'stopForage' });
+    }
+    expect(s.forage).toBeNull();
+    expect(s.stats.trips).toBe(1);
+  });
 });
 
 describe('foraging', () => {

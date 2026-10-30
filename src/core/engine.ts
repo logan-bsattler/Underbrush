@@ -120,6 +120,28 @@ function commissionDeck(seed: string, perks: Perks, c: Content): string[] {
   return new Rng(hashSeed(`${seed}:commissions`)).shuffle(c.commissions.filter((o) => orderDealable(o, perks, c)).map((o) => o.id));
 }
 
+/**
+ * Whether a commission could still be filled this year: every species it names is in storage already or comes into
+ * season before the year ends, and a zone it draws on is still to open.
+ */
+export function commissionFillable(s: GameState, order: OrderDef, c: Content = defaultContent): boolean {
+  const seasons = new Set(Array.from({ length: c.rules.rounds - s.round + 1 }, (_, i) => seasonOf(s.round + i, c)));
+  const need = order.need;
+  if (need.kind === 'species') {
+    return Object.entries(need.items).every(([id, n]) => (s.storage[id] ?? 0) >= n || [...seasons].some((season) => inSeason(id, season, c)));
+  }
+  if (need.kind === 'zone') {
+    const zone = c.zones.find((z) => z.id === need.zone);
+    return !zone?.seasons || zone.seasons.some((season) => seasons.has(season));
+  }
+  return true;
+}
+
+/** The commission taking one would deal: the first waiting that can still be filled, or null if none can. */
+export function nextCommission(s: GameState, c: Content = defaultContent): string | null {
+  return s.commission.deck.find((id) => commissionFillable(s, orderById(id, c)!, c)) ?? null;
+}
+
 /** An order or the open commission, by id. */
 export function orderById(id: string, c: Content = defaultContent): OrderDef | undefined {
   return c.orders.find((o) => o.id === id) ?? c.commissions.find((o) => o.id === id);
@@ -200,7 +222,7 @@ export function descendStatus(s: GameState, c: Content = defaultContent): ZoneSt
   const open = layersOpen(s.perks.generation, trip.zone, c);
   if (trip.layer >= open) {
     const zone = c.zones.find((z) => z.id === trip.zone)!;
-    return { open: false, reason: open ? 'This is as deep as your generation can go.' : `Nothing under the ${zone.name} is open to your generation.` };
+    return { open: false, reason: open ? 'This is as deep as your generation can go.' : `Nothing under the ${zone.name.replace(/^The /, '')} is open to your generation.` };
   }
   const way = trip.patch.find((p) => p.card.type === 'entrance');
   if (way?.flipped) return { open: true };
@@ -209,10 +231,6 @@ export function descendStatus(s: GameState, c: Content = defaultContent): ZoneSt
   return { open: false, reason: `The way down is in the ${hasSetEffect(s.perks.sets, 'shortcut', c) ? 'first deep' : 'last'} patch of the zone.` };
 }
 
-/**
- * What a fall in the next layer down would cost next month, so the stakes can be named before descending.
- * Null when this trip can't go any deeper.
- */
 /** Whether this trip can dig under a patch card: a turned ground card on the surface, with a Spade. */
 export function digStatus(s: GameState, index: number): ZoneStatus {
   const trip = s.forage;
@@ -239,6 +257,10 @@ export function cellarReady(s: GameState, c: Content = defaultContent): boolean 
   return s.mode === 'story' && !s.perks.cacheFound && !s.cacheFound && cacheMarks(s, c).length === 3;
 }
 
+/**
+ * What a fall in the next layer down would cost next month, so the stakes can be named before descending.
+ * Null when this trip can't go any deeper.
+ */
 export function descendCost(s: GameState, c: Content = defaultContent): number | 'month' | null {
   const trip = s.forage;
   if (!trip || trip.status !== 'open' || trip.layer >= layersOpen(s.perks.generation, trip.zone, c)) return null;
@@ -297,33 +319,87 @@ export function orderDealable(order: OrderDef, perks: Perks, c: Content = defaul
   return true;
 }
 
+/** How many mushrooms an order takes in all. */
+export function orderSize(order: OrderDef): number {
+  const need = order.need;
+  return need.kind === 'species' ? Object.values(need.items).reduce((a, b) => a + b, 0) : need.count;
+}
+
+const tally = (pay: Record<string, number>) => Object.values(pay).reduce((a, b) => a + b, 0);
+
+/**
+ * What a stock of mushrooms would give toward an order, picking the cheapest that fit, on top of what
+ * `taken` already covers. It may fall short.
+ */
+function orderTake(stock: Record<string, number>, order: OrderDef, taken: Record<string, number>, c: Content): Record<string, number> {
+  const need = order.need;
+  const have = (id: string) => stock[id] ?? 0;
+  const byValue = (ids: string[]) => ids.slice().sort((a, b) => c.species[a].value - c.species[b].value);
+  const pay: Record<string, number> = {};
+  if (need.kind === 'species') {
+    for (const [id, n] of Object.entries(need.items)) {
+      const take = Math.min(have(id), n - (taken[id] ?? 0));
+      if (take > 0) pay[id] = take;
+    }
+    return pay;
+  }
+  let left = need.count - tally(taken);
+  const pool = orderSpecies(order, c);
+  if (pool) {
+    for (const id of byValue(Object.keys(stock).filter((id) => pool.includes(id)))) {
+      const take = Math.min(have(id), left);
+      if (take > 0) pay[id] = take;
+      left -= Math.max(take, 0);
+    }
+    return pay;
+  }
+  // Different species, one of each: any already counted can't count again.
+  for (const id of byValue(Object.keys(stock).filter((id) => have(id) > 0 && !taken[id])).slice(0, Math.max(left, 0))) pay[id] = 1;
+  return pay;
+}
+
 /** Which stored mushrooms an order would take, picking the cheapest that fit; null if it can't be filled. */
 export function orderPayment(
   storage: Record<string, number>,
   order: OrderDef,
   c: Content = defaultContent,
 ): Record<string, number> | null {
-  const need = order.need;
-  const have = (id: string) => storage[id] ?? 0;
-  const byValue = (ids: string[]) => ids.slice().sort((a, b) => c.species[a].value - c.species[b].value);
-  if (need.kind === 'species') {
-    for (const [id, n] of Object.entries(need.items)) if (have(id) < n) return null;
-    return { ...need.items };
-  }
-  const pool = orderSpecies(order, c);
-  if (pool && 'count' in need) {
-    const pay: Record<string, number> = {};
-    let left = need.count;
-    for (const id of byValue(Object.keys(storage).filter((id) => pool.includes(id)))) {
-      const take = Math.min(have(id), left);
-      if (take > 0) pay[id] = take;
-      left -= take;
-    }
-    return left === 0 ? pay : null;
-  }
-  const ids = byValue(Object.keys(storage).filter((id) => have(id) > 0)).slice(0, need.count);
-  if (ids.length < need.count) return null;
-  return Object.fromEntries(ids.map((id) => [id, 1]));
+  const pay = orderTake(storage, order, {}, c);
+  return tally(pay) === orderSize(order) ? pay : null;
+}
+
+/** How far along an order is: what storage would give it, then what's identified in the basket, then the beds growing toward it. */
+export interface OrderProgress {
+  need: number;
+  stored: number;
+  basket: number;
+  growing: number;
+}
+
+/** An order's progress, taken in the same way a delivery takes from storage, so the farm and the market agree. */
+export function orderProgress(s: GameState, order: OrderDef, c: Content = defaultContent): OrderProgress {
+  const taken: Record<string, number> = {};
+  const count = (ids: string[]) => {
+    const stock: Record<string, number> = {};
+    for (const id of ids) stock[id] = (stock[id] ?? 0) + 1;
+    return stock;
+  };
+  const add = (stock: Record<string, number>) => {
+    const pay = orderTake(stock, order, taken, c);
+    for (const [id, n] of Object.entries(pay)) taken[id] = (taken[id] ?? 0) + n;
+    return tally(pay);
+  };
+  const stored = add(s.storage);
+  // Only what's been identified: an unknown specimen might be a lookalike.
+  const basket = add(count(s.basket.filter((b) => b.identified).map((b) => b.species)));
+  const growing = add(count(s.grid.flatMap((sq) => (sq.species && !sq.blight ? [sq.species] : []))));
+  return { need: orderSize(order), stored, basket, growing };
+}
+
+/** What an artifact brought up this year scores: full the first time, half (rounded up) once it's already in the cabinet. */
+export function artifactPoints(s: GameState, id: string, c: Content = defaultContent): number {
+  const points = artifactDef(id, c)?.points ?? 0;
+  return s.perks.clues.includes(id) ? Math.ceil(points / 2) : points;
 }
 
 export function score(s: GameState, c: Content = defaultContent) {
@@ -331,7 +407,7 @@ export function score(s: GameState, c: Content = defaultContent) {
   const planted = s.planted.length * c.rules.plantedPoints;
   const coins = Math.min(Math.floor(s.coins / c.rules.coinsPerPoint), c.rules.maxCoinPoints);
   const feast = s.feastPoints;
-  const artifacts = s.artifacts.reduce((sum, id) => sum + (artifactDef(id, c)?.points ?? 0), 0);
+  const artifacts = s.artifacts.reduce((sum, id) => sum + artifactPoints(s, id, c), 0);
   // The Festival Ribbons: the judges remember the family.
   const family = setBonus(s.perks.sets, 'points', c);
   const cache = s.cacheFound ? c.cache.points : 0;
@@ -620,15 +696,29 @@ function tripDeck(trip: ForageTrip): string {
   return trip.layer ? layerKey(trip.zone, trip.layer) : trip.zone;
 }
 
+/** The decks each dispatched state has copied; the rest are still shared with the state it was made from. */
+const ownDecks = new WeakMap<GameState, Set<string>>();
+
+/** A zone or layer deck about to change. In a dispatch, the first change copies it so the previous state keeps its own. */
+function deckOf(s: GameState, key: string) {
+  const own = ownDecks.get(s);
+  if (own && !own.has(key) && s.decks[key]) {
+    const d = s.decks[key];
+    s.decks[key] = { draw: [...d.draw], discard: [...d.discard] };
+    own.add(key);
+  }
+  return s.decks[key];
+}
+
 /** Takes the top card of a zone or layer deck. A trip is one pass through it, so null once it runs out. */
 function takeCard(s: GameState, deck: string): Card | null {
-  return s.decks[deck].draw.shift() ?? null;
+  return deckOf(s, deck).draw.shift() ?? null;
 }
 
 /** Wild mushrooms out of season aren't dealt at all: they wait in the discard until the trip's restock shuffles them back. */
 function setAsideOutOfSeason(s: GameState, deck: string, c: Content) {
   const season = seasonOf(s.round, c);
-  const d = s.decks[deck];
+  const d = deckOf(s, deck);
   const out = (card: Card) => card.type === 'specimen' && c.species[card.species].kind === 'wild' && !inSeason(card.species, season, c);
   d.discard.push(...d.draw.filter(out));
   d.draw = d.draw.filter((card) => !out(card));
@@ -643,7 +733,7 @@ function fromDeck(p: PatchCard): boolean {
 function leaveHidden(s: GameState, trip: ForageTrip) {
   for (const p of trip.patch) {
     if (p.flipped || !fromDeck(p)) continue;
-    s.decks[tripDeck(trip)].discard.push(p.card);
+    deckOf(s, tripDeck(trip)).discard.push(p.card);
     if (p.card.type !== 'hazard') trip.missed += 1;
   }
 }
@@ -661,7 +751,7 @@ export function zoneCleared(s: GameState, trip: ForageTrip): boolean {
 /** When a trip ends, every card goes back and each deck it walked is shuffled, so the next trip walks the whole zone again. */
 function restockDeck(s: GameState, trip: ForageTrip, rng: Rng) {
   for (let layer = 0; layer <= trip.layer; layer++) {
-    const deck = s.decks[layer ? layerKey(trip.zone, layer) : trip.zone];
+    const deck = deckOf(s, layer ? layerKey(trip.zone, layer) : trip.zone);
     const unturned = layer === trip.layer ? trip.patch.filter((p) => !p.flipped && fromDeck(p)).map((p) => p.card) : [];
     deck.draw = rng.shuffle([...deck.draw, ...deck.discard, ...unturned]);
     deck.discard = [];
@@ -701,7 +791,7 @@ function wayDown(s: GameState, trip: ForageTrip, last: boolean, c: Content): Car
 function dealPatch(s: GameState, trip: ForageTrip, rng: Rng, c: Content) {
   const n = c.rules.patchSize * c.rules.patchSize;
   const zone = c.zones.find((z) => z.id === trip.zone)!;
-  const deck = s.decks[tripDeck(trip)];
+  const deck = deckOf(s, tripDeck(trip));
   // Underground, the one card from outside the deck is the layer's artifact rather than a deep find.
   const deep = trip.layer ? layerRelic(s, trip, c) : trip.depth >= c.rules.deepAt ? deepFind(s, zone, rng, c) : null;
   const last = !trip.layer && deck.draw.length <= n - (deep ? 1 : 0);
@@ -773,7 +863,11 @@ export function dispatch(
   action: Action,
   c: Content = defaultContent,
 ): { state: GameState; result: ActionResult } {
-  const s: GameState = structuredClone(prev);
+  // Everything but the decks is copied now. Most actions touch one deck at most, and the decks are most of the
+  // state, so each is copied only when the action first changes it (deckOf).
+  const s: GameState = structuredClone({ ...prev, decks: {} });
+  s.decks = { ...prev.decks };
+  ownDecks.set(s, new Set());
   const rng = new Rng(s.rng);
   let result: ActionResult = { kind: 'none' };
 
@@ -789,7 +883,7 @@ export function dispatch(
       spendAction(s);
       s.market = null;
       // Saves from before trips were a single pass can still hold discards: shuffle them back in first.
-      const deck = s.decks[zone.id];
+      const deck = deckOf(s, zone.id);
       if (deck.discard.length) {
         deck.draw = rng.shuffle([...deck.draw, ...deck.discard]);
         deck.discard = [];
@@ -849,7 +943,7 @@ export function dispatch(
       if (spot.flipped) fail('You already turned that one.');
       const card = spot.card;
       spot.flipped = true;
-      if (fromDeck(spot)) s.decks[tripDeck(trip)].discard.push(card);
+      if (fromDeck(spot)) deckOf(s, tripDeck(trip)).discard.push(card);
       let outcome: ActionResult & { kind: 'draw' } = { kind: 'draw', index: action.index, card, outcome: 'basket' };
       if (card.type === 'specimen') {
         const sp = c.species[card.species];
@@ -1188,13 +1282,16 @@ export function dispatch(
       guardFinale(s);
       if (!s.perks.commissions) fail("The village doesn't bring you commissions yet.");
       if (s.commission.open) fail('Deliver the commission you have first.');
-      if (!s.commission.deck.length) fail('No more commissions this year.');
+      const next = nextCommission(s, c);
+      if (!next) fail(s.commission.deck.length ? 'Nothing the village wants can still be found this year.' : 'No more commissions this year.');
       const cost = commissionCost(s, c);
       if (s.coins < cost) fail(`A commission costs ${cost} coins this time.`);
       openMarketVisit(s);
       s.coins -= cost;
       s.commission.taken += 1;
-      s.commission.open = s.commission.deck.shift()!;
+      // Any passed over need what can't be found again this year: they stay in the pile, never dealt.
+      s.commission.deck.splice(s.commission.deck.indexOf(next), 1);
+      s.commission.open = next;
       break;
     }
 

@@ -37,7 +37,7 @@ function forageOne(s: GameState, zone: string, card: Card) {
 
 describe('homestead levels', () => {
   it('maps renown to levels', () => {
-    expect([0, 14, 15, 39, 40, 70, 209, 210, 280, 370, 479, 480, 9999].map((r) => levelFor(r).level)).toEqual([1, 1, 2, 2, 3, 4, 6, 7, 8, 9, 9, 10, 10]);
+    expect([0, 14, 15, 39, 40, 70, 209, 210, 270, 340, 419, 420, 9999].map((r) => levelFor(r).level)).toEqual([1, 1, 2, 2, 3, 4, 6, 7, 8, 9, 9, 10, 10]);
   });
 
   it('starts a new homestead with the basic kit on a 4×4 farm', () => {

@@ -4,6 +4,7 @@ import {
   achievementsEarned,
   actionsPerMonth,
   artifactHome,
+  artifactPoints,
   basketCapacity,
   completedSets,
   content,
@@ -279,6 +280,15 @@ describe('artifacts', () => {
     const before = score(s).total;
     s.artifacts = ['droverspenny', 'blueribbon'];
     expect(score(s)).toMatchObject({ artifacts: 5, total: before + 5 });
+  });
+
+  it('scores half, rounded up, for an artifact already in the cabinet', () => {
+    const s = year(2);
+    s.perks.clues = ['droverspenny', 'blueribbon'];
+    s.artifacts = ['droverspenny', 'blueribbon', 'stonecap'];
+    expect(artifactPoints(s, 'droverspenny')).toBe(1);
+    expect(artifactPoints(s, 'blueribbon')).toBe(2);
+    expect(score(s).artifacts).toBe(1 + 2 + 4);
   });
 
   it("isn't dealt again once it's home this year", () => {

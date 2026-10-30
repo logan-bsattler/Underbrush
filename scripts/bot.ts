@@ -1,5 +1,6 @@
 import {
   basketCapacity,
+  cellarReady,
   commissionCost,
   content,
   deliveryCost,
@@ -15,6 +16,7 @@ import {
   layersOpen,
   levelFor,
   newGame,
+  nextCommission,
   orderById,
   orderPayment,
   orderSpecies,
@@ -28,14 +30,16 @@ import {
   swapCost,
   zoneStatus,
   type Action,
+  type ActionResult,
   hazardsNear,
   type ForageTrip,
   type GameState,
   type Journal,
   type NightReport,
+  type OrderDef,
   type Substrate,
 } from '../src/core';
-import { neighbors } from '../src/core/board';
+import { isShaded, neighbors } from '../src/core/board';
 
 /**
  * Reads the forest floor the way a careful player would: a turned card's number says how many
@@ -142,6 +146,99 @@ function deadOrder(s: GameState, id: string): boolean {
   return false;
 }
 
+/** Months left this year, this one included, in which a wild species is in season in a zone open now. */
+function findableMonths(s: GameState, id: string): number {
+  let n = 0;
+  for (let r = s.round; r <= content.rules.rounds; r++) {
+    const season = seasonOf(r);
+    if (!inSeason(id, season)) continue;
+    if ((SOURCES[id] ?? []).some((src) => zoneStatus(s, content.zones.find((z) => z.id === src.zone)!).open)) n++;
+  }
+  return n;
+}
+
+/**
+ * How many times a bed will fruit before the festival if nothing goes wrong: a step each month it's in season (or under
+ * the tent), none at all if it needs shade and has none. A bed already fruiting is picked this month.
+ */
+function bedYield(s: GameState, id: string, from: 'S' | 'C' | 'P' | 'F', shaded: boolean, tent = false): number {
+  const def = content.species[id];
+  if (def.traits.needsShade && !shaded) return 0;
+  const cycle = stageLength('C', def.growth) + stageLength('P', def.growth);
+  let need = from === 'S' ? 1 + cycle : from === 'C' ? cycle : from === 'P' ? stageLength('P', def.growth) : 0;
+  let n = 0;
+  if (need === 0) [n, need] = [1, cycle];
+  for (let r = s.round; r <= content.rules.rounds; r++) {
+    if (!tent && !inSeason(id, seasonOf(r))) continue;
+    if (--need <= 0) [n, need] = [n + 1, cycle];
+  }
+  return n;
+}
+
+/** What the beds of a species on the farm will bring in before the festival. */
+function bedsYield(s: GameState, id: string): number {
+  return s.grid.reduce((n, q, i) => (q.species === id && !q.blight ? n + bedYield(s, id, q.stage!, isShaded(s.grid, i, s.size), q.tent) : n), 0);
+}
+
+/** How much of an order storage covers: specimens toward each species it names, or toward its count. */
+function progress(storage: Record<string, number>, o: OrderDef): number {
+  const need = o.need;
+  const have = (id: string) => storage[id] ?? 0;
+  if (need.kind === 'species') return Object.entries(need.items).reduce((n, [id, k]) => n + Math.min(k, have(id)), 0);
+  if (need.kind === 'distinct') return Math.min(need.count, Object.keys(storage).filter((id) => have(id) > 0).length);
+  const pool = orderSpecies(o);
+  return pool && 'count' in need ? Math.min(need.count, pool.reduce((n, id) => n + have(id), 0)) : 0;
+}
+
+/**
+ * Whether the planner can expect to fill a commission before the festival. Stricter than deadOrder, since a commission
+ * is paid for up front and can't be swapped: what storage holds, what the beds will fruit in season, what up to two new
+ * beds could add, and for wild finds the months left in season in a zone open now.
+ */
+function commissionInReach(s: GameState, id: string): boolean {
+  const o = orderDef(id);
+  const need = o.need;
+  if (orderPayment(s.storage, o)) return true;
+  if (deadOrder(s, id) && need.kind !== 'hybrids') return false;
+  const have = (sp: string) => s.storage[sp] ?? 0;
+  const room = Math.min(1, emptyGround(s).length);
+  const fresh = (sp: string) => (spawnStock(s).includes(sp) ? Math.min(room, Math.max(0, (need.kind === 'species' ? need.items[sp] : 1) - have(sp) - bedsYield(s, sp))) * bedYield(s, sp, 'S', true) : 0);
+  if (need.kind === 'species') {
+    return Object.entries(need.items).every(([sp, k]) => {
+      if (have(sp) >= k) return true;
+      if (content.species[sp].kind === 'wild') return have(sp) + findableMonths(s, sp) / 2 >= k;
+      return have(sp) + bedsYield(s, sp) + fresh(sp) >= k;
+    });
+  }
+  if (need.kind === 'hybrids') return orderSpecies(o)!.reduce((n, sp) => n + have(sp) + bedsYield(s, sp), 0) >= need.count;
+  if (need.kind === 'distinct') {
+    // Wild species still to be found count for half: the planner forages most months, but finds aren't certain.
+    const kinds = new Set([...Object.keys(s.storage), ...content.speciesOrder.filter((sp) => bedsYield(s, sp) > 0)]);
+    const wild = content.speciesOrder.filter((sp) => !kinds.has(sp) && content.species[sp].kind === 'wild' && findableMonths(s, sp) > 0).length;
+    return kinds.size + wild / 2 >= need.count;
+  }
+  if (need.kind === 'zone') {
+    // Each month a species the zone's floor deals is in season counts as a find; its deep patches are too long a shot.
+    const zone = content.zones.find((z) => z.id === need.zone)!;
+    if (!zoneStatus(s, zone).open) return false;
+    const floor = new Set(zone.deck.flatMap((e) => (e.card.type === 'specimen' ? [e.card.species] : [])));
+    let expect = orderSpecies(o)!.reduce((n, sp) => n + have(sp), 0);
+    for (let r = s.round; r <= content.rules.rounds; r++) {
+      for (const sp of orderSpecies(o)!) if (floor.has(sp) && inSeason(sp, seasonOf(r))) expect += 1;
+    }
+    return expect >= need.count;
+  }
+  return !deadOrder(s, id);
+}
+
+/** What the open commission still lacks of each species it names, beyond storage. */
+function commissionShort(s: GameState): Record<string, number> {
+  const need = s.commission.open ? orderDef(s.commission.open).need : null;
+  const short: Record<string, number> = {};
+  if (need?.kind === 'species') for (const [sp, k] of Object.entries(need.items)) if (k > (s.storage[sp] ?? 0)) short[sp] = k - (s.storage[sp] ?? 0);
+  return short;
+}
+
 /**
  * A simple greedy player used to fuzz the rules and to estimate pacing.
  * It is deliberately unclever: the point is a repeatable baseline, not a strong strategy.
@@ -155,10 +252,25 @@ function deadOrder(s: GameState, id: string): boolean {
  * wants, keeps order mushrooms out of the sale, buys spawn and substrate for a cultivated order, delivers every order it
  * can on a visit while it can pay for the extra ones, swaps away orders it can no longer fill, hires a hand once leftover
  * coins have stopped scoring, and cooks Truffle Shavings.
+ * With `cache`, it buys the Spade and, once the family's marks point to the tree, the place and the season, goes to dig
+ * out the Founder's Cellar at the first chance.
  */
 export function playYear(
   start: GameState,
-  opts: { greed?: number; dive?: boolean; careful?: boolean; forager?: boolean; swap?: boolean; plan?: boolean; onNight?: (report: NightReport) => void } = {},
+  opts: {
+    greed?: number;
+    dive?: boolean;
+    careful?: boolean;
+    forager?: boolean;
+    swap?: boolean;
+    plan?: boolean;
+    /** Buy the Spade and dig for truffles: only on a trip's way home ('exit'), or by heading for oak and hazel in winter ('hunt'). */
+    spade?: 'exit' | 'hunt';
+    /** Solve the Founder's Cache on schedule: dig at the answer as soon as the marks are all in and the season comes. */
+    cache?: boolean;
+    onNight?: (report: NightReport) => void;
+    onResult?: (action: Action, result: ActionResult) => void;
+  } = {},
 ): GameState {
   const greed = opts.greed ?? 3;
   let s = start;
@@ -166,15 +278,25 @@ export function playYear(
     const r = dispatch(s, a);
     s = r.state;
     if (r.result.kind === 'night') opts.onNight?.(r.result.report);
+    opts.onResult?.(a, r.result);
   };
   const value = (id: string | null) => (id ? content.species[id].value : 0);
   let swappedIn = 0;
-  const wantedGear = ['biggerbasket', 'knife', 'lantern', 'dehydrator', 'fieldguide', 'growtent', 'trailmap', 'blightspray', 'dripline', 'waders', 'compass'];
+  // The Spade comes after the gear that pays every trip.
+  const wantedGear = ['biggerbasket', 'knife', 'lantern', 'dehydrator', 'fieldguide', 'growtent', 'trailmap', 'blightspray', 'dripline', 'waders', ...(opts.spade || opts.cache ? ['spade'] : []), 'compass'];
   const gearCost = (g: string) => content.gear.find((x) => x.id === g)!.cost;
+  /** Whether delivering this order would set back the open commission while it can still be filled; never on festival morning. */
+  const robsCommission = (o: OrderDef) => {
+    const open = s.commission.open;
+    if (!opts.plan || !open || o.id === open || s.finale || !commissionInReach(s, open)) return false;
+    const after = { ...s.storage };
+    for (const [id, n] of Object.entries(orderPayment(s.storage, o)!)) after[id] -= n;
+    return progress(after, orderDef(open)) < progress(s.storage, orderDef(open));
+  };
   const fillableOrders = () =>
     board(s)
       .map(orderDef)
-      .filter((o) => orderPayment(s.storage, o))
+      .filter((o) => orderPayment(s.storage, o) && !robsCommission(o))
       .sort((a, b) => b.points - a.points);
   /** Every order storage can fill, best first, while the extra deliveries are affordable. */
   const deliverAll = () => {
@@ -183,7 +305,7 @@ export function playYear(
   /** Sells what the board doesn't want: everything when it would spoil anyway, otherwise only what no order names. */
   const sellSurplus = (all: boolean) => {
     const want = orderWants(s);
-    const distinct = s.orders.visible.some((o) => orderDef(o).need.kind === 'distinct');
+    const distinct = board(s).some((o) => orderDef(o).need.kind === 'distinct');
     const keep = (id: string) => {
       if (all) return 0;
       const named = board(s).some((o) => {
@@ -201,31 +323,42 @@ export function playYear(
   const spawnPlan = (): { species: string; substrate: Substrate | null } | null => {
     if (s.basket.length >= basketCapacity(s)) return null;
     const want = orderWants(s);
+    const short = commissionShort(s);
     for (const id of spawnStock(s).filter((x) => want[x]).sort((a, b) => want[b] - want[a])) {
-      if (s.grid.some((q) => q.species === id)) continue;
+      // One bed for an order; for the commission, more while the beds won't fruit what it still lacks.
+      if (s.grid.some((q) => q.species === id) && bedsYield(s, id) >= (short[id] ?? 0)) continue;
       const nights = nightsToFruit(id);
-      if (s.round + nights - 1 > content.rules.rounds) continue;
-      let ok = true;
+      // A bed for the commission may wait out of season for its next one; a bed for an order has to grow straight through.
+      let ok = s.round + nights - 1 <= content.rules.rounds;
       for (let r = s.round; r < s.round + nights; r++) if (!inSeason(id, seasonOf(r))) ok = false;
-      if (!ok) continue;
-      const bed = plantableSquares(s, id).length > 0;
-      if (!bed && !emptyGround(s).length) continue;
+      if (!ok && !(short[id] && bedYield(s, id, 'S', true) > 0)) continue;
+      const shade = content.species[id].traits.needsShade;
+      const bed = plantableSquares(s, id).some((i) => !shade || isShaded(s.grid, i, s.size));
+      if (!bed && !emptyGround(s).some((i) => !shade || isShaded(s.grid, i, s.size))) continue;
       const sub = content.species[id].substrates[0];
       const cost = spawnCost(id) + (bed ? 0 : content.rules.substrateCost[sub]);
       if (s.coins >= cost) return { species: id, substrate: bed ? null : sub };
     }
     return null;
   };
+  /** A commission worth taking now: one the planner can expect to fill, and the coins for it. */
+  const commissionDue = () => {
+    const commission = s.perks.commissions && !s.commission.open && s.round <= 10 ? nextCommission(s) : null;
+    return !!commission && commissionInReach(s, commission) && s.coins >= commissionCost(s);
+  };
   /** One planned market visit; false if nothing there was worth the action. */
   const planMarket = (): boolean => {
+    // Gear waits for the year's first commission while the planner can fill it and the coins can't cover both.
+    const commissionAhead = s.perks.commissions && !s.commission.taken && s.round <= 10 && !!nextCommission(s) && commissionInReach(s, nextCommission(s)!);
+    const saving = () => (commissionAhead && !s.commission.taken ? commissionCost(s) : 0);
     const dehydrated = s.gear.includes('dehydrator');
     const spoiling = s.round % 3 === 0 && !dehydrated && Object.keys(s.storage).length > 0;
-    const gear = wantedGear.find((g) => !s.gear.includes(g) && s.perks.shop.includes(g) && s.coins >= gearCost(g));
+    const gear = wantedGear.find((g) => !s.gear.includes(g) && s.perks.shop.includes(g) && s.coins >= gearCost(g) + saving());
     const canSwap = () => s.orders.deck.length > 0 && s.coins >= swapCost(s);
     const dead = s.orders.visible.filter((o) => deadOrder(s, o));
     const stored = Object.values(s.storage).reduce((a, b) => a + b, 0);
     const stuck = !fillableOrders().length && stored >= 2 && swappedIn !== s.round;
-    if (!fillableOrders().length && !gear && !spoiling && !spawnPlan() && !((dead.length || stuck) && canSwap())) return false;
+    if (!fillableOrders().length && !gear && !spoiling && !spawnPlan() && !commissionDue() && !((dead.length || stuck) && canSwap())) return false;
     deliverAll();
     for (const o of s.orders.visible.filter((x) => deadOrder(s, x))) if (canSwap()) act({ type: 'swapOrder', order: o });
     if (stuck && !fillableOrders().length && canSwap()) {
@@ -235,12 +368,9 @@ export function playYear(
     deliverAll();
     if (spoiling || !dehydrated || s.coins < 20) sellSurplus(spoiling);
     deliverAll();
-    for (const g of wantedGear) if (!s.gear.includes(g) && s.perks.shop.includes(g) && s.coins >= gearCost(g)) act({ type: 'buyGear', gear: g });
-    // A commission once the coins would otherwise sit idle, early enough in the year to fill it.
-    const cap = content.rules.coinsPerPoint * content.rules.maxCoinPoints;
-    if (s.perks.commissions && !s.commission.open && s.commission.deck.length && s.round <= 9 && s.coins >= commissionCost(s) + Math.min(cap, 20)) {
-      act({ type: 'takeCommission' });
-    }
+    // A commission comes before gear: it pays 12-14 points for 6 coins, if the one it would deal is one the planner can fill.
+    if (commissionDue()) act({ type: 'takeCommission' });
+    for (const g of wantedGear) if (!s.gear.includes(g) && s.perks.shop.includes(g) && s.coins >= gearCost(g) + saving()) act({ type: 'buyGear', gear: g });
     const sp = spawnPlan();
     if (sp) {
       if (sp.substrate) act({ type: 'buySubstrate', substrate: sp.substrate });
@@ -270,6 +400,50 @@ export function playYear(
     return best?.id ?? null;
   };
 
+  const shaded = (i: number) => isShaded(s.grid, i, s.size);
+  /**
+   * Where the next substrate from the shed goes: the first empty ground, but for a planner holding a find that needs shade
+   * and has no shaded bed to go to, beside a tree.
+   */
+  const groundFor = (): number => {
+    const ground = emptyGround(s);
+    const sub = s.shed[0];
+    const shy = (id: string) => content.species[id].traits.needsShade && content.species[id].substrates.includes(sub) && !plantableSquares(s, id).some(shaded);
+    const spot = ground.find(shaded);
+    return opts.plan && spot !== undefined && s.basket.some((b) => b.identified && shy(b.species)) ? spot : ground[0];
+  };
+  /** The planner's bed for a find: shaded first if it needs shade, then away from its own kind, since crowding blights. */
+  const bestSquare = (id: string): number => {
+    const shade = content.species[id].traits.needsShade;
+    const cost = (i: number) => (shade && !shaded(i) ? 10 : 0) + neighbors(i, s.size).filter((n) => s.grid[n].species === id).length;
+    return plantableSquares(s, id).sort((a, b) => cost(a) - cost(b))[0];
+  };
+
+  const truffleSeason = () => inSeason(content.rules.dig.species, seasonOf(s.round));
+  /** With `cache`, whether this month the answer can be dug: every mark in, a Spade, and the cache's season. */
+  const cellarDue = () => !!opts.cache && s.gear.includes('spade') && cellarReady(s) && seasonOf(s.round) === content.cache.season;
+  /**
+   * Where to dig in this surface patch with a Spade in hand: the cache's tree when the cellar is due there,
+   * else a turned oak or hazel in truffle season.
+   */
+  const digSpot = (): number => {
+    const t = s.forage;
+    if (!t || t.status !== 'open' || t.layer || !s.gear.includes('spade')) return -1;
+    const turned = (names: string[]) => t.patch.findIndex((p) => p.flipped && p.card.type === 'ground' && names.includes(p.card.name));
+    if (cellarDue() && t.zone === content.cache.zone) {
+      const i = turned([content.cache.card]);
+      if (i >= 0) return i;
+    }
+    return opts.spade && truffleSeason() ? turned(content.rules.dig.hosts) : -1;
+  };
+  /** Whether this trip is out to dig the cellar and has its tree turned. */
+  const cellarSpot = () => cellarDue() && s.forage?.zone === content.cache.zone && digSpot() >= 0;
+  /** Heads home, digging on the way out when there's a truffle spot turned. */
+  const leave = () => {
+    const i = digSpot();
+    act(i >= 0 ? { type: 'dig', index: i } : { type: 'stopForage' });
+  };
+
   let guard = 0;
   while (!s.over) {
     if (++guard > 2000) throw new Error('bot stuck');
@@ -281,10 +455,7 @@ export function playYear(
     if (s.finale) {
       // Festival morning: bring in the last harvest, deliver what an order takes, sell the rest.
       if (s.grid.some((sq) => sq.stage === 'F' && !sq.blight && sq.species)) act({ type: 'harvest' });
-      const best = s.orders.visible
-        .map((o) => content.orders.find((x) => x.id === o)!)
-        .filter((o) => orderPayment(s.storage, o))
-        .sort((a, b) => b.points - a.points)[0];
+      const best = fillableOrders()[0];
       if (best) act({ type: 'fillOrder', order: best.id });
       // A planner sells what no order takes first, so the coins pay for more deliveries.
       if (opts.plan) {
@@ -302,7 +473,7 @@ export function playYear(
       act({ type: 'endMonth' });
       continue;
     }
-    while (s.shed.length && emptyGround(s).length) act({ type: 'placeSubstrate', index: 0, square: emptyGround(s)[0] });
+    while (s.shed.length && emptyGround(s).length) act({ type: 'placeSubstrate', index: 0, square: groundFor() });
     if (s.gear.includes('growtent') && !s.tentPlaced) {
       const bed = s.grid.findIndex((sq) => sq.species && !sq.tree);
       act({ type: 'placeTent', square: bed >= 0 ? bed : s.grid.findIndex((sq) => !sq.tree) });
@@ -342,7 +513,7 @@ export function playYear(
           .filter((b) => b.identified && plantableSquares(s, b.species).length)
           .sort((a, b) => (want[b.species] ?? 0) - (want[a.species] ?? 0));
         if (ready.length) {
-          act({ type: 'plant', uid: ready[0].uid, square: plantableSquares(s, ready[0].species)[0] });
+          act({ type: 'plant', uid: ready[0].uid, square: bestSquare(ready[0].species) });
           continue;
         }
         // A find no bed can take only blocks the basket: onto the compost, where it feeds the Puffball beds.
@@ -355,7 +526,7 @@ export function playYear(
         }
       }
       if (opts.plan && planMarket()) {
-        while (s.shed.length && emptyGround(s).length) act({ type: 'placeSubstrate', index: 0, square: emptyGround(s)[0] });
+        while (s.shed.length && emptyGround(s).length) act({ type: 'placeSubstrate', index: 0, square: groundFor() });
         continue;
       }
       const fillableNow = () => s.orders.visible.find((o) => orderPayment(s.storage, content.orders.find((x) => x.id === o)!));
@@ -372,8 +543,7 @@ export function playYear(
         act({ type: 'swapOrder', order: s.orders.visible[0] });
       }
       const fillable = fillableNow();
-      const wanted = ['biggerbasket', 'knife', 'lantern', 'dehydrator', 'fieldguide', 'growtent', 'trailmap', 'blightspray', 'dripline', 'waders', 'compass'];
-      const affordable = wanted.find(
+      const affordable = wantedGear.find(
         (g) => !s.gear.includes(g) && s.perks.shop.includes(g) && s.coins >= content.gear.find((x) => x.id === g)!.cost,
       );
       const lastMonthOfSeason = s.round % 3 === 0;
@@ -390,7 +560,7 @@ export function playYear(
             if (!neededSomewhere || lastMonthOfSeason) act({ type: 'sell', species: id, count: s.storage[id] });
           }
         }
-        for (const g of wanted) {
+        for (const g of wantedGear) {
           const def = content.gear.find((x) => x.id === g)!;
           if (!s.gear.includes(g) && s.perks.shop.includes(g) && s.coins >= def.cost) act({ type: 'buyGear', gear: g });
         }
@@ -401,10 +571,16 @@ export function playYear(
       }
       const zones = content.zones.filter((z) => zoneStatus(s, z).open);
       if (!zones.length) break;
+      // A truffle hunter heads for the oak and hazel woods in winter, taking turns between them.
+      const hosts = zones.filter((z) => z.id === 'mixedwoods' || z.id === 'hollow');
+      const hunt = opts.spade === 'hunt' && s.gear.includes('spade') && truffleSeason() && hosts.length ? hosts[s.tripCount % hosts.length].id : null;
+      const cellar = cellarDue() && zones.some((z) => z.id === content.cache.zone) ? content.cache.zone : null;
       const zone =
+        cellar ??
+        hunt ??
         (opts.plan ? planZone(zones) : null) ??
         (zones[zones.length - 1].id === 'burnscar' ? 'burnscar' : zones[(s.round + s.actionsLeft) % zones.length].id);
-      const dive = !!opts.dive && layersOpen(s.perks.generation, zone) > 0 && s.tripCount % 2 === 1;
+      const dive = !!opts.dive && !cellar && layersOpen(s.perks.generation, zone) > 0 && s.tripCount % 2 === 1;
       act({ type: 'forage', zone });
       while (s.forage?.status === 'open') {
         const t: ForageTrip = s.forage;
@@ -419,19 +595,23 @@ export function playYear(
           if (way?.flipped) act({ type: 'descend' });
           else if (way) act({ type: 'flip', index: safestCard(t)!.index });
           else if (s.decks[t.zone].draw.length) act({ type: 'deeper' });
-          else act({ type: 'stopForage' });
+          else leave();
+          continue;
+        }
+        if (cellarSpot() || (opts.spade === 'hunt' && digSpot() >= 0)) {
+          leave();
           continue;
         }
         const full = s.basket.length >= (s.gear.includes('biggerbasket') ? 6 : 4);
         const pick = safestCard(t);
         // Plain ground is no find: greed counts what the trip has actually brought in.
         const finds = t.drawn.filter((d) => d.card.type !== 'ground' && d.card.type !== 'entrance').length;
-        if (full || (t.hazards >= 1 && finds >= greed)) act({ type: 'stopForage' });
+        if (full || (t.hazards >= 1 && finds >= greed)) leave();
         else if (pick && (pick.risk < 0.35 || t.hazards === 0)) act({ type: 'flip', index: pick.index });
         else if (t.layer === 0 && t.depth < 3 && t.hazards === 0) act({ type: 'deeper' });
         // From a later generation on, a clean trip that has walked the deep patches goes underground.
         else if (t.hazards === 0 && descendStatus(s).open) act({ type: 'descend' });
-        else act({ type: 'stopForage' });
+        else leave();
       }
       act({ type: 'closeTrip' });
     }
@@ -440,7 +620,7 @@ export function playYear(
   return s;
 }
 
-export const HEIRLOOM_PREFERENCE = ['biggerbasket', 'knife', 'lantern', 'dripline', 'fieldguide', 'dehydrator', 'growtent', 'trailmap', 'blightspray', 'compass'];
+export const HEIRLOOM_PREFERENCE = ['biggerbasket', 'knife', 'lantern', 'dripline', 'fieldguide', 'dehydrator', 'growtent', 'trailmap', 'blightspray', 'compass', 'spade'];
 
 /** Plays a story campaign of several years, carrying the journal (and so the progression) forward. */
 export function playCampaign(years: number, seed: string, journal: Journal, opts: Parameters<typeof playYear>[1] = {}): { journal: Journal; games: GameState[] } {

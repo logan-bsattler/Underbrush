@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { commissionCost, content, dispatch, emptyJournal, newGame, orderById, perksFor, recordYear, score, standardPerks, tiersFor, type GameState } from '../src/core';
+import { commissionCost, commissionFillable, content, dispatch, emptyJournal, newGame, nextCommission, orderById, perksFor, recordYear, score, seasonOf, standardPerks, tiersFor, type GameState } from '../src/core';
 
 const withCommissions = (coins = 100): GameState => {
   const s = newGame({ seed: 'commission', perks: { ...standardPerks(), commissions: true } });
@@ -35,6 +35,21 @@ describe('commissions', () => {
     expect(r.commission.open).toBeNull();
     expect(r.orders.visible).toEqual(board);
     expect(score(r).orders).toBe(o.points);
+  });
+
+  it('deals only what can still be filled: no spring fair once spring is gone, unless the Morel is in storage', () => {
+    const fair = orderById('c-fair')!;
+    const summer = Array.from({ length: content.rules.rounds }, (_, i) => i + 1).find((r) => seasonOf(r) === 'summer')!;
+    const s = withCommissions();
+    const late: GameState = { ...s, round: summer, commission: { ...s.commission, deck: ['c-fair', 'c-mill'] } };
+    expect(commissionFillable({ ...late, round: 1 }, fair)).toBe(true);
+    expect(commissionFillable(late, fair)).toBe(false);
+    expect(nextCommission(late)).toBe('c-mill');
+    const r = dispatch(late, { type: 'takeCommission' }).state;
+    expect(r.commission.open).toBe('c-mill');
+    expect(r.commission.deck).toEqual(['c-fair']);
+    expect(nextCommission({ ...late, storage: { morel: 4 } })).toBe('c-fair');
+    expect(() => dispatch({ ...late, commission: { ...late.commission, deck: ['c-fair'] } }, { type: 'takeCommission' })).toThrow(/can still be found/);
   });
 
   it("can't be taken without the level", () => {
