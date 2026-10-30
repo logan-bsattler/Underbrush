@@ -143,6 +143,7 @@ Progress (2026-10-30):
       because of the 3f bot work (Lion's Mane beside a tree, planning for commissions). The bot is now closer
       to a skilled player, so this is the truer number. The lever if Ben wants 10–15% back is `tierStep`
       (8 now) or Golden's `min`. Not changed here.
+      - **Accepted (Ben, 2026-10-30):** Golden in 18–22% of planner years is fine. D2 now reads that way.
 
       | Generation (300 Legend years) | Planner median / p90 | Tier reached | Golden | 3b median / Golden |
       | --- | --- | --- | --- | --- |
