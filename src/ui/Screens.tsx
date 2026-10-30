@@ -299,7 +299,8 @@ export function HowTo({ onBack }: { onBack: () => void }) {
         <h2>Tiers</h2>
         <p>
           {r.tiers.map((t) => t.name).join(' · ')}. Each tier's bar rises as your homestead levels up and with each new generation, so a
-          good year means something different later on. The festival screen shows where this year landed.
+          good year means something different later on. Tap the score at the top of the farm to see this year's tiers and how close you
+          are; the festival screen shows where the year landed.
         </p>
       </section>
       <p class="disclaimer">Underbrush is a game, not a foraging guide. Never eat a wild mushroom because of anything you saw here.</p>

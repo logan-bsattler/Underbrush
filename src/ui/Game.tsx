@@ -19,8 +19,11 @@ import {
   orderPayment,
   orderProgress,
   plantableSquares,
+  score,
   seasonOf,
   stageLength,
+  tierLift,
+  tiersFor,
   type ActionResult,
   type GameState,
   type GrowthRate,
@@ -56,6 +59,7 @@ type Sheet =
   | { kind: 'forage' }
   | { kind: 'weather' }
   | { kind: 'pantry' }
+  | { kind: 'tiers' }
   | { kind: 'menu' };
 
 export function SheetFrame({ title, onClose, children, tall }: { title: string; onClose: () => void; children: ComponentChildren; tall?: boolean }) {
@@ -91,10 +95,23 @@ export function ActionsPips({ left, total }: { left: number; total: number }) {
   );
 }
 
-function Hud({ g, onWeather, onPantry, onMenu }: { g: GameState; onWeather: () => void; onPantry: () => void; onMenu: () => void }) {
+function Hud({
+  g,
+  onWeather,
+  onPantry,
+  onScore,
+  onMenu,
+}: {
+  g: GameState;
+  onWeather: () => void;
+  onPantry: () => void;
+  onScore: () => void;
+  onMenu: () => void;
+}) {
   const weather = content.weather.find((w) => w.id === g.weather)!;
   const stored = Object.values(g.storage).reduce((a, b) => a + b, 0);
   const meal = g.meal ? content.recipes.find((r) => r.id === g.meal) : null;
+  const sc = score(g);
   return (
     <header class="hud">
       <div class="hud-month">
@@ -121,6 +138,14 @@ function Hud({ g, onWeather, onPantry, onMenu }: { g: GameState; onWeather: () =
       >
         <Icon name={meal ? 'bowl' : 'pantry'} size={18} />
         {stored}
+      </button>
+      <button
+        class={`chip score ${sc.tier ? 'on' : ''}`}
+        onClick={onScore}
+        aria-label={`Score so far: ${sc.total} point${sc.total === 1 ? '' : 's'}${sc.tier ? `, ${sc.tier.name}` : ''}. Show this year's festival tiers`}
+      >
+        <Icon name="spark" size={18} />
+        {sc.total}
       </button>
       <span class="chip coins" aria-label={`${g.coins} coins`}>
         <Icon name="coin" size={18} />
@@ -876,6 +901,55 @@ function TendSheet({ g, store, onClose, onBed }: { g: GameState; store: Store; o
   );
 }
 
+/** This year's festival tiers against the score so far. The bars rise with the homestead's level and each generation. */
+function TiersSheet({ g, onClose }: { g: GameState; onClose: () => void }) {
+  const sc = score(g);
+  const tiers = tiersFor(g);
+  const next = tiers.find((t) => t.min > sc.total);
+  const lift = tierLift(g.perks);
+  const parts = (
+    [
+      ['Orders', sc.orders],
+      ['Hybrids', sc.hybrids],
+      ['Planted', sc.planted],
+      ['Coins', sc.coins],
+      ['Dishes', sc.feast],
+      ['Artifacts', sc.artifacts],
+      [content.cache.name, sc.cache],
+      ['Family ribbons', sc.family],
+    ] as const
+  ).filter(([, n]) => n > 0);
+  const raised = [
+    lift.level > 0 && `level ${g.perks.level} adds ${lift.level}`,
+    lift.generation > 0 && `generation ${g.perks.generation} adds ${lift.generation}`,
+  ].filter(Boolean);
+  return (
+    <SheetFrame title="Festival tiers" onClose={onClose}>
+      <p>
+        If the festival were today:{' '}
+        <b>
+          {sc.total} point{sc.total === 1 ? '' : 's'}
+        </b>
+        {sc.tier ? `, ${sc.tier.name}` : ''}. {next ? `${next.min - sc.total} more for ${next.name}.` : 'Above every tier.'}
+      </p>
+      <div class="tiers">
+        {tiers.map((t) => (
+          <span class={`tier ${sc.tier?.id === t.id ? 'on' : ''}`}>
+            <b>{t.name}</b>
+            <small>{t.min}+</small>
+          </span>
+        ))}
+      </div>
+      {parts.length > 0 && <p class="small muted">So far: {parts.map(([label, n]) => `${label} ${n}`).join(' · ')}.</p>}
+      <p class="small muted">
+        {raised.length
+          ? `Every tier sits ${lift.level + lift.generation} above the printed one this year: ${raised.join(' and ')}.`
+          : 'These are the printed tiers. They rise as your homestead levels up and with each generation.'}
+      </p>
+    </SheetFrame>
+  );
+}
+
 function Menu({
   g,
   onClose,
@@ -1031,6 +1105,7 @@ export function Game({
         g={g}
         onWeather={() => setSheet({ kind: 'weather' })}
         onPantry={() => setSheet({ kind: 'pantry' })}
+        onScore={() => setSheet({ kind: 'tiers' })}
         onMenu={() => setSheet({ kind: 'menu' })}
       />
       <Orders g={g} onOpen={() => setSheet({ kind: 'market' })} />
@@ -1143,6 +1218,7 @@ export function Game({
       {sheet?.kind === 'menu' && <Menu g={g} onClose={() => setSheet(null)} onHelp={onHelp} onTitle={onTitle} onAlmanac={onAlmanac} />}
       {sheet?.kind === 'market' && <Market g={g} store={store} onClose={() => setSheet(null)} onPantry={() => setSheet({ kind: 'pantry' })} />}
       {sheet?.kind === 'pantry' && <Pantry g={g} store={store} onClose={() => setSheet(null)} />}
+      {sheet?.kind === 'tiers' && <TiersSheet g={g} onClose={() => setSheet(null)} />}
       {(sheet?.kind === 'forage' || g.forage) && <Forage g={g} store={store} onClose={() => setSheet(null)} />}
       {reveal && <Reveal r={reveal} g={g} onDone={() => setReveal(null)} onPlant={startPlant} />}
       {busy && <Night g={g} store={store} />}

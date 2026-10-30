@@ -1,7 +1,7 @@
 # Review follow-up: the plan
 
-Status: Phases 1–3 and 5 are done, and Phase 4 is done except item 5. Phase 3 was signed off 2026-10-30, with
-Golden above target as a flag for Ben. Next: Phase 4 item 5, then Phase 6. Written 2026-10-30 from three
+Status: Phases 1–5 are done. Phase 3 was signed off 2026-10-30, with Golden at 18–22% of planner years
+accepted by Ben. Next: Phase 6. Written 2026-10-30 from three
 reviews: balance, speed and features. Section 0's decisions are settled (see Progress).
 
 Progress (2026-10-30):
@@ -187,9 +187,12 @@ Progress (2026-10-30):
       (25 and 29), from the same bot fix. Not a concern.
     - **Standard-kit years** (`sim-full.txt`, baseline bot): mean 11.0, median 11, and a tier in 21% of years.
       Daily-year tiers were left alone (3g).
-  - **Next:** Phase 4 item 5 (show this year's tiers on the farm), which was waiting for these numbers. Then
-    Phase 6. Ben's call on the Golden flag above comes first if it changes the tiers. The Market browser
-    check for 3f step 1 is still open.
+  - **Next:** Phase 6. The Market browser check for 3f step 1 is still open.
+- **Phase 4 item 5: done.** A score chip in the farm's top bar shows the score so far (rust when a tier is
+  reached). Tapping it opens a Festival tiers sheet: this year's thresholds from `tiersFor`, points to the next
+  tier, the score so far by part, and how much level and generation raise the bars (`Game.tsx`). How to play
+  points to it. Checked in the browser at 375px: L8 shows bronze 24, silver 34, gold 44, Golden 54, and the
+  top bar doesn't overflow. `progression.test.ts` already pins the thresholds, so no new engine test.
 
 ## Bottom line
 

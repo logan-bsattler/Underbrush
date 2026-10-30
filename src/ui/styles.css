@@ -3138,6 +3138,13 @@ button.chip {
   border-color: var(--gold);
   background: #fbf1d8;
 }
+.chip.score {
+  color: var(--ink);
+}
+.chip.score.on {
+  border-color: var(--rust);
+  background: var(--rust-wash);
+}
 .order-card-actions {
   grid-row: 1 / span 2;
   grid-column: 2;
