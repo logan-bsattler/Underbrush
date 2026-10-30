@@ -372,7 +372,7 @@ export function soundFor(a: Action, r: ActionResult, s: GameState): Cue | null {
   if (r.kind === 'order') return { sfx: 'order' };
   if (r.kind === 'night') return { sfx: 'night' };
   if (r.kind === 'identify') return { sfx: 'page' };
-  if (r.kind === 'dig') return { sfx: r.found ? 'rare' : 'thud' };
+  if (r.kind === 'dig') return { sfx: r.dug === 'found' ? 'rare' : r.dug === 'truffle' ? 'find' : 'thud' };
   switch (a.type) {
     case 'forage':
       return { sfx: 'setOut' };

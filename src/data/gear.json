@@ -9,5 +9,6 @@
   { "id": "blightspray", "name": "Blight Spray", "cost": 5, "use": "When you clear blight", "rule": "Clearing blight treats every blighted bed at once, for 1 action." },
   { "id": "dripline", "name": "Drip Line", "cost": 7, "use": "Always on", "rule": "Waters every bed each month, so you never need to Water. Dry spells don't stall it." },
   { "id": "waders", "name": "Waders", "cost": 6, "use": "Unlocks a zone", "rule": "Opens the Riverbank from spring to fall: Dryad's Saddle, Shaggy Mane and oysters on the willows." },
-  { "id": "compass", "name": "Compass", "cost": 7, "use": "Unlocks a zone", "rule": "Opens the Hollow in fall and winter: Blewits, Truffles and other deep-woods finds." }
+  { "id": "compass", "name": "Compass", "cost": 7, "use": "Unlocks a zone", "rule": "Opens the Hollow in fall and winter: Blewits, Truffles and other deep-woods finds." },
+  { "id": "spade", "name": "Spade", "cost": 5, "use": "Ending a Forage trip", "rule": "Dig under a turned card of plain ground on your way home. Under oak or hazel in winter, now and then: a truffle." }
 ]

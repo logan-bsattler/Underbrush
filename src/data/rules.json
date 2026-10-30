@@ -26,6 +26,7 @@
   "bustKeep": 2,
   "recovery": { "actions": [1, 2], "awayFrom": 3 },
   "deepCoinChance": 0.25,
+  "dig": { "hosts": ["Oak", "Hazel Scrub"], "species": "truffle", "chance": 0.35 },
   "scrapsPerCompost": 3,
   "compostValue": 1,
   "dryMarksToBlight": 2,

@@ -8,7 +8,9 @@ export * from './board';
 import type {
   Action,
   ActionResult,
+  CacheMark,
   Card,
+  DrawOutcome,
   ForageTrip,
   IdentifyResult,
   Content,
@@ -211,18 +213,30 @@ export function descendStatus(s: GameState, c: Content = defaultContent): ZoneSt
  * What a fall in the next layer down would cost next month, so the stakes can be named before descending.
  * Null when this trip can't go any deeper.
  */
-/** Whether this trip can dig for the Founder's Cellar under a patch card: a turned ground card on the surface, in a story year with a clue. */
+/** Whether this trip can dig under a patch card: a turned ground card on the surface, with a Spade. */
 export function digStatus(s: GameState, index: number): ZoneStatus {
   const trip = s.forage;
   if (!trip || trip.status !== 'open') return { open: false, reason: 'You are not out foraging.' };
-  // The Founder's Cellar belongs to the family's story, and the family has to have found one of the founder's marks.
-  if (s.mode !== 'story') return { open: false, reason: 'Digging is for story years.' };
-  if (s.perks.cacheFound || s.cacheFound) return { open: false, reason: "The family has already found the Founder's Cellar." };
-  if (!s.perks.clues && !s.artifacts.length) return { open: false, reason: 'Nothing to go on yet.' };
+  if (!s.gear.includes('spade')) return { open: false, reason: 'You need a Spade to dig.' };
   if (trip.layer) return { open: false, reason: 'Dig on the surface, not below it.' };
   const spot = trip.patch[index];
   if (!spot?.flipped || spot.card.type !== 'ground') return { open: false, reason: 'Dig under a turned card of plain ground.' };
   return { open: true };
+}
+
+/** What the family's marks point to so far: the cabinet's artifacts and any brought home this year. */
+export function cacheMarks(s: GameState, c: Content = defaultContent): CacheMark[] {
+  const ids = new Set([...s.perks.clues, ...s.artifacts]);
+  const marks = c.artifacts.flatMap((a) => (ids.has(a.id) && a.mark ? [a.mark] : []));
+  return (['tree', 'place', 'season'] as const).filter((m) => marks.includes(m));
+}
+
+/**
+ * Whether a dig in the right spot would open the Founder's Cellar: a story year, not yet found, and
+ * marks pointing to the tree, the place and the season, so it's never found by accident.
+ */
+export function cellarReady(s: GameState, c: Content = defaultContent): boolean {
+  return s.mode === 'story' && !s.perks.cacheFound && !s.cacheFound && cacheMarks(s, c).length === 3;
 }
 
 export function descendCost(s: GameState, c: Content = defaultContent): number | 'month' | null {
@@ -356,7 +370,7 @@ export function standardPerks(c: Content = defaultContent): Perks {
     level: 1,
     challenges: [],
     sets: [],
-    clues: 0,
+    clues: [],
     cacheFound: false,
     commissions: false,
   };
@@ -373,7 +387,8 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   s.perks.level ??= 1;
   s.perks.challenges ??= [];
   s.perks.sets ??= [];
-  s.perks.clues ??= 0;
+  // Saves from before the marks counted held the cabinet as a number: the year starts without them.
+  if (!Array.isArray(s.perks.clues)) s.perks.clues = [];
   s.perks.cacheFound ??= false;
   // Saves from before boards were all on Streamside, with the stream down the left column.
   s.board ??= 'streamside';
@@ -709,6 +724,34 @@ export function hazardsNear(trip: ForageTrip, index: number, c: Content = defaul
   return neighbors(index, c.rules.patchSize).filter((n) => trip.patch[n]?.card.type === 'hazard').length;
 }
 
+/**
+ * A picked specimen in season: an Expert's wild find goes straight to storage, full basket or not;
+ * otherwise into the basket, bumping a lesser find when it's full, or left behind if nothing ranks lower.
+ */
+function pickSpecimen(s: GameState, trip: ForageTrip, species: string, rare: boolean, c: Content): { outcome: DrawOutcome; dropped?: Specimen } {
+  const sp = c.species[species];
+  const full = s.basket.length >= basketCapacity(s, c);
+  const bump = full ? bumpFor(s, sp.kind === 'wild', rare, c) : null;
+  if (masteryOf(s, sp.id) >= 2 && sp.kind === 'wild') {
+    addStorage(s, sp.id);
+    s.stats.identified[sp.id] = (s.stats.identified[sp.id] ?? 0) + 1;
+    return { outcome: 'known' };
+  }
+  if (full && !bump) return { outcome: 'basketFull' };
+  if (bump) {
+    // The lesser find is left on the forest floor to make room.
+    s.basket = s.basket.filter((b) => b !== bump);
+    trip.picked = trip.picked.filter((u) => u !== bump.uid);
+  }
+  const uid = s.nextUid++;
+  const known = masteryOf(s, sp.id) >= 2;
+  s.basket.push({ uid, species, identified: known, trip: trip.id, ...(rare ? { rare: true } : {}) });
+  trip.picked.push(uid);
+  if (known) s.stats.identified[sp.id] = (s.stats.identified[sp.id] ?? 0) + 1;
+  if (bump) return { outcome: 'swapped', dropped: bump };
+  return { outcome: known ? 'known' : 'basket' };
+}
+
 function specimenFor(s: GameState, uid: number) {
   const spec = s.basket.find((b) => b.uid === uid);
   if (!spec) fail('That specimen is not in your basket.');
@@ -810,32 +853,12 @@ export function dispatch(
       let outcome: ActionResult & { kind: 'draw' } = { kind: 'draw', index: action.index, card, outcome: 'basket' };
       if (card.type === 'specimen') {
         const sp = c.species[card.species];
-        const bump = s.basket.length >= basketCapacity(s, c) ? bumpFor(s, sp.kind === 'wild', !!spot.deep, c) : null;
         if (sp.kind === 'wild' && !inSeason(sp.id, seasonOf(s.round, c), c)) {
           outcome.outcome = 'emptyPatch';
-        } else if (masteryOf(s, sp.id) >= 2 && sp.kind === 'wild') {
-          // An Expert recognizes it on sight; wild finds go straight to storage, full basket or not.
-          addStorage(s, sp.id);
-          s.stats.identified[sp.id] = (s.stats.identified[sp.id] ?? 0) + 1;
-          outcome.outcome = 'known';
-        } else if (s.basket.length >= basketCapacity(s, c) && !bump) {
-          outcome.outcome = 'basketFull';
         } else {
-          if (bump) {
-            // The lesser find is left on the forest floor to make room.
-            s.basket = s.basket.filter((b) => b !== bump);
-            trip.picked = trip.picked.filter((u) => u !== bump.uid);
-            outcome.dropped = bump;
-          }
-          const uid = s.nextUid++;
-          const known = masteryOf(s, sp.id) >= 2;
-          s.basket.push({ uid, species: card.species, identified: known, trip: trip.id, ...(spot.deep ? { rare: true } : {}) });
-          trip.picked.push(uid);
-          if (known) {
-            s.stats.identified[sp.id] = (s.stats.identified[sp.id] ?? 0) + 1;
-            outcome.outcome = 'known';
-          }
-          if (bump) outcome.outcome = 'swapped';
+          const picked = pickSpecimen(s, trip, sp.id, !!spot.deep, c);
+          outcome.outcome = picked.outcome;
+          if (picked.dropped) outcome.dropped = picked.dropped;
         }
         if (spot.deep && outcome.outcome !== 'emptyPatch' && outcome.outcome !== 'basketFull') s.stats.rareFinds += 1;
       } else if (card.type === 'coins') {
@@ -902,15 +925,25 @@ export function dispatch(
       if (!status.open) fail(status.reason);
       const trip = s.forage!;
       const spot = trip.patch[action.index];
-      const { cache } = c;
-      const found = trip.zone === cache.zone && spot.card.type === 'ground' && spot.card.name === cache.card && seasonOf(s.round, c) === cache.season;
-      // Right or wrong, the day is spent: the trip ends as if you headed home, finds and all.
+      const { cache, rules } = c;
+      const name = spot.card.type === 'ground' ? spot.card.name : '';
+      const season = seasonOf(s.round, c);
+      const dig: ActionResult & { kind: 'dig' } = { kind: 'dig', dug: 'empty' };
+      if (cellarReady(s, c) && trip.zone === cache.zone && name === cache.card && season === cache.season) {
+        dig.dug = 'found';
+        s.cacheFound = true;
+      } else if (rules.dig.hosts.includes(name) && inSeason(rules.dig.species, season, c) && rng.next() < rules.dig.chance) {
+        const picked = pickSpecimen(s, trip, rules.dig.species, false, c);
+        dig.dug = picked.outcome === 'basketFull' ? 'noRoom' : 'truffle';
+        dig.outcome = picked.outcome;
+        if (picked.dropped) dig.dropped = picked.dropped;
+      }
+      // Whatever it turns up, the day is spent: the trip ends as if you headed home, finds and all.
       bankRelics(s, trip);
       restockDeck(s, trip, rng);
       trip.status = 'stopped';
-      trip.dug = found ? 'found' : 'empty';
-      if (found) s.cacheFound = true;
-      result = { kind: 'dig', found };
+      trip.dug = dig.dug;
+      result = dig;
       break;
     }
 

@@ -3,6 +3,7 @@ import {
   basketCapacity,
   bustAt,
   bustKeep,
+  cellarReady,
   content,
   descendStatus,
   digStatus,
@@ -110,6 +111,12 @@ function lockedText(unlock: string | null, st: { reason: string; notStocked?: bo
 }
 
 const ordinal = (n: number) => ['first', 'second', 'third', 'fourth', 'fifth'][n - 1] ?? `${n}th`;
+/** The trees a spade finds truffles under, as a forager would say them: "oak and hazel". */
+const hostNames = () => content.rules.dig.hosts.map((h) => h.replace(/ Scrub$/, '').toLowerCase()).join(' and ');
+const seasonsOf = (species: string) => {
+  const seasons = content.species[species].seasons;
+  return seasons === 'any' ? 'any season' : seasons.join(' and ');
+};
 /** "the Badger Setts", but "The Old Well" as it's named. */
 const the = (name: string) => (name.startsWith('The ') ? name : `the ${name}`);
 
@@ -279,8 +286,9 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   const [hold, setHold] = useState<{ index: number; kind: string; bust: boolean } | null>(null);
   const holding = useRef<ReturnType<typeof setTimeout>>();
   useEffect(() => () => clearTimeout(holding.current), []);
-  // A dig for the Founder's Cellar asks first, since it ends the trip; once found, the cellar opens full screen.
+  // A dig asks first, since it ends the trip; once the Founder's Cellar is found, it opens full screen.
   const [digAsk, setDigAsk] = useState<number | null>(null);
+  const [dugUnder, setDugUnder] = useState<string | null>(null);
   const [cellar, setCellar] = useState(false);
   const busy = !!descent || !!hold;
   const home = () => {
@@ -290,8 +298,11 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   };
   const dig = (index: number) => {
     setDigAsk(null);
+    const card = trip.patch[index]?.card;
+    setDugUnder(card?.type === 'ground' ? card.name : null);
     const r = store.act({ type: 'dig', index });
-    if (r?.kind === 'dig' && r.found) buzz([40, 60, 40]);
+    if (r?.kind === 'dig' && r.dug === 'found') buzz([40, 60, 40]);
+    else if (r?.kind === 'dig' && r.dug === 'truffle') buzz(30);
   };
 
   const flip = (index: number) => {
@@ -347,11 +358,26 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
         ? ` The way down lies in the ${hasSetEffect(g.perks.sets, 'shortcut') ? 'first deep' : 'last'} patch.`
         : '';
   const relics = trip.relics.filter((r) => !trip.lost.includes(r.uid)).map((r) => cardTitle({ type: 'artifact', artifact: r.artifact }));
+  const { dig: digRule } = content.rules;
+  const truffle = name(digRule.species);
+  const digResult = store.last?.kind === 'dig' ? store.last : null;
+  const emptyDig = () => {
+    // Once the family's marks say enough, a wrong spot is the founder's riddle; before that, it's just a hole.
+    if (cellarReady(g)) return content.cache.wrong;
+    if (!dugUnder || !digRule.hosts.includes(dugUnder)) return `Roots and cold earth, and nothing else. ${truffle}s grow under ${hostNames()}.`;
+    return inSeason(digRule.species, seasonOf(g.round))
+      ? `Roots and cold earth. No ${truffle.toLowerCase()} under this one today.`
+      : `Roots and cold earth. ${truffle}s only come up in ${seasonsOf(digRule.species)}.`;
+  };
   const message = trip.dug === 'found'
     ? `The spade rings on oak, a hand's depth under the ${content.cache.card}.`
-    : trip.dug === 'empty'
-      ? content.cache.wrong
-      : justCleared
+    : trip.dug === 'truffle'
+      ? `A warty black knob among the roots: a ${truffle.toLowerCase()}! ${digResult?.outcome ? outcomeText(digResult.outcome, { type: 'specimen', species: digRule.species }, digResult.dropped) : ''}`
+      : trip.dug === 'noRoom'
+        ? `A ${truffle.toLowerCase()} among the roots, and no room in your basket for it. You leave it for the deer.`
+        : trip.dug === 'empty'
+          ? emptyDig()
+          : justCleared
     ? `Nothing left unturned: every card in the ${zone.name} but its hazards.`
     : last && lastWasDeep
       ? last.card.type === 'coins'
@@ -418,7 +444,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             const near = hazardsNear(trip, i);
             // The way down, once turned, is a door: tap it to go down.
             const door = open && p.flipped && p.card.type === 'entrance' && !!next;
-            // Turned plain ground can be dug, once the family has a clue to the Founder's Cellar.
+            // With a Spade, turned plain ground can be dug.
             const spade = open && p.flipped && p.card.type === 'ground' && digStatus(g, i).open;
             const label = p.flipped
               ? door
@@ -562,7 +588,19 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
       ) : (
         <footer class="forage-foot done">
           <div class={`trip-end ${trip.status} ${trip.dug ?? ''}`}>
-            <h3>{trip.status === 'busted' ? 'Busted!' : trip.dug === 'found' ? content.cache.name : trip.dug === 'empty' ? 'Nothing here' : 'Heading home'}</h3>
+            <h3>
+              {trip.status === 'busted'
+                ? 'Busted!'
+                : trip.dug === 'found'
+                  ? content.cache.name
+                  : trip.dug === 'truffle'
+                    ? `A ${truffle.toLowerCase()}!`
+                    : trip.dug === 'noRoom'
+                      ? 'No room for it'
+                      : trip.dug === 'empty'
+                        ? 'Nothing here'
+                        : 'Heading home'}
+            </h3>
             <p>
               {kept.length ? `${kept.length} specimen${kept.length === 1 ? '' : 's'}` : 'No specimens'}
               {coins ? `, ${coins} coins` : ''}
@@ -583,7 +621,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
       )}
       {digAsk !== null && trip.patch[digAsk] && (
         <SheetFrame title={`Dig under the ${cardTitle(trip.patch[digAsk].card)}?`} onClose={() => setDigAsk(null)}>
-          <p>If nothing's there, the day is spent and you head home with what you've found.</p>
+          <p>Digging takes the rest of the day: you head home with what you've found, and whatever the spade turns up.</p>
           <div class="foot-actions">
             <button class="btn primary big" onClick={() => dig(digAsk)}>
               <Icon name="spade" size={18} /> Dig here

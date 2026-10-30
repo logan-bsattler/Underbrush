@@ -110,7 +110,7 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
     level,
     challenges: isLegend(j, c) ? challenges.filter((id) => c.progression.challenges.some((x) => x.id === id)) : [],
     sets,
-    clues: j.artifacts.length,
+    clues: [...j.artifacts],
     cacheFound: j.cacheFound,
     commissions,
   };

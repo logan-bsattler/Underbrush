@@ -428,6 +428,16 @@ first-layer inscriptions are enough for a sharp player; the third-layer ones are
 
 The bots never dig, so the sim numbers are unchanged.
 
+**Revised 2026-10-29 (Ben): digging needs a purpose, a tool, and no accidents.**
+- **The Spade** (`gear.json`, 5 coins, shop from level 6, every daily year) is what digs (`digStatus`). Story and daily alike.
+- **Truffles are the everyday purpose** (`rules.dig`): under Oak (Mixed Woods) or Hazel Scrub (the Hollow), while truffles
+  are in season (winter), a dig turns one up 35% of the time, picked like any find (`pickSpecimen`: basket, Expert to
+  storage, bump, or no room). Digging still ends the trip, so it's the last move of a winter trip.
+- **No accidental cellar**: each inscription has a `mark` (tree, place or season, as in the spec's table), and the right
+  spot opens the cellar only once the family's marks (cabinet plus this year's) cover all three (`cacheMarks`,
+  `cellarReady`). Before that the Yew is plain ground. The cabinet says when the marks say enough.
+- The bots don't buy the Spade (`wantedGear`), so the sim numbers are unchanged; the truffle odds are untested by sim.
+
 ## Achievements
 
 Feats the field journal remembers across every year, listed in the Almanac and announced with a

@@ -101,7 +101,11 @@ export interface ArtifactDef {
   blurb: string;
   /** The founder's mark on it: one clue to where the Founder's Cellar lies. */
   inscription?: string;
+  /** What the mark points to. The cellar opens only once the family's marks point to all three. */
+  mark?: CacheMark;
 }
+
+export type CacheMark = 'tree' | 'place' | 'season';
 
 /** The one puzzle of the saga: the artifacts' inscriptions point to a spot to dig, in one zone, in one season. */
 export interface CacheDef {
@@ -113,7 +117,7 @@ export interface CacheDef {
   /** Festival points the year it's found. */
   points: number;
   premise: string;
-  /** What a dig in the wrong spot turns up. */
+  /** What a dig in the wrong spot turns up, once the family knows enough to look. */
   wrong: string;
   /** The place, as it's found... */
   place: string;
@@ -241,6 +245,8 @@ export interface RulesDef {
   recovery: { actions: number[]; awayFrom: number };
   /** When a deep species is in season, the chance a deep find is the zone's cache of coins instead. */
   deepCoinChance: number;
+  /** With a Spade: digging under one of these ground cards, while the species is in season, turns it up this often. */
+  dig: { hosts: string[]; species: string; chance: number };
   /** Discarded specimens on the compost pile that rot into one Compost tile overnight. */
   scrapsPerCompost: number;
   /** Coins a Compost tile from the shed sells for at the market. */
@@ -436,9 +442,12 @@ export interface ForageTrip {
   missed: number;
   /** Every non-hazard card in the zone's deck has been turned this trip. */
   cleared: boolean;
-  /** The trip ended in a dig for the Founder's Cellar: what it turned up. */
-  dug?: 'found' | 'empty';
+  /** The trip ended in a dig: what it turned up. */
+  dug?: DigFind;
 }
+
+/** A dig's find: the Founder's Cellar, a truffle (into the basket, or storage for an Expert), a truffle with no room for it, or nothing. */
+export type DigFind = 'found' | 'truffle' | 'noRoom' | 'empty';
 
 export type DrawOutcome =
   | 'basket'
@@ -533,8 +542,8 @@ export interface Perks {
   challenges: string[];
   /** Artifact sets complete in the field journal's cabinet. */
   sets: string[];
-  /** Artifacts in the cabinet: with any at all, a story year can dig for the Founder's Cellar. */
-  clues: number;
+  /** Artifacts in the cabinet, by id: their marks are the family's clues to the Founder's Cellar. */
+  clues: string[];
   /** The family found the Founder's Cellar in an earlier year: there's nothing left to dig for. */
   cacheFound: boolean;
   /** The market takes commissions this year. */
@@ -620,7 +629,7 @@ export type Action =
   /** Goes down into the next underground layer below the zone, from its deep patches or a layer above. */
   | { type: 'descend' }
   | { type: 'stopForage' }
-  /** Digs under a turned surface ground card for the Founder's Cellar. Right or wrong, the trip ends. */
+  /** Digs under a turned surface ground card with the Spade, for a truffle or the Founder's Cellar. Either way, the trip ends. */
   | { type: 'dig'; index: number }
   | { type: 'closeTrip' }
   /** Identifies every unidentified specimen in the basket, for one action. */
@@ -678,4 +687,4 @@ export type ActionResult =
   | { kind: 'sell'; coins: number }
   | { kind: 'order'; points: number }
   | { kind: 'night'; report: NightReport }
-  | { kind: 'dig'; found: boolean };
+  | { kind: 'dig'; dug: DigFind; outcome?: DrawOutcome; dropped?: Specimen };

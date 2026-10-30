@@ -108,7 +108,7 @@
       "title": "Steward",
       "renown": 150,
       "tierLift": 6,
-      "blurb": "A neighbor's kid starts helping out on the farm, and the woodlot up the lane is yours to farm if you like.",
+      "blurb": "A neighbor's kid starts helping out on the farm, the woodlot up the lane is yours to farm if you like, and the chandler hangs a spade by the door.",
       "unlocks": [
         {
           "type": "actions",
@@ -117,6 +117,10 @@
         {
           "type": "board",
           "id": "woodlot"
+        },
+        {
+          "type": "gear",
+          "id": "spade"
         }
       ]
     },

@@ -274,6 +274,8 @@ function Cabinet({ j }: { j: Journal }) {
 function Riddle({ j }: { j: Journal }) {
   const { cache } = content;
   const marked = j.artifacts.flatMap((id) => content.artifacts.filter((a) => a.id === id && a.inscription));
+  // The cellar won't open until the marks point to the tree, the place and the season.
+  const enough = new Set(marked.flatMap((a) => (a.mark ? [a.mark] : []))).size === 3;
   return (
     <section class={`riddle ${j.cacheFound ? 'solved' : ''}`}>
       <h3>The founder's riddle</h3>
@@ -297,8 +299,10 @@ function Riddle({ j }: { j: Journal }) {
         </div>
       ) : (
         <p class="small muted">
-          {marked.length} of {content.artifacts.length} marks found. On a story year's forage trip, tap a turned card of plain ground to dig
-          under it. A wrong guess ends the trip.
+          {marked.length} of {content.artifacts.length} marks found.{' '}
+          {enough
+            ? "They say enough now to know where to dig. With a Spade, tap a turned card of plain ground on a story year's trip to dig under it; a dig ends the trip."
+            : "They don't say enough yet to know where the founder dug. Bring home more from below."}
         </p>
       )}
     </section>

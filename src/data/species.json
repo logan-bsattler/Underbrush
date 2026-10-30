@@ -121,7 +121,7 @@
     "substrates": [], "seasons": ["winter"], "growth": "none",
     "group": "Buried knob", "lookalike": { "name": "Deer Truffle", "on": 2 },
     "traits": {},
-    "rule": "Can't be planted. Only in the Hollow, only in winter. Worth more than anything else you can find.",
+    "rule": "Can't be planted. Only in winter: in the Hollow, or dug from under oak and hazel with a Spade. Worth more than anything else you can find.",
     "blurb": "A warty black knob under the roots, and a smell you can't forget.",
     "art": { "shape": "ball", "cap": "#3A2C26", "shade": "#1F1612", "gill": "#3A2C26", "stem": "#3A2C26" }
   },
