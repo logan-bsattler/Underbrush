@@ -121,6 +121,18 @@ function unlock() {
   if (!c) return;
   if (c.state !== 'running') safely(() => c.resume());
   if (settings.music) startMusic();
+  else restSoon();
+}
+
+let idle: ReturnType<typeof setTimeout> | undefined;
+
+/** With the music off, audio sleeps a few seconds after the last sound (echo tails included), so a quiet phone isn't processing silence. */
+function restSoon() {
+  clearTimeout(idle);
+  if (settings.music) return;
+  idle = setTimeout(() => {
+    if (!settings.music && ctx?.state === 'running') safely(() => ctx!.suspend());
+  }, 4000);
 }
 
 if (typeof window !== 'undefined') {
@@ -129,7 +141,10 @@ if (typeof window !== 'undefined') {
   document.addEventListener('visibilitychange', () => {
     if (!ctx) return;
     if (document.hidden) safely(() => ctx!.suspend());
-    else if (settings.sound || settings.music) safely(() => ctx!.resume());
+    else if (settings.sound || settings.music) {
+      safely(() => ctx!.resume());
+      restSoon();
+    }
   });
 }
 
@@ -347,8 +362,12 @@ const effects: Record<Sfx, (c: BaseAudioContext, out: Out, t: number, n: number)
 export function play(sfx: Sfx, n = 1) {
   if (!settings.sound) return;
   const c = ctx;
-  if (!c || c.state !== 'running') return;
-  safely(() => effects[sfx](c, { dry: sfxBus, wet: echoIn }, c.currentTime + 0.01, n));
+  if (!c || c.state === 'closed') return;
+  const go = () => safely(() => effects[sfx](c, { dry: sfxBus, wet: echoIn }, c.currentTime + 0.01, n));
+  // Asleep after a quiet spell: wake it, then play. Never from a hidden tab, which stays quiet.
+  if (c.state === 'running') go();
+  else if (!document.hidden) safely(() => c.resume().then(go));
+  restSoon();
 }
 
 export interface Cue {

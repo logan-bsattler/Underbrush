@@ -1,5 +1,6 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useState } from 'preact/hooks';
+import { lazy, memo } from 'preact/compat';
+import { useCallback, useEffect, useRef, useState } from 'preact/hooks';
 import {
   orderById,
   actionsPerMonth,
@@ -33,9 +34,10 @@ import { Market } from './Market';
 import { Night } from './Night';
 import { Pantry } from './Pantry';
 import { AudioToggles } from './Screens';
-import { YearEnd } from './YearEnd';
 import type { Store } from './store';
 import { growthName, masteryName, name, seasonsText, squareName, stageName, substrateName, monthLabel } from './text';
+
+const YearEnd = lazy(() => import('./YearEnd').then((m) => ({ default: m.YearEnd })));
 
 export type Mode =
   | { kind: 'none' }
@@ -130,24 +132,34 @@ function Hud({ g, onWeather, onPantry, onMenu }: { g: GameState; onWeather: () =
 }
 
 /** The Drip Line, laid along every row of the farm with an emitter at each square that isn't a tree. */
-function DripLine({ g }: { g: GameState }) {
+function DripLine({ g, small }: { g: GameState; small?: boolean }) {
   const n = g.size;
   const cell = 100 / n;
   return (
-    <svg class="dripline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-      {Array.from({ length: n }, (_, r) => {
-        const y = (r + 0.86) * cell;
-        return <path d={`M0 ${y} Q25 ${y - 0.8} 50 ${y} T100 ${y}`} class="hose" />;
-      })}
-      {g.grid.map((sq, i) =>
-        sq.tree ? null : (
-          <g>
-            <rect class="emitter" x={(i % n + 0.5) * cell - 1.4} y={(Math.floor(i / n) + 0.86) * cell - 1.2} width="2.8" height="2.4" rx="0.7" />
-            <circle class="drop" cx={(i % n + 0.5) * cell} cy={(Math.floor(i / n) + 0.86) * cell + 2} r="1" style={{ animationDelay: `${(i * 0.37) % 2.4}s` }} />
-          </g>
-        ),
+    <>
+      <svg class="dripline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        {Array.from({ length: n }, (_, r) => {
+          const y = (r + 0.86) * cell;
+          return <path d={`M0 ${y} Q25 ${y - 0.8} 50 ${y} T100 ${y}`} class="hose" />;
+        })}
+        {g.grid.map((sq, i) =>
+          sq.tree ? null : <rect class="emitter" x={(i % n + 0.5) * cell - 1.4} y={(Math.floor(i / n) + 0.86) * cell - 1.2} width="2.8" height="2.4" rx="0.7" />,
+        )}
+      </svg>
+      {/* The drops are HTML, not SVG, so they fall on the compositor. The small farm on the night screen goes without. */}
+      {!small && (
+        <div class="drips" aria-hidden="true">
+          {g.grid.map((sq, i) =>
+            sq.tree ? null : (
+              <span
+                class="drop"
+                style={{ left: `${(i % n + 0.5) * cell - 1}%`, top: `${(Math.floor(i / n) + 0.86) * cell + 1}%`, animationDelay: `${(i * 0.37) % 2.4}s` }}
+              />
+            ),
+          )}
+        </div>
       )}
-    </svg>
+    </>
   );
 }
 
@@ -181,14 +193,7 @@ function Orders({ g, onOpen }: { g: GameState; onOpen: () => void }) {
   );
 }
 
-export function Farm({
-  g,
-  mode,
-  onSquare,
-  marks,
-  picked,
-  small,
-}: {
+type FarmProps = {
   g: GameState;
   mode?: Mode;
   onSquare?: (i: number) => void;
@@ -196,7 +201,31 @@ export function Farm({
   /** Squares just harvested and the species picked from each, to lift out of the bed in turn. */
   picked?: { squares: number[]; species: string[]; key: number };
   small?: boolean;
-}) {
+};
+
+/** What the farm draws from the state: every action clones the state, so it's compared by content, not reference. */
+const farmKeys = new WeakMap<FarmProps, string>();
+function farmKey(p: FarmProps) {
+  let k = farmKeys.get(p);
+  if (k === undefined) {
+    const g = p.g;
+    k = JSON.stringify([g.grid, g.size, g.board, g.finale, g.round, g.gear, g.weather, p.mode?.kind === 'plant' ? g.basket : 0, p.mode, p.marks, p.picked]);
+    farmKeys.set(p, k);
+  }
+  return k;
+}
+
+/** Redraws only when what it shows changes: a card flip on the forest floor leaves the farm under it alone. */
+export const Farm = memo(FarmView, (a, b) => a.onSquare === b.onSquare && a.small === b.small && farmKey(a) === farmKey(b));
+
+function FarmView({
+  g,
+  mode,
+  onSquare,
+  marks,
+  picked,
+  small,
+}: FarmProps) {
   const targets = new Set<number>();
   if (mode?.kind === 'plant') {
     const spec = g.basket.find((b) => b.uid === mode.uid);
@@ -220,7 +249,7 @@ export function Farm({
         </div>
       )}
       <div class="grid">
-        {g.gear.includes('dripline') && <DripLine g={g} />}
+        {g.gear.includes('dripline') && <DripLine g={g} small={small} />}
         {g.grid.map((sq, i) => {
           const isTarget = targets.has(i);
           const months = sq.species && sq.stage ? stageLength(sq.stage, content.species[sq.species].growth) : 0;
@@ -927,7 +956,7 @@ export function Game({
   const blighted = g.grid.filter((sq) => sq.blight).length;
   const busy = !!g.night || g.pendingCrosses.length > 0;
 
-  const onSquare = (i: number) => {
+  const onSquareNow = (i: number) => {
     if (mode.kind === 'plant') {
       const spec = g.basket.find((b) => b.uid === mode.uid);
       if (spec && canPlantOn(g, spec.species, i)) store.act({ type: 'plant', uid: mode.uid, square: i });
@@ -944,6 +973,10 @@ export function Game({
     }
     setSheet({ kind: 'bed', i });
   };
+  // One function for the life of the screen, so the memoized farm isn't redrawn just because this closure is new.
+  const onSquareRef = useRef(onSquareNow);
+  onSquareRef.current = onSquareNow;
+  const onSquare = useCallback((i: number) => onSquareRef.current(i), []);
 
   const startPlant = (uid: number) => {
     setSheet(null);
@@ -977,7 +1010,7 @@ export function Game({
           : null;
 
   return (
-    <div class={`game season-${g.finale ? 'winter' : seasonOf(g.round)}`}>
+    <div class={`game season-${g.finale ? 'winter' : seasonOf(g.round)} ${busy ? 'resting' : ''}`}>
       <Weathering season={g.finale ? 'winter' : seasonOf(g.round)} />
       <Hud
         g={g}
