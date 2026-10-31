@@ -232,7 +232,14 @@ Progress (2026-10-30):
   streaks (today, yesterday, a gap, a month end), story years, replays, a month's average and the share line.
   Checked in the browser at 375 × 812: the grid (42 px squares, no overflow), a tap on a day, month steps, the
   title button, and a daily finished through the UI ("Day 5 in a row", Calendar and Back). No rules change, so
-  no sim or tier re-check. **Next:** rank 5, founder's afterword.
+  no sim or tier re-check.
+- **Phase 6, rank 5, founder's afterword: done (2026-10-30).** Spec in `founders-afterword-spec.md`, approved by
+  Ben with both open choices as recommended (pairings name both parents; one page per generation). Helpers in
+  `afterword.ts`, `cacheGeneration` in the journal, `FounderJournal` in `Progress.tsx` and the latest page in Pass
+  it on. `afterword.test.ts` covers pages by generation, the migration, hazard counts against the decks and
+  level-gated pairings. Checked in the browser at 375 × 812 on a generation-4 save (no overflow, "new" clears on
+  the next visit, the save restored after). Information only, so no sim or tier re-check. **Next:** rank 6,
+  the small polish bundle.
 
 ## Bottom line
 

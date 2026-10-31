@@ -6,5 +6,6 @@ export { Rng, hashSeed } from './rng';
 export * from './progression';
 export * from './achievements';
 export * from './underground';
+export * from './afterword';
 export { previewNight, stageLength } from './growth';
 export type { TonightEvent } from './growth';

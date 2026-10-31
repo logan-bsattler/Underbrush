@@ -62,6 +62,8 @@ export interface Journal {
   layers: string[];
   /** The family found the Founder's Cellar: the saga's one puzzle, solved for good. */
   cacheFound: boolean;
+  /** The generation that found the cellar: the founder's journal reads one more page each generation after it. */
+  cacheGeneration?: number;
 }
 
 export function emptyJournal(): Journal {
@@ -79,7 +81,12 @@ export function normalizeJournal(j: Partial<Journal> | null): Journal {
     masteryUps: [],
     ...y,
   })) as YearRecord[];
-  return { ...base, ...j, years, version: 1 };
+  const out: Journal = { ...base, ...j, years, version: 1 };
+  // Cellars found before the founder's journal was kept: the year that scored the cache says which generation found it.
+  if (out.cacheFound && out.cacheGeneration === undefined) {
+    out.cacheGeneration = years.find((y) => (y.breakdown?.cache ?? 0) > 0)?.generation ?? out.generation;
+  }
+  return out;
 }
 
 /** Folds this year's finds into the journal. Returns the ids that are new to it, sets the cabinet just completed among them. */
@@ -106,7 +113,10 @@ export function mergeDiscoveries(j: Journal, s: GameState): { journal: Journal; 
     layers: add(j.layers, s.layersReached ?? [], 'layer:'),
     cacheFound: j.cacheFound || !!s.cacheFound,
   };
-  if (journal.cacheFound && !j.cacheFound) fresh.push('cache:cellar');
+  if (journal.cacheFound && !j.cacheFound) {
+    journal.cacheGeneration = s.perks.generation;
+    fresh.push('cache:cellar');
+  }
   const before = completedSets(j.artifacts);
   for (const id of completedSets(journal.artifacts)) if (!before.includes(id)) fresh.push(`set:${id}`);
   return { journal, fresh };

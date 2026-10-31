@@ -127,6 +127,18 @@ export interface CacheDef {
   place: string;
   /** ...and the family's story, ending. */
   ending: string;
+  /** The founder's journal, kept once the cellar is found. */
+  afterword: AfterwordDef;
+}
+
+/** What the founder's journal holds after the cellar: the founder's story a page per generation, and notes on the deepest layers. */
+export interface AfterwordDef {
+  /** Read one a generation, starting with the generation that finds the cellar. */
+  pages: string[];
+  /** Shown above the notes on the third layers. */
+  advice: string;
+  /** The founder's note on each zone's deepest layer, by zone id. */
+  below: Record<string, string>;
 }
 
 /** Artifacts that belong together. A full set in the cabinet brings a small perk to every story year after. */

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import {
   achievementProgress,
+  afterwordPages,
   artifactHome,
+  belowNotes,
   boardsFor,
   boardUnlockLevel,
   challengeBonus,
@@ -17,6 +19,7 @@ import {
   masteryLevel,
   newGame,
   nextLevel,
+  pairings,
   perksFor,
   standardPerks,
   type Journal,
@@ -273,50 +276,142 @@ function Cabinet({ j }: { j: Journal }) {
   );
 }
 
-/** The founder's riddle: the mark on every artifact found so far, and once the cellar is found, its story to read again. */
+/** The founder's riddle: the mark on every artifact found so far. Once the cellar is found it becomes the founder's journal. */
 function Riddle({ j }: { j: Journal }) {
   const { cache } = content;
-  const marked = j.artifacts.flatMap((id) => content.artifacts.filter((a) => a.id === id && a.inscription));
+  const marked = markedArtifacts(j);
+  if (j.cacheFound) return <FounderJournal j={j} marked={marked} />;
   // The cellar won't open until the marks point to the tree, the place and the season.
   const enough = new Set(marked.flatMap((a) => (a.mark ? [a.mark] : []))).size === 3;
   return (
-    <section class={`riddle ${j.cacheFound ? 'solved' : ''}`}>
+    <section class="riddle">
       <h3>The founder's riddle</h3>
       <p class="small lore-line">{cache.premise}</p>
+      <Marks marked={marked} />
+      <p class="small muted">
+        {marked.length} of {content.artifacts.length} marks found.{' '}
+        {enough
+          ? "They say enough now to know where to dig. With a Spade, tap a turned card of plain ground on a story year's trip to dig under it; a dig ends the trip."
+          : "They don't say enough yet to know where the founder dug. Bring home more from below."}
+      </p>
+    </section>
+  );
+}
+
+const markedArtifacts = (j: Journal) => j.artifacts.flatMap((id) => content.artifacts.filter((a) => a.id === id && a.inscription));
+
+function Marks({ marked }: { marked: ReturnType<typeof markedArtifacts> }) {
+  return (
+    <ul class="relics">
+      {marked.map((a) => (
+        <li class="found">
+          <Icon name="relic" size={20} />
+          <span>
+            <b>{a.name}</b>
+            <small>{a.inscription}</small>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** How many of the founder's pages this device has shown, so a page read since is marked new. Not game state. */
+const PAGES_SEEN = 'underbrush:afterword-seen';
+
+/** The founder's journal: the cellar's story, a page for each generation since, notes on the deepest layers and the hybrids still to make. */
+function FounderJournal({ j, marked }: { j: Journal; marked: ReturnType<typeof markedArtifacts> }) {
+  const { cache } = content;
+  const pages = afterwordPages(j);
+  const [seen] = useState(() => {
+    try {
+      return Number(localStorage.getItem(PAGES_SEEN) ?? 0);
+    } catch {
+      return 0;
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(PAGES_SEEN, String(pages.length));
+    } catch {
+      // Private windows can refuse storage; the page just isn't marked new next time.
+    }
+  }, [pages.length]);
+  const notes = belowNotes(j);
+  const pairs = pairings(j);
+  return (
+    <section class="riddle solved founder">
+      <h3>The founder's journal</h3>
+      <details class="founder-cellar">
+        <summary>{cache.name}, found. Read again</summary>
+        <p class="small">{cache.place}</p>
+        <p class="small lore-line">{cache.ending}</p>
+      </details>
+      <h4>Pages</h4>
+      <ol class="founder-pages" reversed>
+        {pages
+          .map((text, i) => (
+            <li class={i >= seen ? 'new' : ''}>
+              <p class="small lore-line">
+                {text}
+                {i >= seen && <span class="new-tag">new</span>}
+              </p>
+            </li>
+          ))
+          .reverse()}
+      </ol>
+      <p class="small muted">
+        {pages.length < cache.afterword.pages.length
+          ? `${pages.length} of ${cache.afterword.pages.length} pages read. The family reads one more each generation.`
+          : 'Every page read.'}
+      </p>
+      <h4>Below</h4>
+      <p class="small lore-line">{cache.afterword.advice}</p>
       <ul class="relics">
-        {marked.map((a) => (
-          <li class="found">
+        {notes.map((n) => (
+          <li class={n.found ? 'found' : ''}>
             <Icon name="relic" size={20} />
             <span>
-              <b>{a.name}</b>
-              <small>{a.inscription}</small>
+              <b>
+                {artifactName(n.artifact)}
+                {n.found && ' ✓'}
+              </b>
+              <small>
+                {n.place}, the {ordinal(n.depth)} layer below the {zoneName(n.zone)}. {n.note}
+              </small>
+              <small class="founder-hazards">{n.hazards.map((h) => `${h.count} ${h.name}`).join(', ')}</small>
             </span>
           </li>
         ))}
       </ul>
-      {j.cacheFound ? (
-        <div class="riddle-end">
-          <b>{cache.name}, found</b>
-          <p class="small">{cache.place}</p>
-          <p class="small lore-line">{cache.ending}</p>
-        </div>
+      <h4>Pairings</h4>
+      {pairs.length ? (
+        <ul class="founder-pairs small">
+          {pairs.map((p) => (
+            <li>
+              <b>{name(p.hybrid)}</b>: {name(p.parents[0])} beside {name(p.parents[1])}.
+            </li>
+          ))}
+        </ul>
       ) : (
-        <p class="small muted">
-          {marked.length} of {content.artifacts.length} marks found.{' '}
-          {enough
-            ? "They say enough now to know where to dig. With a Spade, tap a turned card of plain ground on a story year's trip to dig under it; a dig ends the trip."
-            : "They don't say enough yet to know where the founder dug. Bring home more from below."}
-        </p>
+        <p class="small muted">You've grown everything the founder wrote down.</p>
       )}
+      <details class="founder-marks">
+        <summary>The marks</summary>
+        <Marks marked={marked} />
+      </details>
     </section>
   );
 }
+
+const artifactName = (id: string) => content.artifacts.find((a) => a.id === id)?.name ?? id;
 
 /** Passing the homestead on: what it costs, what carries down, and the generations so far. */
 function Legacy({ store }: { store: Store }) {
   const j = store.journal;
   const { tierStep, startCoins } = content.progression.legacy;
   const lore = generationLore(j.generation);
+  const page = afterwordPages(j).at(-1);
   const [sure, setSure] = useState(false);
   useEffect(() => {
     if (!sure) return;
@@ -337,6 +432,7 @@ function Legacy({ store }: { store: Store }) {
           {lore.layer.clue} <span class="muted">({ordinal(lore.depth)} layer below the {zoneName(lore.zone)})</span>
         </p>
       )}
+      {page && <p class="small lore-line">From the founder's journal: {page}</p>}
       {j.lineage.length > 0 && (
         <ul class="lineage">
           {j.lineage.map((l) => (

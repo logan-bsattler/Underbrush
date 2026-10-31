@@ -517,6 +517,20 @@ Everything comes from `dailyStats()` in `journal.ts`, worked out from the journa
 saved. The streak also shows on the title's Daily year button, on a daily's festival screen (with a Calendar
 button into Past festivals), and on the share card's first line from 2 days. It earns no points or renown.
 
+## The founder's afterword
+
+Once the Founder's Cellar is found, the founder's riddle in the cabinet becomes the founder's journal
+(`afterword.ts`, `FounderJournal` in `Progress.tsx`, text in `artifacts.json` `cache.afterword`). It is information
+only: no points, perk or rule change, and the bots never read it.
+
+- **Pages:** seven pages of the founder's story. The generation that finds the cellar reads the first; each
+  generation after reads one more (`journal.cacheGeneration`, filled for older saves from the year that scored the
+  cache). The newest page also shows in Pass it on, which is the only lore there from generation 5 on.
+- **Below:** a note on each zone's deepest layer naming the heirloom left there, with a hazard line counted from
+  the layer's deck, under one line of advice to bring the Mushroom Stones home first.
+- **Pairings:** both parents of every hybrid the family has never made and the current level can cross.
+- Pages read since the last visit are marked new, counted per device in localStorage (`underbrush:afterword-seen`).
+
 ## Achievements
 
 Feats the field journal remembers across every year, listed in the Almanac and announced with a

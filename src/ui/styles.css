@@ -4414,3 +4414,51 @@ h3 .inline-link {
 .riddle-end p {
   margin: 6px 0 0;
 }
+/* The founder's journal, once the cellar is found */
+.founder h4 {
+  margin: 14px 0 4px;
+  font-family: var(--serif);
+}
+.founder details {
+  margin-top: 10px;
+}
+.founder summary {
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px;
+}
+.founder details p {
+  margin: 6px 0 0;
+}
+.founder-pages {
+  margin: 0;
+  padding-left: 22px;
+  color: var(--ink-faint);
+  font-size: 13px;
+}
+.founder-pages .lore-line {
+  margin: 4px 0 8px;
+}
+.founder .new-tag {
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--gold);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+}
+.founder .relics small.founder-hazards {
+  margin-top: 2px;
+  font-weight: 700;
+  color: var(--rust);
+}
+.founder-pairs {
+  margin: 0;
+  padding-left: 18px;
+}
+.founder-pairs li {
+  margin: 2px 0;
+}

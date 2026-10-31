@@ -78,6 +78,26 @@
     "premise": "Every heirloom the founder left is marked. Put the marks together and dig: the right spot, in the right place, at the right time of year.",
     "wrong": "Roots and cold earth, and nothing else. The founder never dug here. The day is spent, so you head home.",
     "place": "A hand's depth under the Yew, the spade rings on oak. A trapdoor, and under it a cellar no bigger than a larder, dry as the day it was dug. Empty jars on the shelves. A basket on a hook. And on a stone ledge, wrapped in oilcloth, a field journal older than any in the family.",
-    "ending": "It's the founder's. It begins the winter they came over the hills with a basket and nothing else, and built a house in the hollow beside the Yew. Page after page of mushrooms in a careful hand: where they grew, when, and what they were mistaken for. Every name in it is one the family still uses. The last page is for whoever found it: \"I hid our things all over the valley, so whoever came after me would have to walk all of it. If you are reading this, you know these woods the way I did. The homestead is yours. It always was.\" You carry the journal home and shelve it beside your own."
+    "ending": "It's the founder's. It begins the winter they came over the hills with a basket and nothing else, and built a house in the hollow beside the Yew. Page after page of mushrooms in a careful hand: where they grew, when, and what they were mistaken for. Every name in it is one the family still uses. The last page is for whoever found it: \"I hid our things all over the valley, so whoever came after me would have to walk all of it. If you are reading this, you know these woods the way I did. The homestead is yours. It always was.\" You carry the journal home and shelve it beside your own.",
+    "afterword": {
+      "pages": [
+        "The first winter I lived on what the snow didn't hide. I learned this valley the way you learn anything: by being wrong about it, and living.",
+        "A drover came through one spring and lost his purse along the way, a coin here and a coin there. I found them for years after, one under each wrong tree. I never gave them back. I put them somewhere better.",
+        "At the first Harvest Festival I won every ribbon, because I was the only one who knew which mushrooms wouldn't kill the judges. The next year they asked me to judge instead.",
+        "A mapmaker stayed a summer and charted every hole under the valley. He paid for his keep with his kit, and I hid the pieces where his own maps said no one would look.",
+        "The Hollow floods in a wet spring. After the third flood I moved us up to where the homestead stands now. I left the hearth behind so the old house would know we'd be back.",
+        "My hands are slow now. The grandchildren tell my stories wrong, and I let them. A wrong story still sends you walking, and walking is how you learn the woods.",
+        "That's the last of my own story. The blank pages at the back of this book are yours. Write down what you find."
+      ],
+      "advice": "Fetch the stone mushroom before anything else down there. Whole, it lands every fall one layer softer, and a fall that deep costs a month.",
+      "below": {
+        "meadow": "I dropped the cap down the old well, and the water carried it to the spring underneath.",
+        "mixedwoods": "The stem I pushed down along the big oak's taproot, all the way to the hall at the bottom.",
+        "oldgrowth": "The ring is in the grotto where the mushrooms give their own light. It shows you the way, not the drops.",
+        "burnscar": "I left the door key in the vault under the kiln. It's the driest place in the valley, and the worst place to breathe.",
+        "riverbank": "The basket handle hangs in the old mill under the river, where the wheel still turns.",
+        "hollow": "The hearth tile is where our first fire was. Go gently; it was home."
+      }
+    }
   }
 }
