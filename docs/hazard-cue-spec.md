@@ -1,7 +1,7 @@
 # Hazard cue: a soft knock for each hazard beside the card you turn
 
 Rank 9 on the Phase 6 list (`review-plan.md`), size S. Drafted 2026-10-30. **Approved 2026-10-30 as recommended**
-(lower and slower on the edge, silence after a 0), to be built before rank 8. Nothing is built yet.
+(lower and slower on the edge, silence after a 0), to be built before rank 8. **Built 2026-10-30.** The cue also carries `under` for the echo below ground.
 
 ## The answer
 

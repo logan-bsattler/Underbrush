@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
-import type { Action, ActionResult, GameState, Season } from '../core';
+import { bustAt, hazardsNear, type Action, type ActionResult, type GameState, type Season } from '../core';
 
 /**
  * Sound effects and music, all synthesised with the Web Audio API: no audio files to download or license.
@@ -148,9 +148,9 @@ if (typeof window !== 'undefined') {
   });
 }
 
-/** For checking from the console: whether audio is running and the music is on. */
+/** For checking from the console: whether audio is running, the music is on, and the last cue played. */
 export function audioState() {
-  return { context: ctx?.state ?? 'none', music: !!music.timer, scene: music.scene };
+  return { context: ctx?.state ?? 'none', music: !!music.timer, scene: music.scene, last: lastCue };
 }
 
 // ---------------------------------------------------------------- voices
@@ -365,12 +365,45 @@ const effects: Record<Sfx, (c: BaseAudioContext, out: Out, t: number, n: number)
   },
 };
 
-/** Plays a sound effect now. `n` counts beds for a harvest, cards for a deal. */
-export function play(sfx: Sfx, n = 1) {
+/**
+ * A muffled knock, like a footstep on a hollow log: a low triangle for headphones, and a soft noise tap that
+ * still carries on a phone speaker. Kept under the card's own turn sound.
+ */
+function knock(c: BaseAudioContext, out: Out, at: number, low: boolean, wet: number) {
+  const f = low ? 150 * 2 ** (-4 / 12) : 150;
+  tone(c, out, at, { f, to: f * 0.8, type: 'triangle', dur: 0.14, gain: 0.14, lp: 420, attack: 0.003, wet });
+  noise(c, out, at, { dur: 0.05, gain: 0.16, f: low ? 400 : 500, q: 1.2, attack: 0.002, wet });
+}
+
+/** How long each turn sound rings before the knocks come in under its tail. */
+const knockAfter: Partial<Record<Sfx, number>> = { flip: 0.1, find: 0.3, coins: 0.3, rare: 0.5, wayDown: 0.5 };
+
+/** One knock per hazard beside a turned card, up to four; slower and lower when one more hazard ends the trip. */
+function knocks(c: BaseAudioContext, out: Out, t: number, k: Cue) {
+  const count = Math.min(k.near ?? 0, 4);
+  const gap = k.edge ? 0.22 : 0.16;
+  for (let i = 0; i < count; i++) {
+    // More than four beside it (only the Old-growth's diagonals could do that): the fourth knock drops lower.
+    const low = !!k.edge || (i === 3 && k.near! > 4);
+    knock(c, out, t + i * gap, low, k.under ? 0.45 : 0.12);
+  }
+}
+
+let lastCue: Cue | null = null;
+
+/** Plays a sound effect now. `n` counts beds for a harvest, cards for a deal. A cue with `near` adds its knocks after it. */
+export function play(sfx: Sfx, n = 1, cue?: Cue) {
   if (!settings.sound) return;
   const c = ctx;
   if (!c || c.state === 'closed') return;
-  const go = () => safely(() => effects[sfx](c, { dry: sfxBus, wet: echoIn }, c.currentTime + 0.01, n));
+  lastCue = cue ?? { sfx, n };
+  const go = () =>
+    safely(() => {
+      const out = { dry: sfxBus, wet: echoIn };
+      const t = c.currentTime + 0.01;
+      effects[sfx](c, out, t, n);
+      if (cue?.near) knocks(c, out, t + (knockAfter[sfx] ?? 0.3), cue);
+    });
   // Asleep after a quiet spell: wake it, then play. Never from a hidden tab, which stays quiet.
   if (c.state === 'running') go();
   else if (!document.hidden) safely(() => c.resume().then(go));
@@ -380,6 +413,22 @@ export function play(sfx: Sfx, n = 1) {
 export interface Cue {
   sfx: Sfx;
   n?: number;
+  /** Hazards beside a card just turned, said as knocks after its sound. Never set for a hazard or a bust. */
+  near?: number;
+  /** One more counted hazard would end the trip. */
+  edge?: boolean;
+  /** Below ground: the knocks echo more. */
+  under?: boolean;
+}
+
+/** Adds the hazard knocks to a non-hazard card's cue, from the number now showing on it. Nothing for a 0. */
+function withKnocks(cue: Cue, index: number, s: GameState): Cue {
+  const trip = s.forage;
+  if (!trip || trip.status !== 'open') return cue;
+  const near = hazardsNear(trip, index);
+  if (near <= 0) return cue;
+  const knife = s.gear.includes('knife') && !trip.knifeUsed;
+  return { ...cue, near, edge: !knife && trip.hazards === bustAt(s) - 1, under: trip.layer > 0 };
 }
 
 /** The sound for an action the game just took, given its result and the state it left behind. */
@@ -387,11 +436,11 @@ export function soundFor(a: Action, r: ActionResult, s: GameState): Cue | null {
   if (r.kind === 'draw') {
     if (r.outcome === 'bust') return { sfx: s.forage?.layer ? 'fall' : 'bust' };
     if (r.outcome === 'hazard' || r.outcome === 'hazardIgnored') return { sfx: 'hazard' };
-    if (r.outcome === 'wayDown') return { sfx: 'wayDown' };
-    if (r.cleared || r.outcome === 'artifact' || s.forage?.patch[r.index]?.deep) return { sfx: 'rare' };
-    if (r.outcome === 'coins') return { sfx: 'coins' };
-    if (r.outcome === 'basket' || r.outcome === 'known' || r.outcome === 'swapped') return { sfx: 'find' };
-    return { sfx: 'flip' };
+    if (r.outcome === 'wayDown') return withKnocks({ sfx: 'wayDown' }, r.index, s);
+    if (r.cleared || r.outcome === 'artifact' || s.forage?.patch[r.index]?.deep) return withKnocks({ sfx: 'rare' }, r.index, s);
+    if (r.outcome === 'coins') return withKnocks({ sfx: 'coins' }, r.index, s);
+    if (r.outcome === 'basket' || r.outcome === 'known' || r.outcome === 'swapped') return withKnocks({ sfx: 'find' }, r.index, s);
+    return withKnocks({ sfx: 'flip' }, r.index, s);
   }
   if (r.kind === 'harvest') return { sfx: 'harvest', n: r.squares.length };
   if (r.kind === 'sell') return { sfx: 'coins' };

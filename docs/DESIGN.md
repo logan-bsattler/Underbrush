@@ -659,3 +659,10 @@ compares it with the usual planner.
   along the bottom, and the zone wash is tinted in the trip and the picker. The underground ignores the season.
 - Flavor only, so no sim. Spec: `zone-seasons-spec.md`, where Ben dropped the prime-season rules.
 
+## The hazard cue
+
+- When you turn a card that isn't a hazard, it knocks once for each hazard beside it (up to four) after its own
+  sound: a muffled triangle around 150 Hz with a noise tap at 500 Hz, so a phone speaker still carries it. A 0
+  is silent. When one more counted hazard ends the trip (Knife spent or absent), the knocks are lower and slower.
+  Below ground they echo more. The cue only repeats the number on screen, never a face-down card, so the odds are
+  unchanged. `withKnocks` and `knocks` in `sound.ts`. Spec: `hazard-cue-spec.md`.

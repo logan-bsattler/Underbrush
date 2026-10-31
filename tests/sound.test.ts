@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dispatch, newGame, standardPerks, type GameState } from '../src/core';
+import { bustAt, dispatch, hazardsNear, newGame, standardPerks, type GameState } from '../src/core';
 import { audioSettings, play, setAudio, setScene, soundFor } from '../src/ui/sound';
 
 describe('sound', () => {
@@ -37,5 +37,62 @@ describe('sound', () => {
     expect(draw('nothing')).toBe('flip');
     expect(soundFor({ type: 'harvest' }, { kind: 'harvest', gained: {}, squares: [1, 2, 3] }, g)).toEqual({ sfx: 'harvest', n: 3 });
     expect(soundFor({ type: 'festival' }, { kind: 'none' }, g)?.sfx).toBe('festival');
+  });
+
+  describe('hazard knocks', () => {
+    const h = { type: 'hazard', name: 'Ticks' } as const;
+    const ground = { type: 'ground', name: 'Leaf Litter', look: 'ground' } as const;
+    // Hazards above and left of the centre (neighbours are side by side, not diagonal); ground everywhere else.
+    function patchTrip(gear: string[] = []): GameState {
+      const g = dispatch(newGame({ mode: 'daily', seed: 'knock-test', perks: standardPerks() }), { type: 'forage', zone: 'meadow' }).state;
+      g.forage!.patch = [ground, h, ground, h, ground, ground, ground, ground, ground].map((card) => ({ card, flipped: false, outcome: null }));
+      g.gear.push(...(gear as any));
+      return g;
+    }
+    const turn = (g: GameState, index: number) => {
+      const { state, result } = dispatch(g, { type: 'flip', index });
+      return { state, cue: soundFor({ type: 'flip', index }, result, state) };
+    };
+
+    it('knocks once for each hazard beside a turned card, and stays quiet on a 0', () => {
+      const g = patchTrip();
+      const centre = turn(g, 4);
+      expect(centre.cue).toMatchObject({ sfx: 'flip', near: hazardsNear(centre.state.forage!, 4), edge: false, under: false });
+      expect(centre.cue?.near).toBe(2);
+      expect(turn(centre.state, 8).cue).toEqual({ sfx: 'flip' });
+    });
+
+    it('never knocks for a hazard, a hazard the Knife ignores or a bust', () => {
+      const first = turn(patchTrip(), 1);
+      expect(first.cue).toEqual({ sfx: 'hazard' });
+      expect(turn(first.state, 3).cue).toEqual({ sfx: 'bust' });
+      expect(turn(patchTrip(['knife']), 1).cue).toEqual({ sfx: 'hazard' });
+    });
+
+    it('drops to the edge one hazard below a bust, unless the Knife is still unspent', () => {
+      const hit = turn(patchTrip(), 1).state;
+      expect(hit.forage!.hazards).toBe(bustAt(hit) - 1);
+      expect(turn(hit, 0).cue).toMatchObject({ near: 2, edge: true });
+      const knifed = patchTrip(['knife']);
+      knifed.forage!.hazards = bustAt(knifed) - 1;
+      expect(turn(knifed, 4).cue).toMatchObject({ near: 2, edge: false });
+      knifed.forage!.knifeUsed = true;
+      expect(turn(knifed, 4).cue).toMatchObject({ near: 2, edge: true });
+    });
+
+    it('echoes more below ground', () => {
+      const g = patchTrip();
+      g.forage!.layer = 1;
+      g.forage!.patch[4].deep = true;
+      expect(turn(g, 4).cue?.under).toBe(true);
+    });
+
+    it('never throws without Web Audio', () => {
+      setAudio({ sound: true });
+      expect(() => {
+        play('find', 1, { sfx: 'find', near: 3, edge: true, under: true });
+        play('flip', 1, { sfx: 'flip', near: 6 });
+      }).not.toThrow();
+    });
   });
 });

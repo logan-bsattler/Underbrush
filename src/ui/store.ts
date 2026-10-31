@@ -118,7 +118,7 @@ export function useStore(): Store {
         setLast(result);
         setError(null);
         const cue = soundFor(a, result, state);
-        if (cue) play(cue.sfx, cue.n);
+        if (cue) play(cue.sfx, cue.n, cue);
         return result;
       } catch (e) {
         if (e instanceof GameError) {

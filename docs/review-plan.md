@@ -276,6 +276,14 @@ Progress (2026-10-30):
   as flavor only: seasonal names for hazards and ground, and seasonal art and backgrounds on the forest floor. The
   prime-season rules were dropped. `tests/zone-seasons.test.ts`; 284 tests pass. Winter Meadow browser-checked at
   375 px, and Ben's save restored. No rules change, so no sim.
+- **Phase 6, rank 9, hazard cue: done (2026-10-30).** Spec in `hazard-cue-spec.md`, approved as recommended
+  (lower and slower on the edge, silence after a 0). A turned card that isn't a hazard knocks once for each hazard
+  beside it, up to four, under its own sound; on the edge (one counted hazard from a bust, Knife spent or absent)
+  the knocks drop four semitones and slow to 0.22 s. More echo below ground. `Cue` gains `near`, `edge` and
+  `under`; `audioState().last` shows the last cue. `tests/sound.test.ts`; 289 tests pass. Cue values checked on a
+  real Mixed Woods patch (⚠2 → 2 knocks, none on a hazard or a 0, edge after Ticks with the Knife spent), and
+  Ben's save restored. The sound itself is for Ben to judge on his phone. No rules change, so no sim.
+  **Next:** rank 8, once Ben answers its four open choices.
 
 ## Bottom line
 
