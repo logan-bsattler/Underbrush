@@ -435,7 +435,7 @@ function withKnocks(cue: Cue, index: number, s: GameState): Cue {
 export function soundFor(a: Action, r: ActionResult, s: GameState): Cue | null {
   if (r.kind === 'draw') {
     if (r.outcome === 'bust') return { sfx: s.forage?.layer ? 'fall' : 'bust' };
-    if (r.outcome === 'hazard' || r.outcome === 'hazardIgnored') return { sfx: 'hazard' };
+    if (r.outcome === 'hazard' || r.outcome === 'hazardIgnored' || r.outcome === 'turnedAround') return { sfx: 'hazard' };
     if (r.outcome === 'wayDown') return withKnocks({ sfx: 'wayDown' }, r.index, s);
     if (r.cleared || r.outcome === 'artifact' || s.forage?.patch[r.index]?.deep) return withKnocks({ sfx: 'rare' }, r.index, s);
     if (r.outcome === 'coins') return withKnocks({ sfx: 'coins' }, r.index, s);

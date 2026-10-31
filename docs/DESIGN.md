@@ -666,3 +666,28 @@ compares it with the usual planner.
   is silent. When one more counted hazard ends the trip (Knife spent or absent), the knocks are lower and slower.
   Below ground they echo more. The cue only repeats the number on screen, never a face-down card, so the odds are
   unchanged. `withKnocks` and `knocks` in `sound.ts`. Spec: `hazard-cue-spec.md`.
+
+## Zone rules
+
+Each zone has one rule of its own, on the surface only (`zones.json` `rule`, `ruleName`, `ruleText`, `ruleCard`;
+`tripRule` in `engine.ts`). The layers below keep the plain rules. Each rule's line sits on its zone card in the
+picker, and the first time a rule fires in a save the floor message names it (`useRuleIntro`, kept in
+localStorage as `underbrush:rules-seen`). After that, only the cards show it.
+
+- **Meadow, the fairy ring:** a trip's first patch has a mushroom from the deck at its centre, with a ring of
+  tiny caps on its back. The first tap is safe and its number covers four cards. No mushroom left in the draw
+  pile, no ring.
+- **Mixed Woods, the mycelium:** turning any mushroom card shows a pale cap on each face-down mushroom beside it
+  (up, down, left, right), with a thread drawn between them. A marked card is safe, and turning it can mark more.
+- **Old-growth, the quiet:** numbers count all eight cards around, corners included (`nearCells`), and are drawn
+  in a ring. The hazard cue knocks the same count, capped at four.
+- **Burn Scar, open sky:** Ash is dealt face up, numbers showing, never in the trip log. It counts as seen for
+  Nothing Left Unturned.
+- **Riverbank, the creek:** Rain closes it ("Closed by high water"). The month after Rain (`washed`, set as the
+  weather rolls), the first trip there finds the season's deep find washed up in its first patch.
+- **The Hollow, turned around:** Lost Trail on the surface doesn't count toward a bust or use the Knife. It ends
+  the patch: its face-down cards dim, and you walk on or head home (only home on the last patch). It's still a
+  hazard for the numbers. No descending while turned around; digging is allowed.
+- The bot plays every rule: `safestCard` reads `nearCells` and takes a ringed or marked card as safe, and it walks
+  on or heads home after a turnaround. Tests that stack a deck for the plain deal call `plainRules()`
+  (`tests/plain.ts`). Spec: `zone-rules-spec.md`.

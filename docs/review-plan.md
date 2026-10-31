@@ -284,6 +284,20 @@ Progress (2026-10-30):
   real Mixed Woods patch (⚠2 → 2 knocks, none on a hazard or a 0, edge after Ticks with the Knife spent), and
   Ben's save restored. The sound itself is for Ben to judge on his phone. No rules change, so no sim.
   **Next:** rank 8, once Ben answers its four open choices.
+- **Phase 6, rank 8, zone rules: done (2026-10-31).** Spec in `zone-rules-spec.md`, approved as recommended (all
+  six zones, the quiet, Rain closes the Riverbank with a washed-up find after, no swaps). Fairy ring, mycelium,
+  quiet, open sky, creek and turned around, on the surface only; picker rule lines and first-time floor messages.
+  The bot plays each rule. `tests/zone-rules.test.ts` (16 tests); `plainRules()` keeps the older deck-stacking
+  tests on the plain rules; 305 tests pass. Browser-checked at 375 px, Ben's save restored. Built in one commit,
+  not one per rule, since the rules share the deal, the flip and the picker.
+  - **Sims, before → after.** Plan sim (20×30) tiers by level L1–L10: 48/85/76/63/84/75/77/68/80/73% →
+    62/67/88/61/75/69/65/65/73/76%; pooled L1–3 70 → 73%, L4–9 75 → 68%, L10 73 → 76%. Feast sim (20×30), usual
+    planner pooled L6–9 81 → 79%, rare planner 87 → 88%. Gen sim (Legend) medians flat, gen 1–3 bust rate 2 → 1%.
+    Baseline daily years: mean 11.0 → 10.9, Bronze 20 → 21%; bust rate 6 → 4%.
+  - **Verdict:** no level rises past the 5-point bar on more than one sim, and daily years are flat, so no
+    `tierLift` change and the daily tiers stand. Busts fall, as expected. The plan sim's L4–9 dip (−7 pooled) doesn't
+    show in the feast sim's usual planner (−2), so it's likely noise, but it's the one number to watch. A per-zone
+    scratch script (bust rate, finds per trip, trips per year) wasn't run.
 
 ## Bottom line
 

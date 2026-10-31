@@ -21,7 +21,8 @@ export function inSeason(speciesId: string, season: Season, c: Content = default
   return s.seasons === 'any' || s.seasons.includes(season);
 }
 
-export function neighbors(index: number, n: number): number[] {
+/** The squares beside one on an n×n grid: up, right, down and left, then the four corners too when `diagonal`. */
+export function neighbors(index: number, n: number, diagonal = false): number[] {
   const row = Math.floor(index / n);
   const col = index % n;
   const out: number[] = [];
@@ -29,6 +30,11 @@ export function neighbors(index: number, n: number): number[] {
   if (col < n - 1) out.push(index + 1);
   if (row < n - 1) out.push(index + n);
   if (col > 0) out.push(index - 1);
+  if (!diagonal) return out;
+  if (row > 0 && col < n - 1) out.push(index - n + 1);
+  if (row < n - 1 && col < n - 1) out.push(index + n + 1);
+  if (row < n - 1 && col > 0) out.push(index + n - 1);
+  if (row > 0 && col > 0) out.push(index - n - 1);
   return out;
 }
 

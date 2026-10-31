@@ -33,6 +33,9 @@ import {
   type GameState,
   type Journal,
 } from '../src/core';
+import { plainRules } from './plain';
+
+plainRules();
 
 const run = (s: GameState, ...actions: Action[]) => {
   for (const a of actions) s = dispatch(s, a).state;

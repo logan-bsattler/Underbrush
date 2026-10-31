@@ -496,6 +496,14 @@ export function Icon({ name, size = 20, season }: { name: string; size?: number;
           <path d="M7 10 Q12 1 17 10M8 13v4M12 13v4M16 13v4" {...s} stroke="#7A5A2C" />
         </svg>
       );
+    case 'cap':
+      // The mycelium's sign: a pale cap showing through the leaves.
+      return (
+        <svg {...p} class="icon cap-sign">
+          <path d="M10.6 13 L10 19 Q12 20 14 19 L13.4 13 Z" fill="#F3EBD6" stroke="#8C7A5A" strokeWidth="1.1" />
+          <path d="M4 13.5 Q4 6 12 6 Q20 6 20 13.5 Z" fill="#F6F0E0" stroke="#8C7A5A" strokeWidth="1.2" />
+        </svg>
+      );
     case 'hazard':
       return (
         <svg {...p}>

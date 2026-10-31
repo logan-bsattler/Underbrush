@@ -25,6 +25,7 @@ import type {
   Square,
   Substrate,
   ZoneDef,
+  ZoneRule,
 } from './types';
 
 export class GameError extends Error {}
@@ -219,7 +220,7 @@ export function zoneStatus(s: GameState, zone: ZoneDef, c: Content = defaultCont
     return { open: false, reason: `Only open in ${open}` };
   }
   const weather = c.weather.find((w) => w.id === s.weather);
-  if (weather?.closes?.includes(zone.id)) return { open: false, reason: `Closed by ${weather.name.toLowerCase()}` };
+  if (weather?.closes?.includes(zone.id)) return { open: false, reason: `Closed by ${weather.closedBy ?? weather.name.toLowerCase()}` };
   return { open: true };
 }
 
@@ -227,6 +228,7 @@ export function zoneStatus(s: GameState, zone: ZoneDef, c: Content = defaultCont
 export function descendStatus(s: GameState, c: Content = defaultContent): ZoneStatus {
   const trip = s.forage;
   if (!trip || trip.status !== 'open') return { open: false, reason: 'You are not out foraging.' };
+  if (trip.turnedAround) return { open: false, reason: 'The trail has turned you around. Walk on or head home.' };
   const open = layersOpen(s.perks.generation, trip.zone, c);
   if (trip.layer >= open) {
     const zone = c.zones.find((z) => z.id === trip.zone)!;
@@ -521,6 +523,7 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   s.stats.dishes ??= s.meal ? [s.meal] : [];
   s.zonesCleared ??= [];
   s.layersCleared ??= [];
+  s.washed ??= false;
   if (s.forage) {
     // A trip saved before clears were tracked can't say what it walked past, so one already deeper than the first patch can't clear.
     s.forage.missed ??= s.forage.depth > 1 ? 1 : 0;
@@ -558,6 +561,8 @@ function dealLayerDecks(s: GameState, c: Content) {
 }
 
 function rollWeather(s: GameState, rng: Rng, c: Content) {
+  // The creek: what last month's Rain washed up waits on the Riverbank for one month.
+  s.washed = s.weather === 'rain';
   const roll = rng.die(12);
   const w = c.weather.find((w) => roll >= w.from && roll <= w.to);
   s.weather = w ? w.id : 'clear';
@@ -634,6 +639,7 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     layersCleared: [],
     cacheFound: false,
     watered: false,
+    washed: false,
     market: null,
     forage: null,
     pendingCrosses: [],
@@ -812,26 +818,53 @@ function dealPatch(s: GameState, trip: ForageTrip, rng: Rng, c: Content) {
   const n = c.rules.patchSize * c.rules.patchSize;
   const zone = c.zones.find((z) => z.id === trip.zone)!;
   const deck = deckOf(s, tripDeck(trip));
+  // The creek: the month after Rain, the first trip's first patch holds a rare find washed up. Only the first trip gets it.
+  const washed = !trip.layer && trip.depth === 1 && zone.rule === 'creek' && s.washed;
+  if (washed) s.washed = false;
   // Underground, the one card from outside the deck is the layer's artifact rather than a deep find.
-  const deep = trip.layer ? layerRelic(s, trip, c) : trip.depth >= c.rules.deepAt ? deepFind(s, zone, rng, c) : null;
+  const deep = trip.layer ? layerRelic(s, trip, c) : trip.depth >= c.rules.deepAt || washed ? deepFind(s, zone, rng, c) : null;
   const last = !trip.layer && deck.draw.length <= n - (deep ? 1 : 0);
   const way = wayDown(s, trip, last, c);
-  const room = n - (deep ? 1 : 0) - (way ? 1 : 0);
+  // The fairy ring: a trip's first patch has a mushroom from the deck at its centre (the deck is shuffled, so the first one is as good as any).
+  const rule = tripRule(trip, c);
+  const ringAt = rule === 'fairyRing' && trip.depth === 1 ? deck.draw.findIndex((card) => card.type === 'specimen') : -1;
+  const ring = ringAt >= 0 ? deck.draw.splice(ringAt, 1)[0] : null;
+  const room = n - (deep ? 1 : 0) - (way ? 1 : 0) - (ring ? 1 : 0);
   trip.patch = [];
   for (let i = 0; i < room; i++) {
     const card = takeCard(s, tripDeck(trip));
     if (!card) break;
-    trip.patch.push({ card, flipped: false, outcome: null });
+    // Open sky: with no canopy over the Burn Scar, its Ash is dealt face up, already turned.
+    if (rule === 'openSky' && card.type === 'ground' && card.name === zone.ruleCard) {
+      trip.patch.push({ card, flipped: true, outcome: 'nothing', faceUp: true });
+      deck.discard.push(card);
+    } else trip.patch.push({ card, flipped: false, outcome: null });
   }
   // The zone's last patch ends the trip's pass: a card the way down crowds out is walked past.
   if (way && last) deck.discard.push(...deck.draw.splice(0));
   if (deep) trip.patch.splice(Math.floor(rng.next() * (trip.patch.length + 1)), 0, { card: deep, flipped: false, outcome: null, deep: true });
   if (way) trip.patch.splice(Math.floor(rng.next() * (trip.patch.length + 1)), 0, { card: way, flipped: false, outcome: null });
+  if (ring) trip.patch.splice(Math.min(Math.floor(n / 2), trip.patch.length), 0, { card: ring, flipped: false, outcome: null, ring: true });
+  // A patch of nothing but face-up Ash and hazards, at the end of the deck, clears the zone without a card turned.
+  if (rule === 'openSky' && trip.status === 'open' && !trip.cleared && zoneCleared(s, trip)) {
+    trip.cleared = true;
+    if (!s.zonesCleared.includes(trip.zone)) s.zonesCleared.push(trip.zone);
+  }
 }
 
-/** Hazards orthogonally beside a patch card: the rustle you notice once you've turned it. */
+/** The zone's own rule, where it applies: on the surface only. */
+export function tripRule(trip: ForageTrip, c: Content = defaultContent): ZoneRule | null {
+  return trip.layer ? null : (c.zones.find((z) => z.id === trip.zone)?.rule ?? null);
+}
+
+/** The cards a patch card's number counts: the four beside it, and the corners too in the Old-growth's quiet. */
+export function nearCells(trip: ForageTrip, index: number, c: Content = defaultContent): number[] {
+  return neighbors(index, c.rules.patchSize, tripRule(trip, c) === 'quiet').filter((n) => n < trip.patch.length);
+}
+
+/** Hazards beside a patch card: the rustle you notice once you've turned it. */
 export function hazardsNear(trip: ForageTrip, index: number, c: Content = defaultContent): number {
-  return neighbors(index, c.rules.patchSize).filter((n) => trip.patch[n]?.card.type === 'hazard').length;
+  return nearCells(trip, index, c).filter((n) => trip.patch[n].card.type === 'hazard').length;
 }
 
 /**
@@ -938,6 +971,7 @@ export function dispatch(
       if (!s.decks[trip.zone].draw.length) fail("You've walked the whole zone. Time to head home.");
       leaveHidden(s, trip);
       trip.depth += 1;
+      trip.turnedAround = false;
       dealPatch(s, trip, rng, c);
       break;
     }
@@ -960,6 +994,7 @@ export function dispatch(
       const trip = s.forage;
       if (!trip || trip.status !== 'open') fail('You are not out foraging.');
       const spot = trip.patch[action.index] ?? fail('There is no card there.');
+      if (trip.turnedAround) fail('The trail has turned you around. Walk on or head home.');
       if (spot.flipped) fail('You already turned that one.');
       const card = spot.card;
       spot.flipped = true;
@@ -975,6 +1010,15 @@ export function dispatch(
           if (picked.dropped) outcome.dropped = picked.dropped;
         }
         if (spot.deep && outcome.outcome !== 'emptyPatch' && outcome.outcome !== 'basketFull') s.stats.rareFinds += 1;
+        // The mycelium: any mushroom card, in season or not, shows the face-down mushrooms beside it (as the numbers count them).
+        if (tripRule(trip, c) === 'mycelium') {
+          const marked = neighbors(action.index, c.rules.patchSize).filter((n) => {
+            const p = trip.patch[n];
+            return p && !p.flipped && p.card.type === 'specimen' && p.sign === undefined;
+          });
+          for (const n of marked) trip.patch[n].sign = action.index;
+          if (marked.length) outcome.marked = marked;
+        }
       } else if (card.type === 'coins') {
         s.coins += card.amount;
         s.stats.coinsEarned += card.amount;
@@ -992,6 +1036,10 @@ export function dispatch(
         trip.relics.push({ uid, artifact: card.artifact });
         trip.picked.push(uid);
         outcome.outcome = 'artifact';
+      } else if (tripRule(trip, c) === 'turnedAround' && card.name === c.zones.find((z) => z.id === trip.zone)?.ruleCard) {
+        // Turned around: Lost Trail in the Hollow ends this patch instead of counting toward a bust. The knife stays sharp.
+        trip.turnedAround = true;
+        outcome.outcome = 'turnedAround';
       } else {
         if (s.gear.includes('knife') && !trip.knifeUsed) {
           trip.knifeUsed = true;

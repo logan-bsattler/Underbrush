@@ -35,6 +35,7 @@ import {
   type Action,
   type ActionResult,
   hazardsNear,
+  nearCells,
   type ForageTrip,
   type GameState,
   type Journal,
@@ -50,17 +51,19 @@ import { isShaded, neighbors } from '../src/core/board';
  * and turn the card that looks least risky. Unknown cards count as the zone's base rate.
  */
 function safestCard(t: ForageTrip): { index: number; risk: number } | null {
-  const size = content.rules.patchSize;
-  const risk = t.patch.map(() => 0.25);
+  // A zone rule can say outright that a card is a mushroom: the fairy ring's centre, or one the mycelium shows.
+  const known = (p: ForageTrip['patch'][number]) => !!p.ring || p.sign !== undefined;
+  const risk: number[] = t.patch.map(() => 0.25);
   t.patch.forEach((p, i) => {
     if (!p.flipped || p.card.type === 'hazard') return;
-    // A patch at the end of the deck can be short: only the cards actually dealt are neighbors.
-    const around = neighbors(i, size).filter((n) => n < t.patch.length);
+    // The cards the number counts, as the engine counts them: only those actually dealt, and the corners too in the Old-growth.
+    const around = nearCells(t, i);
     const hidden = around.filter((n) => !t.patch[n].flipped);
     const found = around.filter((n) => t.patch[n].flipped && t.patch[n].card.type === 'hazard').length;
     const left = hazardsNear(t, i) - found;
     for (const n of hidden) risk[n] = left === 0 ? 0 : Math.max(risk[n] === 0 ? 0 : risk[n], left / hidden.length);
   });
+  t.patch.forEach((p, i) => known(p) && (risk[i] = 0));
   let best: { index: number; risk: number } | null = null;
   t.patch.forEach((p, i) => {
     if (!p.flipped && (!best || risk[i] < best.risk)) best = { index: i, risk: risk[i] };
@@ -617,6 +620,12 @@ export function playYear(
       while (s.forage?.status === 'open') {
         const t: ForageTrip = s.forage;
         const way = t.patch.find((p) => p.card.type === 'entrance');
+        // Turned around in the Hollow: walk on if the zone has cards left, or else head home.
+        if (t.turnedAround) {
+          if (s.decks[t.zone].draw.length) act({ type: 'deeper' });
+          else leave();
+          continue;
+        }
         // A careful diver heads home from below after the first counted hazard, and won't go down with one counted.
         if (opts.careful && t.hazards >= 1 && t.layer > 0) {
           act({ type: 'stopForage' });

@@ -1,6 +1,7 @@
 # Zone rules: one rule of its own for each zone
 
-Rank 8 on the Phase 6 list (`review-plan.md`), size L. Drafted 2026-10-30 for Ben's approval. Nothing is built.
+Rank 8 on the Phase 6 list (`review-plan.md`), size L. Drafted 2026-10-30. **Approved 2026-10-30 as recommended**
+(all six zones, the quiet, closed in Rain with a washed-up find, no swaps).
 
 ## The answer
 

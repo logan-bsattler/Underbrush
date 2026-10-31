@@ -10,6 +10,7 @@ import {
   type GameState,
   type NightEvent,
   type OrderProgress,
+  type ZoneRule,
   type Season,
   type Specimen,
   type Stage,
@@ -139,6 +140,16 @@ export function cardTitle(card: Card, where?: FloorPlace) {
   }
 }
 
+/** A zone rule named on the floor the first time it fires. The creek and the Hollow's turnaround always say what they did. */
+export const ruleIntro: Record<ZoneRule, string> = {
+  fairyRing: 'The fairy ring: a mushroom grows at the centre of this patch.',
+  mycelium: 'The mycelium: the mushrooms beside it show through the leaves.',
+  quiet: "The quiet: it's so still here that you hear further. Numbers count the diagonal cards too.",
+  openSky: 'Open sky: with no canopy, the Ash lies face up, its numbers showing.',
+  creek: '',
+  turnedAround: '',
+};
+
 export function outcomeText(o: DrawOutcome, card: Card, dropped?: Specimen, where?: FloorPlace) {
   switch (o) {
     case 'swapped': {
@@ -171,10 +182,15 @@ export function outcomeText(o: DrawOutcome, card: Card, dropped?: Specimen, wher
       const layer = card.type === 'entrance' ? content.underground[card.zone]?.[card.depth - 1] : null;
       return `A way down${layer ? ` to the ${layer.name.replace(/^The /, '')}` : ''}! Tap it to go down, or turn more cards first.`;
     }
+    case 'turnedAround':
+      return 'Turned around. The trail loops back on itself; walk on or head home.';
     case 'bust':
       return bustText(content.rules.bustKeep);
   }
 }
+
+/** The creek's line on the zone picker, the month after Rain. */
+export const washedRule = 'Washed up after the rain: a rare find in your first patch.';
 
 /**
  * One line per night event, or null for events the summary folds together. `picked` is the beds the

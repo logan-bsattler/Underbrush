@@ -78,7 +78,15 @@ export interface ZoneDef {
   deck: { card: Card; copies: number; unlock?: string }[];
   /** Rare finds dealt into each patch once a trip is rules.deepAt patches deep. Never part of the deck. */
   deep: Card[];
+  /** The zone's own rule on the surface, named and told in a line on the zone picker. The layers below keep the plain rules. */
+  rule?: ZoneRule;
+  ruleName?: string;
+  ruleText?: string;
+  /** The card the rule works on: the Ash that open sky deals face up, the Lost Trail that turns you around. */
+  ruleCard?: string;
 }
+
+export type ZoneRule = 'fairyRing' | 'mycelium' | 'quiet' | 'openSky' | 'creek' | 'turnedAround';
 
 /** One level of a zone's underground: a small deck of its own, dealt as a single patch when you descend into it. */
 export interface LayerDef {
@@ -204,6 +212,8 @@ export interface WeatherDef {
   to: number;
   rule: string;
   closes?: string[];
+  /** What a closed zone's card says closed it, when it isn't the weather's own name ("Closed by high water"). */
+  closedBy?: string;
 }
 
 export type OrderNeed =
@@ -450,6 +460,12 @@ export interface PatchCard {
   outcome: DrawOutcome | null;
   /** A deep find, or a layer's artifact: not from the deck, so it never goes back into it. */
   deep?: boolean;
+  /** The Meadow's fairy ring: the first patch's centre mushroom, its ring of caps showing on the card's back. */
+  ring?: boolean;
+  /** The Mixed Woods' mycelium: a mushroom shows through the leaves, shown by the turned mushroom at this index. */
+  sign?: number;
+  /** Dealt face up under the Burn Scar's open sky: turned, but never by you, so it isn't in the trip's log. */
+  faceUp?: boolean;
 }
 
 export interface ForageTrip {
@@ -477,6 +493,8 @@ export interface ForageTrip {
   cleared: boolean;
   /** The trip ended in a dig: what it turned up. */
   dug?: DigFind;
+  /** Lost Trail in the Hollow turned you around: this patch is done, so walk on or head home. */
+  turnedAround?: boolean;
 }
 
 /** A dig's find: the Founder's Cellar, a truffle (into the basket, or storage for an Expert), a truffle with no room for it, or nothing. */
@@ -495,6 +513,7 @@ export type DrawOutcome =
   | 'artifact'
   | 'nothing'
   | 'wayDown'
+  | 'turnedAround'
   | 'bust';
 
 export interface Cross {
@@ -641,6 +660,8 @@ export interface GameState {
   /** The Founder's Cellar was found this year. */
   cacheFound: boolean;
   watered: boolean;
+  /** Last month's rain washed something up on the Riverbank: its first patch this month holds a rare find. */
+  washed: boolean;
   /** An open market visit and the orders delivered on it so far. */
   market: { deliveries: number } | null;
   forage: ForageTrip | null;
@@ -723,7 +744,7 @@ export interface IdentifyResult {
 export type ActionResult =
   | { kind: 'none' }
   | { kind: 'identify'; results: IdentifyResult[] }
-  | { kind: 'draw'; index: number; card: Card; outcome: DrawOutcome; dropped?: Specimen; cleared?: boolean }
+  | { kind: 'draw'; index: number; card: Card; outcome: DrawOutcome; dropped?: Specimen; cleared?: boolean; marked?: number[] }
   | { kind: 'harvest'; gained: Record<string, number>; squares: number[] }
   | { kind: 'sell'; coins: number }
   | { kind: 'order'; points: number }

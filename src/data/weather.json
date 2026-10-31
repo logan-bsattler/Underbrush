@@ -1,6 +1,6 @@
 [
   { "id": "clear", "name": "Clear", "from": 1, "to": 3, "rule": "No effect." },
-  { "id": "rain", "name": "Rain", "from": 4, "to": 5, "rule": "No dry marks this month, and every growing bed advances one extra stage." },
+  { "id": "rain", "name": "Rain", "from": 4, "to": 5, "rule": "No dry marks this month, and every growing bed advances one extra stage. The Riverbank floods.", "closes": ["riverbank"], "closedBy": "high water" },
   { "id": "dryspell", "name": "Dry spell", "from": 6, "to": 7, "rule": "If you don't Tend this month, no beds grow." },
   { "id": "fog", "name": "Fog", "from": 8, "to": 8, "rule": "Mixed Woods is closed this month.", "closes": ["mixedwoods"] },
   { "id": "marketday", "name": "Market day", "from": 9, "to": 9, "rule": "Every sale is worth +1 coin this month." },

@@ -17,6 +17,7 @@ import {
   layersOpen,
   speciesOpen,
   nextClue,
+  tripRule,
   recoveryCost,
   seasonOf,
   zoneStatus,
@@ -24,11 +25,13 @@ import {
   type Season,
   type DrawOutcome,
   type GameState,
+  type PatchCard,
+  type ZoneRule,
 } from '../core';
 import { Icon, Mushroom, SubstrateArt, Unknown } from './art';
 import { SheetFrame } from './Game';
 import type { Store } from './store';
-import { artifactText, bare, bustText, cardTitle, digText, fallText, name, outcomeText, type FloorPlace } from './text';
+import { artifactText, bare, bustText, cardTitle, digText, fallText, name, outcomeText, ruleIntro, washedRule, type FloorPlace } from './text';
 
 function buzz(ms: number | number[]) {
   try {
@@ -117,6 +120,64 @@ function lockedText(unlock: string | null, st: { reason: string; notStocked?: bo
   return `The ${gear.name} that opens it is stocked once your homestead reaches ${at.title} (level ${at.level}).`;
 }
 
+/** The fairy ring on a card's back: a ring of tiny caps around the leaf. */
+function RingCaps() {
+  const caps = Array.from({ length: 9 }, (_, k) => {
+    const a = (k / 9) * Math.PI * 2 - Math.PI / 2;
+    return [50 + Math.cos(a) * 34, 62 + Math.sin(a) * 40];
+  });
+  return (
+    <svg class="ring-caps" viewBox="0 0 100 125" aria-hidden="true">
+      {caps.map(([x, y]) => (
+        <g transform={`translate(${x.toFixed(1)} ${y.toFixed(1)})`}>
+          <path d="M-1 0 L-1 4 L1 4 L1 0 Z" />
+          <path d="M-5 1 Q-5 -5 0 -5 Q5 -5 5 1 Z" />
+        </g>
+      ))}
+    </svg>
+  );
+}
+
+/** The mycelium's pale threads, from each turned mushroom to the cards it showed: drawn once, then left as a thin line. */
+function Threads({ patch, n }: { patch: PatchCard[]; n: number }) {
+  const at = (i: number) => [((i % n) + 0.5) * (100 / n), (Math.floor(i / n) + 0.5) * (100 / n)];
+  const lines = patch.flatMap((p, i) => (p.sign === undefined ? [] : [[...at(p.sign), ...at(i), i]]));
+  if (!lines.length) return null;
+  return (
+    <svg class="threads" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+      {lines.map(([x1, y1, x2, y2, i]) => (
+        <path key={i} pathLength={1} d={`M${x1} ${y1} Q${(x1 + x2) / 2 + (y2 - y1) * 0.12} ${(y1 + y2) / 2 + (x1 - x2) * 0.12} ${x2} ${y2}`} />
+      ))}
+    </svg>
+  );
+}
+
+const RULES_SEEN = 'underbrush:rules-seen';
+
+/**
+ * Whether to name a zone rule on the floor: only the first time it fires in this save. `key` names the moment it
+ * fires, so the line stays up while that moment does; after that, only the cards show the rule.
+ */
+function useRuleIntro(rule: ZoneRule | null, key: string | null): boolean {
+  const shown = useRef<string | null>(null);
+  if (!rule || !key) return false;
+  if (shown.current === key) return true;
+  let seen: string[] = [];
+  try {
+    seen = JSON.parse(localStorage.getItem(RULES_SEEN) ?? '[]');
+  } catch {
+    // No storage: every rule is new, which only means its line shows again.
+  }
+  if (seen.includes(rule)) return false;
+  shown.current = key;
+  try {
+    localStorage.setItem(RULES_SEEN, JSON.stringify([...seen, rule]));
+  } catch {
+    // As above.
+  }
+  return true;
+}
+
 const ordinal = (n: number) => ['first', 'second', 'third', 'fourth', 'fifth'][n - 1] ?? `${n}th`;
 /** "the Badger Setts", but "The Old Well" as it's named. */
 const the = (name: string) => (name.startsWith('The ') ? name : `the ${name}`);
@@ -152,6 +213,15 @@ function ZonePicker({ g, store, onClose }: { g: GameState; store: Store; onClose
               <span class="zone-wash" aria-hidden="true" />
               <span class="zone-name">{z.name}</span>
               <span class="zone-blurb">{st.open ? z.blurb : lockedText(z.unlock, st)}</span>
+              {z.rule === 'creek' && g.washed && st.open ? (
+                <span class="zone-rule washed">{washedRule}</span>
+              ) : (
+                z.ruleName && (
+                  <span class="zone-rule">
+                    <b>{z.ruleName}:</b> {z.ruleText}
+                  </span>
+                )
+              )}
               <span class="zone-meta">
                 <span>Hazard: {z.hazard}</span>
                 <span>{finds.map((id) => content.species[id].group).join(' · ')}</span>
@@ -317,7 +387,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
     const r = store.act({ type: 'flip', index });
     if (r?.kind === 'draw') {
       if (r.outcome === 'bust') buzz([60, 40, 120]);
-      else if (r.outcome === 'hazard') buzz(40);
+      else if (r.outcome === 'hazard' || r.outcome === 'turnedAround') buzz(40);
       if (card?.type === 'hazard' && !reducedMotion()) {
         const bust = r.outcome === 'bust';
         setHold({ index, kind: hazardKind(cardTitle(card, where), card.name), bust });
@@ -347,7 +417,21 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   const coins = trip.drawn.filter((d) => d.card.type === 'coins').reduce((sum, d) => sum + (d.card as { amount: number }).amount, 0);
   const subs = trip.drawn.filter((d) => d.card.type === 'substrate').length;
   const hidden = trip.patch.filter((p) => !p.flipped).length;
-  const turnedHere = trip.patch.some((p) => p.flipped);
+  // Cards dealt face up under open sky were never turned by you.
+  const turnedHere = trip.patch.some((p) => p.flipped && !p.faceUp);
+  const rule = tripRule(trip);
+  // A zone rule is named the first time it fires: as a patch is dealt (the fairy ring), or as a card is turned (the rest).
+  const introKey =
+    rule === 'fairyRing' && !turnedHere && trip.patch.some((p) => p.ring && !p.flipped)
+      ? `${trip.id}:${trip.depth}`
+      : rule === 'openSky' && !turnedHere && trip.patch.some((p) => p.faceUp)
+        ? `${trip.id}:${trip.depth}`
+        : (rule === 'mycelium' && store.last?.kind === 'draw' && store.last.marked?.length) || (rule === 'quiet' && turnedHere)
+          ? `${trip.id}:${trip.drawn.length}`
+          : null;
+  const intro = useRuleIntro(rule, introKey) && rule ? ruleIntro[rule] : '';
+  // Turned around in the Hollow: this patch is done, so its face-down cards dim until you walk on.
+  const turned = open && !!trip.turnedAround;
   const limit = bustAt(g);
   const deepHere = trip.patch.find((p) => p.deep);
   const lastWasDeep = !!deepHere?.flipped && last?.card === deepHere.card;
@@ -395,6 +479,8 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
           ? `A hazard. ${limit - trip.hazards} more this trip and you bust.`
           : last.outcome === 'bust'
             ? bustText(bustKeep(g), fall)
+            : last.outcome === 'turnedAround' && end
+              ? "Turned around. The trail loops back on itself, and this is the zone's last patch: time to head home."
             : last.outcome === 'wayDown' && fallNext !== null
               ? `${outcomeText(last.outcome, last.card)} ${fallText(fallNext)}.`
               : outcomeText(last.outcome, last.card, last.dropped, where)
@@ -402,6 +488,8 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
           ? 'The faded cards are what you walked past.'
           : layer
             ? `${layer.blurb}${deepHere ? ' Something old lies hidden in this patch.' : ''}${wayDown}`
+            : deepHere && trip.depth < deepAt
+              ? `The creek has left something: one card on this patch is a rare find.${wayDown}`
             : deepHere
               ? `Deep in the woods. One card on this ${end ? 'last patch' : 'patch'} hides a rare find.${wayDown}`
               : end && trip.depth > 1
@@ -409,6 +497,9 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
                 : trip.depth > 1
                   ? `Deeper in. The hazards you already met still count.${trip.depth < deepAt ? ' One patch further and rare finds start to turn up.' : ''}${wayDown}`
                   : `Tap a card to turn it. Each one you turn shows how many hazards lie beside it.${wayDown}`;
+
+  // A rule named as a patch is dealt comes first; one named as a card is turned follows what the card did.
+  const shownMessage = !intro ? message : turnedHere ? `${message} ${intro}` : `${intro} ${message}`;
 
   return (
     <div class={`overlay forage-screen ${under ? 'under' : `season-${season}`} ${hold?.bust ? 'busting' : ''}`} aria-busy={busy} style={{ '--zone': zone.color } as any}>
@@ -440,11 +531,12 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
       </header>
 
       <p class={`floor-msg ${last?.outcome ?? ''} ${lastWasDeep || justCleared ? 'rare' : ''}`} aria-live="polite">
-        {message}
+        {shownMessage}
       </p>
 
       <div class="floor-wrap">
         <div class={`floor ${under && arrived === trip.layer ? 'arriving' : ''}`} ref={floor} style={{ '--n': n } as any} role="grid" aria-label="Forest floor">
+          {rule === 'mycelium' && <Threads patch={trip.patch} n={n} />}
           {trip.patch.map((p, i) => {
             // Once the trip is over, the cards you didn't turn are shown faintly: what you walked past.
             const shown = p.flipped || !open;
@@ -463,7 +555,11 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
                   ? `${cardLabel(p.card, p.outcome, where)}${truffly ? ', truffle ground' : ''}, ${near} hazard${near === 1 ? '' : 's'} beside it: dig here`
                 : `${cardLabel(p.card, p.outcome, where)}${truffly ? ', truffle ground' : ''}${again ? ', already in the cabinet' : ''}${p.card.type === 'hazard' ? '' : `, ${near} hazard${near === 1 ? '' : 's'} beside it`}`
               : open
-                ? `Face-down card, row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}`
+                ? p.ring
+                  ? 'Face-down card, centre, in a fairy ring: a mushroom'
+                  : p.sign !== undefined
+                    ? 'Face-down card, a mushroom shows through'
+                    : `Face-down card, row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}`
                 : `Passed by: ${p.deep && p.card.type !== 'artifact' ? 'a rare find, ' : ''}${cardLabel(p.card, null, where)}`;
             // The rare find looks like any other card until it's turned (or the trip ends), then it shines.
             const rare = p.deep && shown;
@@ -472,14 +568,16 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             return (
               <button
                 key={`${trip.depth}-${trip.layer}-${i}`}
-                class={`fc ${p.card.type} ${p.outcome ?? ''} ${shown ? 'up' : ''} ${!p.flipped && !open ? 'passed' : ''} ${rare ? 'deep' : ''} ${rare && p.flipped ? 'found' : ''} ${glint ? 'glint' : ''} ${door ? 'door' : ''} ${door && descent ? 'lifted' : ''} ${spade ? 'diggable' : ''} ${hold?.index === i ? `hz-${hold.kind}` : ''}`}
+                class={`fc ${p.card.type} ${p.outcome ?? ''} ${shown ? 'up' : ''} ${!p.flipped && (!open || turned) ? 'passed' : ''} ${rare ? 'deep' : ''} ${rare && p.flipped ? 'found' : ''} ${glint ? 'glint' : ''} ${door ? 'door' : ''} ${door && descent ? 'lifted' : ''} ${spade ? 'diggable' : ''} ${hold?.index === i ? `hz-${hold.kind}` : ''}`}
                 style={{ '--i': i } as any}
-                disabled={!open || (p.flipped && !door && !spade)}
+                disabled={!open || (p.flipped && !door && !spade) || (turned && !p.flipped)}
                 onClick={() => (door ? descend() : spade ? !busy && setDigAsk(i) : flip(i))}
                 aria-label={label}
               >
                 <span class="fc-inner">
                   <span class="fc-back" aria-hidden="true">
+                    {p.ring && <RingCaps />}
+                    {p.sign !== undefined && <Icon name="cap" size={22} />}
                     <Icon name="leaf" size={22} />
                   </span>
                   <span class="fc-front" aria-hidden="true">
@@ -499,7 +597,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
                       </span>
                     )}
                     {p.flipped && p.card.type !== 'hazard' && (
-                      <span class={`near n${near}`} title={`${near} hazard${near === 1 ? '' : 's'} beside this card`}>
+                      <span class={`near n${near} ${rule === 'quiet' ? 'quiet' : ''}`} title={`${near} hazard${near === 1 ? '' : 's'} ${rule === 'quiet' ? 'around' : 'beside'} this card`}>
                         <Icon name="hazard" size={12} />
                         {near}
                       </span>
@@ -526,7 +624,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
                   ? down.reason
                   : end
                     ? 'End of the zone: the whole deck is dealt.'
-                    : `Go deeper: deal a fresh patch from the ${left} cards left. ${hidden} unturned card${hidden === 1 ? '' : 's'} stay behind.`
+                    : `${turned ? 'Walk on' : 'Go deeper'}: deal a fresh patch from the ${left} cards left. ${hidden} unturned card${hidden === 1 ? '' : 's'} stay behind.`
             }
             onPointerDown={(e) => {
               // Keep receiving this pointer after it leaves the deck, so a mouse drag works like a touch swipe.
@@ -565,6 +663,12 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
                   <span>No way down</span>
                   <small>as deep as you can go</small>
                 </>
+              ) : turned && !end ? (
+                <>
+                  <span>Swipe up</span>
+                  <small>to walk on</small>
+                  <small>{left} cards left</small>
+                </>
               ) : end ? (
                 <>
                   <span>End of the zone</span>
@@ -592,7 +696,8 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             )}
             {!end && (
               <button class="btn small ghost" onClick={deeper}>
-                Go deeper{hidden ? ` (${hidden} unturned left behind)` : ''}
+                {turned ? 'Walk on' : 'Go deeper'}
+                {hidden ? ` (${hidden} unturned left behind)` : ''}
               </button>
             )}
           </div>

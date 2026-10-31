@@ -20,6 +20,9 @@ import { runGrowth, stageLength } from '../src/core/growth';
 import { Rng } from '../src/core/rng';
 import { emptyJournal, mergeDiscoveries, recordYear } from '../src/core/journal';
 import { playYear } from '../scripts/bot';
+import { plainRules } from './plain';
+
+plainRules();
 
 const run = (s: GameState, ...actions: Action[]) => {
   for (const a of actions) s = dispatch(s, a).state;
