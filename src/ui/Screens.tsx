@@ -1,4 +1,4 @@
-import { content, dailyBoard, masteryLevel, score } from '../core';
+import { content, dailyBoard, hybridUnlockLevel, levelFor, masteryLevel, score } from '../core';
 import { Icon, Mushroom, Unknown } from './art';
 import { HomesteadCard } from './Progress';
 import { setAudio, useAudioSettings } from './sound';
@@ -150,6 +150,14 @@ export function Journal({ store, onBack }: { store: Store; onBack: () => void })
               ) : sp.kind === 'hybrid' && sp.hint ? (
                 <>
                   <p class="hint">{sp.hint}</p>
+                  {(() => {
+                    const gate = hybridUnlockLevel(id);
+                    return gate && levelFor(j.renown).level < gate.level ? (
+                      <p class="muted small">
+                        Crosses from level {gate.level}, {gate.title}.
+                      </p>
+                    ) : null;
+                  })()}
                   {sp.parents?.every((p) => j.discovered.includes(p)) && <p class="muted small">You've grown both halves of this one.</p>}
                 </>
               ) : (

@@ -8,6 +8,7 @@ import {
   newGame,
   orderPayment,
   orderSpecies,
+  perksFor,
   score,
   standardPerks,
   seasonOf,
@@ -658,6 +659,67 @@ describe('growth phase', () => {
     s = run(s, { type: 'resolveCross', index: 0, replace: null });
     grow(s);
     expect(s.pendingCrosses).toHaveLength(0);
+  });
+
+  it('crosses a level-gated hybrid only from its level', () => {
+    const at = (level: number) => perksFor({ ...emptyJournal(), renown: content.progression.levels[level - 1].renown }, []);
+    expect(at(7).hybrids).toEqual([]);
+    expect(at(8).hybrids).toEqual(['snowcomb']);
+    expect(at(9).hybrids).toEqual(['snowcomb', 'claretshelf']);
+    expect(standardPerks().hybrids).toEqual([]);
+
+    const pair = (perks = standardPerks()) => {
+      const s = blank();
+      s.perks = perks;
+      s.round = 7;
+      s.watered = true;
+      bed(s, 4, 'lionsmane', 'C');
+      bed(s, 5, 'enoki', 'C');
+      return s;
+    };
+    const below = pair(at(7));
+    grow(below);
+    expect(below.pendingCrosses).toEqual([]);
+
+    let s = pair(at(8));
+    grow(s);
+    expect(s.pendingCrosses).toEqual([{ a: 4, b: 5, hybrid: 'snowcomb' }]);
+    s = run(s, { type: 'resolveCross', index: 0, replace: 'b' });
+    expect(s.grid[5]).toMatchObject({ species: 'snowcomb', stage: 'C' });
+    expect(s.hybridsMade).toEqual(['snowcomb']);
+
+    // A save from before the gate has no perks.hybrids: the gated ones stay locked.
+    const old = pair();
+    delete (old.perks as Partial<typeof old.perks>).hybrids;
+    const migrated = migrateState(old);
+    grow(migrated);
+    expect(migrated.pendingCrosses).toEqual([]);
+  });
+
+  it('a feeder lifts neighbors at Spawn to Colonized when it fruits, and nothing else', () => {
+    const s = blank();
+    s.round = 4;
+    s.watered = true;
+    bed(s, 5, 'claretshelf', 'P');
+    bed(s, 1, 'enoki', 'S'); // out of season: would wait at Spawn
+    bed(s, 6, 'oyster', 'S');
+    s.grid[6].blight = true;
+    bed(s, 9, 'enoki', 'C');
+    const { events } = grow(s);
+    expect(s.grid[5].stage).toBe('F');
+    expect(events.filter((e) => e.type === 'feed')).toEqual([{ type: 'feed', from: 5, to: 1 }]);
+    expect(s.grid[1]).toMatchObject({ stage: 'C', hold: 0 });
+    expect(s.grid[6].stage).toBe('S');
+    expect(s.grid[9].stage).toBe('C');
+
+    // Only on fresh fruit: fruit left unpicked goes overripe and feeds no one.
+    const t = blank();
+    t.round = 4;
+    t.watered = true;
+    bed(t, 5, 'claretshelf', 'F');
+    bed(t, 1, 'enoki', 'S');
+    grow(t);
+    expect(t.grid[1].stage).toBe('S');
   });
 });
 

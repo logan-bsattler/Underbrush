@@ -90,12 +90,14 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
   let bonusActions = 0;
   let autoHarvest = false;
   let commissions = false;
+  const hybrids: string[] = [];
   for (const u of unlocks) {
     if (u.type === 'farmSize') size = Math.max(size, u.size);
     if (u.type === 'startCoins') bonusCoins += u.amount;
     if (u.type === 'actions') bonusActions += u.amount;
     if (u.type === 'autoHarvest') autoHarvest = true;
     if (u.type === 'commissions') commissions = true;
+    if (u.type === 'hybrid') hybrids.push(u.id);
   }
   return {
     shop,
@@ -113,6 +115,7 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
     clues: [...j.artifacts],
     cacheFound: j.cacheFound,
     commissions,
+    hybrids,
   };
 }
 
@@ -120,6 +123,11 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
 export function boardsFor(j: Journal, c: Content = defaultContent): string[] {
   const unlocks = unlocksThrough(levelFor(j.renown, c).level, c);
   return c.boards.map((b) => b.id).filter((id) => unlocks.some((u) => u.type === 'board' && u.id === id));
+}
+
+/** The level from which this hybrid can cross, or null if it crosses from the start. */
+export function hybridUnlockLevel(hybridId: string, c: Content = defaultContent): LevelDef | null {
+  return c.progression.levels.find((l) => l.unlocks.some((u) => u.type === 'hybrid' && u.id === hybridId)) ?? null;
 }
 
 /** The level whose unlock first opens this board, or null if no level does. */

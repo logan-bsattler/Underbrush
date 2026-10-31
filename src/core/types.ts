@@ -26,6 +26,8 @@ export interface SpeciesTraits {
   coldHardy?: boolean;
   thirsty?: boolean;
   hungry?: boolean;
+  /** Each time it fruits, adjacent beds still at Spawn jump to Colonized. */
+  feeder?: boolean;
 }
 
 export interface SpeciesDef {
@@ -316,7 +318,9 @@ export type Unlock =
   | { type: 'actions'; amount: number }
   | { type: 'board'; id: string }
   | { type: 'autoHarvest' }
-  | { type: 'commissions' };
+  | { type: 'commissions' }
+  /** This hybrid can cross from this level on. Hybrids no level names cross from the start. */
+  | { type: 'hybrid'; id: string };
 
 export interface LevelDef {
   level: number;
@@ -481,6 +485,8 @@ export type NightEvent =
   | { type: 'spread'; from: number; to: number; species: string }
   | { type: 'takeover'; from: number; to: number; species: string }
   | { type: 'eat'; from: number; to: number }
+  /** A feeder's fresh fruit lifted a neighbour at Spawn to Colonized. */
+  | { type: 'feed'; from: number; to: number }
   | { type: 'cross'; a: number; b: number; hybrid: string }
   | { type: 'moldBloom'; count: number }
   | { type: 'spoil'; lost: Record<string, number> }
@@ -550,6 +556,8 @@ export interface Perks {
   cacheFound: boolean;
   /** The market takes commissions this year. */
   commissions: boolean;
+  /** Level-gated hybrids that can cross this year. */
+  hybrids: string[];
 }
 
 export interface GameState {

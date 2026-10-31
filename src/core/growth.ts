@@ -128,7 +128,7 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
     }
   }
 
-  // 6. Spreaders and hungry beds act on fresh fruit
+  // 6. Spreaders, hungry beds and feeders act on fresh fruit
   const fruiting = beds().filter((i) => grid[i].stage === 'F' && !grid[i].blight);
   for (const i of fruiting) {
     const sp = def(i);
@@ -161,6 +161,14 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
         events.push({ type: 'eat', from: i, to: n });
       }
     }
+    if (sp.traits.feeder) {
+      for (const n of neighbors(i, s.size)) {
+        const nb = grid[n];
+        if (!nb.species || nb.blight || nb.stage !== 'S') continue;
+        Object.assign(nb, { stage: 'C', hold: 0 });
+        events.push({ type: 'feed', from: i, to: n });
+      }
+    }
   }
 
   // 7. Hybrids: offer every compatible adjacent pair, both colonized or later
@@ -172,7 +180,7 @@ export function runGrowth(s: GameState, rng: Rng, c: Content): NightReport {
       const a = grid[i];
       const b = grid[n];
       if (!mature(a) || !mature(b)) continue;
-      const hybrid = hybridFor(a.species!, b.species!, c);
+      const hybrid = hybridFor(a.species!, b.species!, c, s.perks.hybrids);
       if (!hybrid) continue;
       if (s.declinedCrosses.includes(crossKey(i, n, a.species!, b.species!))) continue;
       s.pendingCrosses.push({ a: i, b: n, hybrid });
@@ -213,7 +221,7 @@ export function previewNight(s: GameState, c: Content): TonightEvent[] {
   const filled = new Set(events.flatMap((e) => (e.type === 'spread' || e.type === 'takeover' ? [e.to] : [])));
   const kept: TonightEvent[] = [];
   for (const e of events) {
-    if (e.type === 'grow' || e.type === 'wait' || e.type === 'spread' || e.type === 'takeover') continue;
+    if (e.type === 'grow' || e.type === 'wait' || e.type === 'spread' || e.type === 'takeover' || e.type === 'feed') continue;
     if (e.type === 'cross' && (filled.has(e.a) || filled.has(e.b))) continue;
     // Which square gets eaten is the throwaway RNG's pick, so it isn't told: -1.
     kept.push(e.type === 'eat' ? { ...e, to: -1 } : (e as TonightEvent));

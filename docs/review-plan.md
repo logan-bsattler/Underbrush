@@ -212,6 +212,19 @@ Progress (2026-10-30):
   at 375 px: a fresh journal, both parents grown, and a hybrid made. No rules change, so no sim or tier
   re-check. **Next:** rank 3, second half, new hybrids (its own spec; Lion's Mane × Enoki and Reishi × Wine
   Cap are the candidates).
+- **Phase 6, rank 3, second half, new hybrids: built (2026-10-30).** Spec in `new-hybrids-spec.md`, approved
+  with all three recommendations. Snow Comb (Lion's Mane × Enoki, from L8) and Claret Shelf (Reishi × Wine Cap,
+  from L9) with the new `feeder` trait; see DESIGN.md "Level-gated hybrids". New tests: the gate by level and
+  for old saves, the feeder, and the tonight preview with a feeder (bot years now run half with the gated
+  hybrids unlocked). `npm run sim -- 20 plan 30` gained a hybrids/yr column.
+  - **Sims** (before in session 4f13e281's scratchpad `before/`, after in `after/`): L1–L7 of the plan sim,
+    `100 campaign` and `300` are identical to before. Plan sim L8/L9/L10: tier rate 73→77%, 70→74%, 73→73%;
+    median 31→31, 30→30, 39→40; hybrids/yr 1.04→1.21, 1.13→1.48, 1.23→1.57. All within 5 points, so no
+    `tierLift` change. Gen sim (`300 gen`, Legend years at L10): every row moves a little, median +1 to +2 and
+    tier reached +1 to +4 points (planner 45/97/94/92/80% → 47/97/95/91/81%), top tier +1 to +3. Also within the bar.
+  - **Browser at 375 px:** locked pages read "Crosses from level 8, Pathfinder." and "…9, Lorekeeper."; at L9
+    the tonight preview offered the Snow Comb cross without mentioning the feeding, the night report read "The
+    Claret Shelf fed the Wine Cap beside it.", and the Snow Comb cross prompt rendered.
 
 ## Bottom line
 

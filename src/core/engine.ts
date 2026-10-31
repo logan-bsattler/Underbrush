@@ -449,6 +449,7 @@ export function standardPerks(c: Content = defaultContent): Perks {
     clues: [],
     cacheFound: false,
     commissions: false,
+    hybrids: [],
   };
 }
 
@@ -466,6 +467,8 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   // Saves from before the marks counted held the cabinet as a number: the year starts without them.
   if (!Array.isArray(s.perks.clues)) s.perks.clues = [];
   s.perks.cacheFound ??= false;
+  // Saves from before level-gated hybrids: the gated ones stay locked this year.
+  s.perks.hybrids ??= [];
   // Saves from before boards were all on Streamside, with the stream down the left column.
   s.board ??= 'streamside';
   s.grid.forEach((sq, i) => (sq.damp ??= i % s.size === 0));
@@ -1422,7 +1425,7 @@ export function dispatch(
       const target = action.replace === 'a' ? a : b;
       const other = action.replace === 'a' ? b : a;
       const valid =
-        a.species && b.species && hybridFor(a.species, b.species, c) === cross.hybrid && !a.blight && !b.blight && other.species;
+        a.species && b.species && hybridFor(a.species, b.species, c, s.perks.hybrids) === cross.hybrid && !a.blight && !b.blight && other.species;
       if (!valid) break; // an earlier cross used one of these beds
       target.species = cross.hybrid;
       target.stage = 'C';

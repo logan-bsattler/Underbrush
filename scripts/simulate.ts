@@ -145,7 +145,8 @@ if (process.argv[3] === 'cache') {
 } else if (process.argv[3] === 'plan') {
   // Long story campaigns with the planner, which chases orders, read by the homestead level at the start of each year.
   const YEARS = Number(process.argv[4] ?? 30);
-  const rows: Record<number, { score: number[]; tier: number; orders: number; left: number[]; earned: number[]; hires: number; taken: number; done: number }> = {};
+  const rows: Record<number, { score: number[]; tier: number; orders: number; left: number[]; earned: number[]; hires: number; taken: number; done: number; hybrids: number; gated: number }> = {};
+  const gated = (id: string) => content.progression.levels.some((l) => l.unlocks.some((u) => u.type === 'hybrid' && u.id === id));
   for (let i = 0; i < n; i++) {
     let j = emptyJournal();
     for (let y = 0; y < YEARS; y++) {
@@ -154,7 +155,7 @@ if (process.argv[3] === 'cache') {
       const s = playYear(newGame({ seed: `plan-${i}-y${y}`, perks: perksFor(j, heirlooms) }), { plan: true });
       j = recordYear(j, s);
       const sc = score(s);
-      const r = (rows[level] ??= { score: [], tier: 0, orders: 0, left: [], earned: [], hires: 0, taken: 0, done: 0 });
+      const r = (rows[level] ??= { score: [], tier: 0, orders: 0, left: [], earned: [], hires: 0, taken: 0, done: 0, hybrids: 0, gated: 0 });
       r.score.push(sc.total);
       if (sc.tier) r.tier += 1;
       r.orders += s.orders.filled.length;
@@ -163,14 +164,16 @@ if (process.argv[3] === 'cache') {
       r.hires += s.hires;
       r.taken += s.commission.taken;
       r.done += s.orders.filled.filter((id) => id.startsWith('c-')).length;
+      r.hybrids += s.hybridsMade.length;
+      r.gated += s.hybridsMade.filter(gated).length;
     }
   }
   console.log(`${n} ${YEARS}-year campaigns with the planner, by level at the start of the year`);
-  console.log('level  years  median  p90  tiers now  orders/yr  hires/yr  coins left (median, p90)  coins earned (median)  commissions taken, delivered /yr');
+  console.log('level  years  median  p90  tiers now  orders/yr  hires/yr  coins left (median, p90)  coins earned (median)  commissions taken, delivered /yr  hybrids/yr (level-gated)');
   for (const [level, r] of Object.entries(rows)) {
     const k = r.score.length;
     console.log(
-      `${level.padStart(5)}  ${String(k).padStart(5)}  ${String(pct(r.score, 0.5)).padStart(6)}  ${String(pct(r.score, 0.9)).padStart(3)}  ${`${((100 * r.tier) / k).toFixed(0)}%`.padStart(9)}  ${(r.orders / k).toFixed(1).padStart(9)}  ${(r.hires / k).toFixed(1).padStart(8)}  ${`${pct(r.left, 0.5)}, ${pct(r.left, 0.9)}`.padStart(24)}  ${String(pct(r.earned, 0.5)).padStart(21)}  ${(r.taken / k).toFixed(1)}, ${(r.done / k).toFixed(1)}`,
+      `${level.padStart(5)}  ${String(k).padStart(5)}  ${String(pct(r.score, 0.5)).padStart(6)}  ${String(pct(r.score, 0.9)).padStart(3)}  ${`${((100 * r.tier) / k).toFixed(0)}%`.padStart(9)}  ${(r.orders / k).toFixed(1).padStart(9)}  ${(r.hires / k).toFixed(1).padStart(8)}  ${`${pct(r.left, 0.5)}, ${pct(r.left, 0.9)}`.padStart(24)}  ${String(pct(r.earned, 0.5)).padStart(21)}  ${(r.taken / k).toFixed(1)}, ${(r.done / k).toFixed(1)}  ${(r.hybrids / k).toFixed(2).padStart(31)} (${(r.gated / k).toFixed(2)})`,
     );
   }
 } else if (process.argv[3] === 'campaign') {

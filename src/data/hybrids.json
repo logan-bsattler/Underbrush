@@ -34,5 +34,23 @@
     "blurb": "Blue-grey shelves rimed like a January window.",
     "hint": "A pale shelf on velvet stems, rimed with frost. Straw beside a log as the year turns cold.",
     "art": { "shape": "shelf", "cap": "#A9BFCB", "shade": "#6F8B9A", "gill": "#E3ECEF", "stem": "#CFDCE2" }
+  },
+  {
+    "id": "snowcomb", "name": "Snow Comb", "kind": "hybrid", "value": 4, "parents": ["lionsmane", "enoki"],
+    "substrates": ["log"], "seasons": ["fall", "winter"], "growth": "medium",
+    "traits": { "coldHardy": true, "needsShade": true },
+    "rule": "Shaded and cold-hardy. Grows through fall and winter and ignores Cold Snap, but only beside a Tree.",
+    "blurb": "Frosted white teeth hanging in a winter comb.",
+    "hint": "An icicle tooth on velvet stems. Two logs, side by side, in the fall.",
+    "art": { "shape": "tooth", "cap": "#F2F6FA", "shade": "#A9C3D6", "gill": "#F2F6FA", "stem": "#D3E2EC" }
+  },
+  {
+    "id": "claretshelf", "name": "Claret Shelf", "kind": "hybrid", "value": 5, "parents": ["reishi", "winecap"],
+    "substrates": ["log", "woodchip"], "seasons": ["summer", "fall"], "growth": "slow",
+    "traits": { "feeder": true },
+    "rule": "Slow. Each time it fruits, it feeds its neighbours: every adjacent bed still at Spawn jumps to Colonized.",
+    "blurb": "A wine-dark shelf that shares what it eats.",
+    "hint": "A lacquered shelf beside a burgundy cap. A log beside the chips, in the summer.",
+    "art": { "shape": "kidney", "cap": "#7A1F2E", "shade": "#4A0F1A", "gill": "#E3B8A0", "stem": "#5A1A22", "gloss": true }
   }
 ]

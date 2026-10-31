@@ -48,10 +48,13 @@ export function farmLayout(boardId: string, size: number, c: Content = defaultCo
   return { trees, damp, start };
 }
 
-export function hybridFor(a: string, b: string, c: Content = defaultContent): string | null {
+/** The hybrid these two species cross into, or null. A hybrid a level unlocks crosses only once it's in `unlocked`. */
+export function hybridFor(a: string, b: string, c: Content = defaultContent, unlocked: string[] = []): string | null {
   for (const id of c.speciesOrder) {
     const p = c.species[id].parents;
-    if (p && ((p[0] === a && p[1] === b) || (p[0] === b && p[1] === a))) return id;
+    if (!p || !((p[0] === a && p[1] === b) || (p[0] === b && p[1] === a))) continue;
+    const gated = c.progression.levels.some((l) => l.unlocks.some((u) => u.type === 'hybrid' && u.id === id));
+    return gated && !unlocked.includes(id) ? null : id;
   }
   return null;
 }

@@ -153,6 +153,10 @@
         {
           "type": "gear",
           "id": "compass"
+        },
+        {
+          "type": "hybrid",
+          "id": "snowcomb"
         }
       ]
     },
@@ -165,6 +169,10 @@
       "unlocks": [
         {
           "type": "autoHarvest"
+        },
+        {
+          "type": "hybrid",
+          "id": "claretshelf"
         }
       ]
     },

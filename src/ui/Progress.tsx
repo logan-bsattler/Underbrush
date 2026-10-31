@@ -54,6 +54,8 @@ export function unlockText(u: Unlock): string {
       return 'Fruiting beds are picked into storage every morning';
     case 'commissions':
       return 'Take paid commissions at the market: bigger orders for more points';
+    case 'hybrid':
+      return 'A new hybrid can cross: see the Field journal';
   }
 }
 

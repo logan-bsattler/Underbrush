@@ -9,6 +9,7 @@ const markFor: Partial<Record<NightEvent['type'], string>> = {
   grow: 'grow',
   blight: 'blight',
   spread: 'spread',
+  feed: 'grow',
   takeover: 'blight',
   overripe: 'blight',
   cross: 'cross',

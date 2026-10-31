@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { content, dispatch, newGame, previewNight, type Action, type GameState, type NightEvent } from '../src/core';
+import { content, dispatch, newGame, previewNight, standardPerks, type Action, type GameState, type NightEvent } from '../src/core';
 import { tonightLines } from '../src/ui/text';
 import { playYear } from '../scripts/bot';
 
@@ -30,7 +30,9 @@ describe('tonight preview', () => {
     let nights = 0;
     let warned = 0;
     for (let i = 0; i < 24; i++) {
-      const start = newGame({ seed: `tonight-${i}` });
+      // Half the years have the level-gated hybrids unlocked.
+      const perks = i % 2 ? { ...standardPerks(), hybrids: ['snowcomb', 'claretshelf'] } : undefined;
+      const start = newGame({ seed: `tonight-${i}`, perks });
       const actions: Action[] = [];
       playYear(start, { greed: 2 + (i % 4), plan: i % 2 === 0, onResult: (a) => actions.push(a) });
       let s = start;
@@ -53,6 +55,23 @@ describe('tonight preview', () => {
     // Bots leave beds to dry and fruit to rot on about one night in five, so the comparison isn't vacuous.
     expect(warned).toBeGreaterThan(nights / 8);
   }, 20000);
+
+  it("tells the cross a feeder's neighbor will offer, but not the feeding", () => {
+    const s = blank();
+    s.perks.hybrids = ['claretshelf'];
+    s.round = 4;
+    bed(s, 5, 'claretshelf', 'P');
+    bed(s, 1, 'lionsmane', 'S'); // no tree beside it, so it waits at Spawn until fed
+    bed(s, 2, 'oyster', 'C');
+    s.watered = true;
+    const preview = previewNight(s, content);
+    expect(preview.some((e) => e.type === ('feed' as string))).toBe(false);
+    const { result } = dispatch(s, { type: 'endMonth' });
+    if (result.kind !== 'night') throw new Error('endMonth gave no night');
+    expect(result.report.events).toContainEqual({ type: 'feed', from: 5, to: 1 });
+    expect(preview).toEqual(told(result.report.events));
+    expect(preview).toContainEqual({ type: 'cross', a: 1, b: 2, hybrid: 'shaggyoyster' });
+  });
 
   it('never says where a spreader lands, or the cross its new bed would offer', () => {
     const s = blank();

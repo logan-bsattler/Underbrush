@@ -208,6 +208,8 @@ export function eventText(
       return `${name(e.species)} smothered a Puffball bed.`;
     case 'eat':
       return 'Ember Puff ate an empty square of substrate.';
+    case 'feed':
+      return `The ${sp(e.from)} fed the ${sp(e.to)} beside it.`;
     case 'moldBloom':
       return `Mold bloom: ${e.count} beds are blighted. You lose an action next month.`;
     case 'spoil': {

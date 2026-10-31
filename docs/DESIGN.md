@@ -486,6 +486,25 @@ Each hybrid you haven't made shows a riddle on its Field journal page (spec: `do
 - **Balance.** Riddles only bring the first discovery forward, and bots never plan hybrids, so sims
   and tiers are untouched.
 
+## Level-gated hybrids
+
+Two more hybrids, each crossing only from a homestead level (spec: `docs/new-hybrids-spec.md`).
+
+| Hybrid | Parents | From | Rules |
+|---|---|---|---|
+| Snow Comb | Lion's Mane × Enoki | L8, Pathfinder | Log; fall and winter; medium; `coldHardy` + `needsShade`. Value 4. |
+| Claret Shelf | Reishi × Wine Cap | L9, Lorekeeper | Log or Woodchip; summer and fall; slow; `feeder`. Value 5. |
+
+- **The gate.** A `{ type: 'hybrid', id }` unlock in `progression.json`; `perksFor` collects them into
+  `Perks.hybrids`, and `hybridFor` skips a hybrid any level names unless it's in that list. Daily years and
+  old saves have none, so they never cross these two. Locked journal pages add "Crosses from level N, Title."
+- **Feeder.** In step 6 of the night, a feeder on fresh fruit moves every adjacent unblighted bed at Spawn
+  to Colonized, with a `feed` night event. No dice, so the tonight preview stays exact; it doesn't list the
+  feeding, only any cross the fed bed then offers.
+- **Balance.** L1–L7, campaign and standard-kit sims are byte-identical to before. With the planner, L8–L10
+  tier rates went 73/70/73% → 77/74/73% and level-gated hybrids are 0.2–0.4 a year, inside the 5-point bar,
+  so `tierLift` is unchanged.
+
 ## Achievements
 
 Feats the field journal remembers across every year, listed in the Almanac and announced with a
