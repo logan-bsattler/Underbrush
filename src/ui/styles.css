@@ -2928,23 +2928,81 @@ button.chip {
   font-size: 14px;
   margin: 0 0 10px;
 }
-.mastery {
+.mastery-group {
+  margin: 14px 0 6px;
+  font-size: 16px;
+}
+.mastery-grid {
   list-style: none;
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 8px;
-}
-.mastery li {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-.mastery-head {
-  display: flex;
-  justify-content: space-between;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
-  margin-bottom: 3px;
+}
+/* A tile's edge carries its mastery colour: plain for New, then the tag colours. */
+.mastery-tile {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 4px 7px;
+  border-radius: 10px;
+  border: 1.5px solid var(--line);
+  background: var(--card);
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+.mastery-tile.m1 {
+  border: 2px solid var(--moss);
+}
+.mastery-tile.m2 {
+  border: 2.5px solid var(--moss-dark);
+  background: var(--moss-wash);
+}
+.mastery-tile.m3 {
+  border: 2.5px solid var(--gold);
+  background: #fbf1d8;
+}
+.mastery-tile.on {
+  box-shadow: 0 0 0 2px var(--ink);
+}
+.mastery-name {
+  font-size: 12px;
+  line-height: 1.15;
+  text-align: center;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.3em;
+}
+.mastery-bar {
+  align-self: stretch;
+  height: 4px;
+  margin: auto 2px 0;
+  border-radius: 2px;
+  background: var(--paper-2);
+  overflow: hidden;
+}
+.mastery-bar span {
+  display: block;
+  height: 100%;
+  background: var(--moss);
+}
+.mastery-detail {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--paper-2);
+  font-size: 14px;
 }
 .mastery-tag {
   font-size: 11px;

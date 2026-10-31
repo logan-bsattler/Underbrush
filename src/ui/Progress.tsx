@@ -129,11 +129,76 @@ function LevelRow({ l, j }: { l: LevelDef; j: Journal }) {
   );
 }
 
+const GRID_COLUMNS = 4;
+/** Species that only grow below ground: every specimen dealt on an underground layer. */
+const belowGround = new Set(
+  Object.values(content.underground).flatMap((layers) => layers.flatMap((l) => l.deck.flatMap((e) => (e.card.type === 'specimen' ? [e.card.species] : [])))),
+);
+
+/** Mastery as a grid of tiles in three groups; tapping a tile opens a detail line under its row. */
+function MasteryGrid({ j }: { j: Journal }) {
+  const [open, setOpen] = useState<string | null>(null);
+  const species = content.speciesOrder.filter((id) => content.species[id].kind !== 'hybrid');
+  const groups: [string, string[]][] = [
+    ['Cultivated', species.filter((id) => content.species[id].kind === 'cultivated')],
+    ['Wild', species.filter((id) => content.species[id].kind === 'wild' && !belowGround.has(id))],
+    ['Below ground', species.filter((id) => belowGround.has(id))],
+  ];
+  const top = content.progression.mastery[content.progression.mastery.length - 1];
+  const detail = (id: string) => {
+    const n = j.idCounts[id] ?? 0;
+    const lvl = masteryLevel(n);
+    const nextM = content.progression.mastery.find((m) => m.ids > n);
+    return (
+      <li class="mastery-detail" key={`${id}-detail`}>
+        <b>{j.discovered.includes(id) ? name(id) : content.species[id].group}</b>
+        <span class={`mastery-tag m${lvl}`}>{lvl ? masteryName(lvl) : 'New'}</span>
+        <small class="muted">{nextM ? `${n} of ${nextM.ids} identified for ${nextM.name}` : `${n} identified · ${top.name}`}</small>
+      </li>
+    );
+  };
+  return (
+    <>
+      {groups.map(([label, ids]) => {
+        const mastered = ids.filter((id) => masteryLevel(j.idCounts[id] ?? 0) === top.level).length;
+        const at = open ? ids.indexOf(open) : -1;
+        // The detail line goes after the last tile in the open tile's row.
+        const after = at < 0 ? -1 : Math.min(ids.length, (Math.floor(at / GRID_COLUMNS) + 1) * GRID_COLUMNS) - 1;
+        return (
+          <>
+            <h3 class="mastery-group">
+              {label} · {mastered} of {ids.length} mastered
+            </h3>
+            <ul class="mastery-grid">
+              {ids.flatMap((id, i) => {
+                const n = j.idCounts[id] ?? 0;
+                const lvl = masteryLevel(n);
+                const nextM = content.progression.mastery.find((m) => m.ids > n);
+                const known = j.discovered.includes(id);
+                const tile = (
+                  <li key={id}>
+                    <button class={`mastery-tile m${lvl} ${open === id ? 'on' : ''}`} aria-expanded={open === id} onClick={() => setOpen(open === id ? null : id)}>
+                      {known ? <Mushroom species={id} size={40} /> : <Unknown species={id} size={40} />}
+                      <span class="mastery-name">{known ? name(id) : content.species[id].group}</span>
+                      <span class="mastery-bar">
+                        <span style={{ width: `${Math.round((nextM ? n / nextM.ids : 1) * 100)}%` }} />
+                      </span>
+                    </button>
+                  </li>
+                );
+                return i === after ? [tile, detail(open!)] : [tile];
+              })}
+            </ul>
+          </>
+        );
+      })}
+    </>
+  );
+}
+
 export function Almanac({ store, onBack, onHistory }: { store: Store; onBack: () => void; onHistory: () => void }) {
   const j = store.journal;
   const st = standing(j);
-  const species = content.speciesOrder.filter((id) => content.species[id].kind !== 'hybrid');
-  const top = content.progression.mastery[content.progression.mastery.length - 1];
   return (
     <div class="screen almanac paper">
       <header class="screen-head">
@@ -177,27 +242,7 @@ export function Almanac({ store, onBack, onHistory }: { store: Store; onBack: ()
           </li>
         ))}
       </ul>
-      <ul class="mastery">
-        {species.map((id) => {
-          const n = j.idCounts[id] ?? 0;
-          const lvl = masteryLevel(n);
-          const nextM = content.progression.mastery.find((m) => m.ids > n);
-          const known = j.discovered.includes(id);
-          return (
-            <li>
-              {known ? <Mushroom species={id} size={40} /> : <Unknown species={id} size={40} />}
-              <div class="grow">
-                <div class="mastery-head">
-                  <b>{known ? name(id) : content.species[id].group}</b>
-                  <span class={`mastery-tag m${lvl}`}>{lvl ? masteryName(lvl) : 'New'}</span>
-                </div>
-                <Bar pct={nextM ? n / nextM.ids : 1} />
-                <small class="muted">{nextM ? `${n} of ${nextM.ids} identified for ${nextM.name}` : `${n} identified · ${top.name}`}</small>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
+      <MasteryGrid j={j} />
       <h2>Achievements</h2>
       <ul class="achievements">
         {content.achievements.map((a) => {
