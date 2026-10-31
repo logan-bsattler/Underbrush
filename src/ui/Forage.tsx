@@ -478,7 +478,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
         ? last.outcome === 'hazard' && limit - trip.hazards > 1
           ? `A hazard. ${limit - trip.hazards} more this trip and you bust.`
           : last.outcome === 'bust'
-            ? bustText(bustKeep(g), fall)
+            ? bustText(trip.picked.length - trip.lost.length, trip.lost.length, fall)
             : last.outcome === 'turnedAround' && end
               ? "Turned around. The trail loops back on itself, and this is the zone's last patch: time to head home."
             : last.outcome === 'wayDown' && fallNext !== null

@@ -41,9 +41,16 @@ export function fallText(cost: number | 'month'): string {
   return `A fall here: ${plural(cost, 'action')} next month`;
 }
 
-/** A bust: the finds kept, and below ground what the fall costs next month. Kept gentle: it's a scrape, not a disaster. */
-export function bustText(keep: number, cost: number | 'month' = 0): string {
-  const finds = `Bust! You scramble home with only your first ${plural(keep, 'find')}.`;
+/**
+ * A bust: the finds that made it home (and whether any were dropped), and below ground what the fall costs next
+ * month. Kept gentle: it's a scrape, not a disaster.
+ */
+export function bustText(kept: number, lost: number, cost: number | 'month' = 0): string {
+  const finds = lost
+    ? `Bust! You scramble home with only your first ${plural(kept, 'find')}.`
+    : !kept
+      ? 'Bust! You scramble home empty-handed.'
+      : `Bust! You scramble home with ${kept === 1 ? 'your one find' : kept === 2 ? 'both your finds' : `all ${kept} of your finds`}.`;
   if (cost === 'month') return `${finds} It was a hard fall: you'll spend next month out recovering.`;
   if (cost) return `${finds} You took a fall, too: next month you'll be ${plural(cost, 'action')} short.`;
   return finds;
@@ -185,7 +192,7 @@ export function outcomeText(o: DrawOutcome, card: Card, dropped?: Specimen, wher
     case 'turnedAround':
       return 'Turned around. The trail loops back on itself; walk on or head home.';
     case 'bust':
-      return bustText(content.rules.bustKeep);
+      return bustText(content.rules.bustKeep, 1);
   }
 }
 

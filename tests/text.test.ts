@@ -11,12 +11,20 @@ describe('fall and bust text', () => {
   });
 
   it('says how many finds a bust keeps, and what a fall costs', () => {
-    expect(bustText(2)).toBe('Bust! You scramble home with only your first 2 finds.');
-    expect(bustText(3)).toMatch(/first 3 finds/);
-    expect(bustText(1)).toMatch(/first 1 find\./);
-    expect(bustText(2, 1)).toMatch(/next month you'll be 1 action short/);
-    expect(bustText(2, 'month')).toMatch(/next month out recovering/);
-    expect(outcomeText('bust', { type: 'hazard', name: 'Ticks' } as any)).toBe(bustText(content.rules.bustKeep));
+    expect(bustText(2, 1)).toBe('Bust! You scramble home with only your first 2 finds.');
+    expect(bustText(3, 2)).toMatch(/first 3 finds/);
+    expect(bustText(1, 1)).toMatch(/first 1 find\./);
+    expect(bustText(2, 1, 1)).toMatch(/next month you'll be 1 action short/);
+    expect(bustText(2, 1, 'month')).toMatch(/next month out recovering/);
+    expect(outcomeText('bust', { type: 'hazard', name: 'Ticks' } as any)).toBe(bustText(content.rules.bustKeep, 1));
+  });
+
+  it("doesn't claim finds a bust had nothing to drop from", () => {
+    expect(bustText(0, 0)).toBe('Bust! You scramble home empty-handed.');
+    expect(bustText(1, 0)).toBe('Bust! You scramble home with your one find.');
+    expect(bustText(2, 0)).toBe('Bust! You scramble home with both your finds.');
+    expect(bustText(3, 0)).toBe('Bust! You scramble home with all 3 of your finds.');
+    expect(bustText(0, 0, 1)).toMatch(/^Bust! You scramble home empty-handed\. You took a fall/);
   });
 
   it('tells the night of a fall', () => {
