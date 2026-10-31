@@ -60,6 +60,12 @@ function Main() {
   const store = useStore();
   const [view, setView] = useState<View>('title');
   const [back, setBack] = useState<View>('title');
+  // Past festivals opens from the Almanac or from a daily's festival, and goes back to where it came from.
+  const [historyBack, setHistoryBack] = useState<View>('almanac');
+  const history = (from: View) => {
+    setHistoryBack(from);
+    setView('history');
+  };
 
   const open = (v: View) => {
     setBack(view);
@@ -102,13 +108,14 @@ function Main() {
         onTitle={() => setView('title')}
         onNewYear={beginStory}
         onAlmanac={() => open('almanac')}
+        onHistory={() => history('game')}
       />
     );
   else if (view === 'journal') screen = <Journal store={store} onBack={() => setView(back)} />;
   else if (view === 'help') screen = <HowTo onBack={() => setView(back)} />;
-  // History opens from the Almanac and returns to it, leaving the Almanac's own way back alone.
-  else if (view === 'almanac') screen = <Almanac store={store} onBack={() => setView(back)} onHistory={() => setView('history')} />;
-  else if (view === 'history') screen = <PastFestivals store={store} onBack={() => setView('almanac')} />;
+  // History returns to where it was opened, leaving the Almanac's own way back alone.
+  else if (view === 'almanac') screen = <Almanac store={store} onBack={() => setView(back)} onHistory={() => history('almanac')} />;
+  else if (view === 'history') screen = <PastFestivals store={store} onBack={() => setView(historyBack)} />;
   else if (view === 'pack')
     screen = (
       <Pack

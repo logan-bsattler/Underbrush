@@ -4297,6 +4297,103 @@ h3 .inline-link {
 .fest-detail .score-table td:last-child {
   font-size: 16px;
 }
+/* The daily calendar, at the top of Past festivals */
+.daily-cal {
+  margin: 8px 0 12px;
+  padding: 10px 10px 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.cal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cal-head h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 19px;
+}
+.cal-head .btn {
+  min-width: 40px;
+  font-size: 20px;
+}
+.cal-head .btn:disabled {
+  visibility: hidden;
+}
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 4px;
+  margin: 6px 0 4px;
+}
+.cal-wd {
+  text-align: center;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+.cal-day {
+  position: relative;
+  aspect-ratio: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+.cal-day small {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--ink-soft);
+}
+.cal-day b {
+  font-family: var(--serif);
+  font-weight: 800;
+  font-size: 16px;
+  margin-top: 6px;
+}
+.cal-day.played {
+  cursor: pointer;
+  border-color: var(--line);
+  background: var(--paper);
+}
+.cal-day.bronze {
+  border-color: #b07a4a;
+  background: radial-gradient(circle at 35% 30%, #f6e2cf, #d9a77a);
+}
+.cal-day.silver {
+  border-color: #9aa3a8;
+  background: radial-gradient(circle at 35% 30%, #fff, #c9d0d4);
+}
+.cal-day.gold {
+  border-color: var(--gold);
+  background: radial-gradient(circle at 35% 30%, #fff6d6, #e7c46a);
+}
+.cal-day.golden {
+  border-color: var(--rust);
+  background: radial-gradient(circle at 35% 30%, #fff1c9, #e9a23b);
+  box-shadow: 0 0 0 2px rgba(233, 162, 59, 0.35);
+}
+.cal-day.missed small {
+  color: var(--ink-faint);
+}
+.cal-day.today {
+  border: 1.5px dashed var(--rust);
+}
+.cal-day.later small {
+  color: var(--line);
+}
+.cal-sum {
+  margin: 4px 2px 0;
+}
 /* The founder's riddle, under the cabinet */
 .riddle {
   margin: 12px 0 0;

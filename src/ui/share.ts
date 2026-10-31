@@ -24,8 +24,8 @@ function farmGlyphs(g: GameState): string {
   return rows.join('\n');
 }
 
-/** A short, spoiler-free summary of a finished year to paste into a chat. */
-export function shareText(g: GameState, url: string): string {
+/** A short, spoiler-free summary of a finished year to paste into a chat. A daily's streak shows from 2 days. */
+export function shareText(g: GameState, url: string, streak = 0): string {
   const sc = score(g);
   const board = content.boards.find((b) => b.id === g.board)?.name ?? '';
   const day = g.mode === 'daily' ? g.seed.replace(/^daily-/, '') : null;
@@ -40,7 +40,7 @@ export function shareText(g: GameState, url: string): string {
     ...(sc.cache ? [`Cellar ${sc.cache}`] : []),
   ];
   return [
-    day ? `Underbrush daily · ${day}` : 'Underbrush · story year',
+    day ? `Underbrush daily · ${day}${streak > 1 ? ` · streak ${streak}` : ''}` : 'Underbrush · story year',
     `${sc.tier ? sc.tier.name : 'A quiet year'} · ${sc.total} points · ${board}`,
     parts.join(' · '),
     farmGlyphs(g),

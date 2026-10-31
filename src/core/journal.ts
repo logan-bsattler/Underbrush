@@ -161,3 +161,55 @@ export function recordYear(j: Journal, s: GameState, c: Content = defaultContent
     best: Math.max(journal.best, sc.total),
   };
 }
+
+/** What the daily calendar shows: each finished daily year by the day it was dealt, and the streaks. */
+export interface DailyStats {
+  /** Days as "YYYY-MM-DD", from the seed: a daily finished after midnight still belongs to the day it was dealt. */
+  byDay: Record<string, YearRecord>;
+  /** Days in a row with a finished daily, ending today, or yesterday while today is still unplayed. */
+  streak: number;
+  longest: number;
+  playedToday: boolean;
+  /** The first day a daily was finished, or null before any. */
+  first: string | null;
+}
+
+const DAY = /^daily-(\d{4}-\d{2}-\d{2})$/;
+
+/** The day before a "YYYY-MM-DD" day. Worked in UTC so a clock change can't skip or repeat a day. */
+export function dayBefore(day: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d - 1)).toISOString().slice(0, 10);
+}
+
+/** `today` is the player's own date as "YYYY-MM-DD", the same date a daily seed carries. */
+export function dailyStats(years: YearRecord[], today: string): DailyStats {
+  const byDay: Record<string, YearRecord> = {};
+  for (const y of years) {
+    const m = y.mode === 'daily' ? DAY.exec(y.seed) : null;
+    if (m && !byDay[m[1]]) byDay[m[1]] = y;
+  }
+  const days = Object.keys(byDay).sort();
+  let longest = 0;
+  let run = 0;
+  days.forEach((d, i) => {
+    run = i > 0 && dayBefore(d) === days[i - 1] ? run + 1 : 1;
+    longest = Math.max(longest, run);
+  });
+  const playedToday = !!byDay[today];
+  let streak = 0;
+  for (let d = playedToday ? today : dayBefore(today); byDay[d]; d = dayBefore(d)) streak++;
+  return { byDay, streak, longest, playedToday, first: days[0] ?? null };
+}
+
+/** One month of dailies, `month` as "YYYY-MM": how many were played, their average score (rounded) and the best. */
+export function dailyMonth(stats: DailyStats, month: string): { played: number; average: number; best: number } {
+  const scores = Object.entries(stats.byDay)
+    .filter(([d]) => d.startsWith(`${month}-`))
+    .map(([, y]) => y.score);
+  return {
+    played: scores.length,
+    average: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0,
+    best: scores.length ? Math.max(...scores) : 0,
+  };
+}

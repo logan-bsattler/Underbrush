@@ -505,6 +505,18 @@ Two more hybrids, each crossing only from a homestead level (spec: `docs/new-hyb
   tier rates went 73/70/73% → 77/74/73% and level-gated hybrids are 0.2–0.4 a year, inside the 5-point bar,
   so `tierLift` is unchanged.
 
+## The daily calendar
+
+Past festivals opens with a month grid of daily years (`DailyCalendar` in `History.tsx`). Each finished daily is
+a square in its medal colour with its score; a tap opens that year's row below. Under the grid: the current and
+longest streaks, and the month's count, average and best. The streak is the run of days in a row with a finished
+daily, ending today, or yesterday while today is unplayed. A daily belongs to the date in its seed, not the day
+it was finished, and only a day's first finish is recorded, so replays can't pad it. There is no rest day.
+
+Everything comes from `dailyStats()` in `journal.ts`, worked out from the journal's years, so nothing new is
+saved. The streak also shows on the title's Daily year button, on a daily's festival screen (with a Calendar
+button into Past festivals), and on the share card's first line from 2 days. It earns no points or renown.
+
 ## Achievements
 
 Feats the field journal remembers across every year, listed in the Almanac and announced with a

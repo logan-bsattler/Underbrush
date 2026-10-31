@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { challengeBonus, content, score, tiersFor, type ScoreBreakdown } from '../core';
+import { challengeBonus, content, dailyStats, score, tiersFor, type ScoreBreakdown } from '../core';
 import { Icon, Mushroom } from './art';
 import { RenownPanel } from './Progress';
 import type { Store } from './store';
@@ -80,7 +80,7 @@ export function ScoreTable({
   );
 }
 
-export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: () => void; onNewYear: () => void }) {
+export function YearEnd({ store, onTitle, onNewYear, onHistory }: { store: Store; onTitle: () => void; onNewYear: () => void; onHistory: () => void }) {
   const g = store.game!;
   const sc = score(g);
   const tiers = tiersFor(g);
@@ -93,7 +93,9 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
   const won = store.freshThisYear.flatMap((f) => (f.startsWith('achievement:') ? content.achievements.filter((a) => `achievement:${a.id}` === f) : []));
   const record = store.journal.years.find((y) => y.seed === g.seed);
   const [shared, setShared] = useState<null | 'shared' | 'copied' | 'failed'>(null);
-  const text = shareText(g, `${location.origin}${location.pathname}`);
+  // Counted back from the day this daily was dealt, which is today unless it was finished after midnight.
+  const streak = g.mode === 'daily' ? dailyStats(store.journal.years, g.seed.replace(/^daily-/, '')).streak : 0;
+  const text = shareText(g, `${location.origin}${location.pathname}`, streak);
   const share = async () => setShared(await shareResult(text));
 
   return (
@@ -115,9 +117,15 @@ export function YearEnd({ store, onTitle, onNewYear }: { store: Store; onTitle: 
         <button class={`btn ${g.mode === 'daily' ? 'primary' : ''}`} onClick={share}>
           <Icon name="share" size={18} /> {g.mode === 'daily' ? "Share today's result" : 'Share this year'}
         </button>
+        {g.mode === 'daily' && (
+          <button class="btn" onClick={onHistory}>
+            <Icon name="book" size={18} /> Calendar
+          </button>
+        )}
         {shared === 'copied' && <span class="small muted">Copied. Paste it anywhere.</span>}
         {g.mode === 'daily' && !shared && <span class="small muted">Everyone played the same farm, weather and decks today.</span>}
       </div>
+      {streak > 0 && <p class="center small">{streak > 1 ? `Day ${streak} in a row.` : 'A new streak starts today.'}</p>}
       {shared === 'failed' && <textarea class="share-text" readOnly rows={8} value={text} onFocus={(e) => (e.target as HTMLTextAreaElement).select()} />}
 
       {bonus > 0 && (

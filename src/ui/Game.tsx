@@ -1104,12 +1104,14 @@ export function Game({
   onTitle,
   onNewYear,
   onAlmanac,
+  onHistory,
 }: {
   store: Store;
   onHelp: () => void;
   onTitle: () => void;
   onNewYear: () => void;
   onAlmanac: () => void;
+  onHistory: () => void;
 }) {
   const g = store.game!;
   const [mode, setMode] = useState<Mode>({ kind: 'none' });
@@ -1206,7 +1208,7 @@ export function Game({
     else setSheet({ kind: 'tend' });
   };
 
-  if (g.over && !g.night) return <YearEnd store={store} onTitle={onTitle} onNewYear={onNewYear} />;
+  if (g.over && !g.night) return <YearEnd store={store} onTitle={onTitle} onNewYear={onNewYear} onHistory={onHistory} />;
 
   const plantSpec = mode.kind === 'plant' ? g.basket.find((b) => b.uid === mode.uid) : null;
   const banner =

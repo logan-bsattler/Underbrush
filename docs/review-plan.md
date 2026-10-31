@@ -1,6 +1,6 @@
 # Review follow-up: the plan
 
-Status: Phases 1–5 are done; Phase 6 is under way (ranks 1–2 and the first half of 3 done). Phase 3 was signed off 2026-10-30, with Golden at 18–22% of planner years
+Status: Phases 1–5 are done; Phase 6 is under way (ranks 1–4 done). Phase 3 was signed off 2026-10-30, with Golden at 18–22% of planner years
 accepted by Ben. Next: Phase 6. Written 2026-10-30 from three
 reviews: balance, speed and features. Section 0's decisions are settled (see Progress).
 
@@ -225,6 +225,14 @@ Progress (2026-10-30):
   - **Browser at 375 px:** locked pages read "Crosses from level 8, Pathfinder." and "…9, Lorekeeper."; at L9
     the tonight preview offered the Snow Comb cross without mentioning the feeding, the night report read "The
     Claret Shelf fed the Wine Cap beside it.", and the Snow Comb cross prompt rendered.
+- **Phase 6, rank 4, daily calendar and streak: done (2026-10-30).** Spec in `daily-calendar-spec.md`, approved
+  by Ben with both open choices as recommended (no rest day; the calendar tops Past festivals, with a Calendar
+  button on a daily's festival screen). `dailyStats()` and `dailyMonth()` in `journal.ts`, `DailyCalendar` in
+  `History.tsx`, the streak on the title button, the festival screen and the share card. `daily.test.ts` covers
+  streaks (today, yesterday, a gap, a month end), story years, replays, a month's average and the share line.
+  Checked in the browser at 375 × 812: the grid (42 px squares, no overflow), a tap on a day, month steps, the
+  title button, and a daily finished through the UI ("Day 5 in a row", Calendar and Back). No rules change, so
+  no sim or tier re-check. **Next:** rank 5, founder's afterword.
 
 ## Bottom line
 

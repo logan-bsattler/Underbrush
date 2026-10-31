@@ -1,9 +1,9 @@
-import { content, dailyBoard, hybridUnlockLevel, levelFor, masteryLevel, score } from '../core';
+import { content, dailyBoard, dailyStats, hybridUnlockLevel, levelFor, masteryLevel, score } from '../core';
 import { Icon, Mushroom, Unknown } from './art';
 import { HomesteadCard } from './Progress';
 import { setAudio, useAudioSettings } from './sound';
 import type { Store } from './store';
-import { dailySeed } from './store';
+import { dailySeed, todayKey } from './store';
 import { growthName, masteryName, seasonsText, substrateName } from './text';
 
 export function Title({
@@ -23,6 +23,7 @@ export function Title({
 }) {
   const save = store.game;
   const today = store.journal.years.find((y) => y.seed === dailySeed());
+  const { streak } = dailyStats(store.journal.years, todayKey());
   const todayBoard = content.boards.find((b) => b.id === dailyBoard(dailySeed()))?.name;
   return (
     <div class="screen title">
@@ -51,7 +52,8 @@ export function Title({
           <small>Your homestead's unlocks and heirlooms come with you</small>
         </button>
         <button class="btn big" onClick={() => onStart('daily')}>
-          Daily year {today ? `· played, ${today.score} points` : ''}
+          Daily year
+          {today ? `${streak > 1 ? ` · streak ${streak}` : ''} · played, ${today.score} points` : streak > 0 ? ` · keep your ${streak}-day streak` : ''}
           <small>Everyone gets today's farm ({todayBoard}), weather and decks, with the standard kit</small>
         </button>
         <div class="row">

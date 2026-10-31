@@ -52,6 +52,9 @@ export function dailySeed(d = new Date()) {
   return `daily-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** Today as "YYYY-MM-DD", the date a daily seed carries. */
+export const todayKey = () => dailySeed().slice('daily-'.length);
+
 export interface Store {
   game: GameState | null;
   journal: Journal;
