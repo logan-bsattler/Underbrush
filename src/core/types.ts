@@ -314,7 +314,13 @@ export type AchievementCheck =
   /** Descend this many layers below a zone on one trip. */
   | { type: 'layer'; depth: number }
   /** Bring home this many artifacts in one year. */
-  | { type: 'artifacts'; count: number };
+  | { type: 'artifacts'; count: number }
+  /** Find the Founder's Cellar. */
+  | { type: 'cellar' }
+  /** Have this many artifact sets complete, counting the cabinet and this year's finds. */
+  | { type: 'sets'; count: number }
+  /** Turn every non-hazard card on an underground layer's patch on one trip. */
+  | { type: 'clearLayer' };
 
 /** A feat the field journal remembers across years. Earned once, from any story or daily year. */
 export interface AchievementDef {
@@ -621,6 +627,8 @@ export interface GameState {
   artifacts: string[];
   /** Underground layers reached this year, as "zone:depth". */
   layersReached: string[];
+  /** Underground layers cleared this year, as "zone:depth": every card on the patch but the hazards turned on one trip. */
+  layersCleared: string[];
   /** The Founder's Cellar was found this year. */
   cacheFound: boolean;
   watered: boolean;

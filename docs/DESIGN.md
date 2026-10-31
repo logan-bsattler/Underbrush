@@ -572,6 +572,24 @@ The year's state now also counts rare finds and the different dishes cooked (`st
 Cross-Pollinator 76%, Sure-Footed 44%, Black Gold and Wall to Wall 8% each, Strange Gardens 1% and
 nothing else. It never cooks, goes deep or plans for orders, so those are for people.
 
+Six more come from the underground and the saga. The cellar and the sets count across years:
+
+| Achievement | Check | Feat |
+| --- | --- | --- |
+| Below Ground | `layer` | Descend one layer below a zone |
+| Cabinet of Curiosities | `artifacts` | Bring home 4 artifacts in one year |
+| Bedrock | `layer` | Descend three layers on one trip |
+| Down in the Cellar | `cellar` | Find the Founder's Cellar |
+| Whole Again | `sets` | Complete an artifact set, counting the cabinet and this year's finds |
+| The Whole Cabinet | `sets` | Complete all six sets |
+| Nothing Left Below | `clearLayer` | Turn every card on a layer's patch except its hazards, the heirloom and way down included, before the trip ends |
+
+- **Layers cleared** are recorded on the flip that clears one, in `layersCleared` on the year and the journal,
+  as "zone:depth". A layer is a single patch, so cards left in its deck don't count.
+- **Quiet grant.** Journals saved before the cellar and set achievements existed get them when they load, from
+  `cacheFound` and the cabinet, so no banner pops. Layer clears were never tracked, so that one must be earned.
+- **Progress:** The Whole Cabinet (and Whole Again, until earned) shows "Sets complete: n of 6" in the Almanac.
+
 ## Not in this build
 
 Monetization and store builds (a natural demo cut is year one, levels 1–2), async co-op, expansion biomes, Burn Bed,

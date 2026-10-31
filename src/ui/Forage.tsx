@@ -372,6 +372,8 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
     ? `${dugText} ${digResult?.outcome ? outcomeText(digResult.outcome, { type: 'specimen', species: digRule.species }, digResult.dropped) : ''}`
     : trip.dug
       ? dugText
+      : justCleared && layer
+    ? `${last && lastWasDeep && last.card.type === 'artifact' ? `${artifactText(g, last.card.artifact)} ` : ''}Nothing left below: every card in the ${bare(layer.name)} but its hazards.`
       : justCleared
     ? `Nothing left unturned: every card in the ${bare(zone.name)} but its hazards.`
     : last && lastWasDeep

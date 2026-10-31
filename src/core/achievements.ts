@@ -1,5 +1,6 @@
 import { content as defaultContent } from './content';
 import { score } from './engine';
+import { completedSets } from './underground';
 import type { AchievementCheck, Content, GameState } from './types';
 
 /**
@@ -14,6 +15,11 @@ function reachedTier(s: GameState, tier: string | null, c: Content): boolean {
   if (!got) return false;
   const rank = (id: string) => c.rules.tiers.findIndex((t) => t.id === id);
   return tier === null || rank(got.id) >= rank(tier);
+}
+
+/** Artifact sets complete across the cabinet and what this year has brought home. */
+export function setsComplete(s: GameState, c: Content = defaultContent): number {
+  return completedSets([...s.perks.clues, ...s.artifacts], c).length;
 }
 
 function met(check: AchievementCheck, s: GameState, c: Content): boolean {
@@ -46,6 +52,12 @@ function met(check: AchievementCheck, s: GameState, c: Content): boolean {
       return s.layersReached.some((key) => Number(key.split(':')[1]) >= check.depth);
     case 'artifacts':
       return s.artifacts.length >= check.count;
+    case 'cellar':
+      return s.cacheFound || s.perks.cacheFound;
+    case 'sets':
+      return setsComplete(s, c) >= check.count;
+    case 'clearLayer':
+      return s.layersCleared.length > 0;
   }
 }
 

@@ -509,6 +509,7 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   s.stats.rareFinds ??= 0;
   s.stats.dishes ??= s.meal ? [s.meal] : [];
   s.zonesCleared ??= [];
+  s.layersCleared ??= [];
   if (s.forage) {
     // A trip saved before clears were tracked can't say what it walked past, so one already deeper than the first patch can't clear.
     s.forage.missed ??= s.forage.depth > 1 ? 1 : 0;
@@ -615,6 +616,7 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     zonesCleared: [],
     artifacts: [],
     layersReached: [],
+    layersCleared: [],
     cacheFound: false,
     watered: false,
     market: null,
@@ -1002,6 +1004,12 @@ export function dispatch(
         trip.cleared = true;
         outcome.cleared = true;
         if (!s.zonesCleared.includes(trip.zone)) s.zonesCleared.push(trip.zone);
+      }
+      // A layer is one patch: the last card on it that isn't a hazard clears it, heirloom and way down included.
+      if (trip.status === 'open' && trip.layer && card.type !== 'hazard' && trip.patch.every((p) => p.flipped || p.card.type === 'hazard')) {
+        outcome.cleared = true;
+        const key = layerKey(trip.zone, trip.layer);
+        if (!s.layersCleared.includes(key)) s.layersCleared.push(key);
       }
       spot.outcome = outcome.outcome;
       trip.drawn.push({ card, outcome: outcome.outcome, ...(outcome.dropped ? { dropped: outcome.dropped } : {}) });

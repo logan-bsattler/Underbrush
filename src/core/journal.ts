@@ -52,6 +52,8 @@ export interface Journal {
   achievements: string[];
   /** Zones ever cleared: every card but the hazards turned on one trip. */
   zonesCleared: string[];
+  /** Underground layers ever cleared, as "zone:depth". */
+  layersCleared: string[];
   /** The generation working the homestead now, from 1. */
   generation: number;
   /** Each generation that passed the homestead on: the renown it reached and its story years. */
@@ -67,7 +69,7 @@ export interface Journal {
 }
 
 export function emptyJournal(): Journal {
-  return { version: 1, discovered: [], lookalikes: [], hybrids: [], years: [], best: 0, renown: 0, idCounts: {}, gearOwned: [], achievements: [], zonesCleared: [], generation: 1, lineage: [], artifacts: [], layers: [], cacheFound: false };
+  return { version: 1, discovered: [], lookalikes: [], hybrids: [], years: [], best: 0, renown: 0, idCounts: {}, gearOwned: [], achievements: [], zonesCleared: [], layersCleared: [], generation: 1, lineage: [], artifacts: [], layers: [], cacheFound: false };
 }
 
 /** Fills in fields added after a journal was first saved. */
@@ -86,6 +88,12 @@ export function normalizeJournal(j: Partial<Journal> | null): Journal {
   if (out.cacheFound && out.cacheGeneration === undefined) {
     out.cacheGeneration = years.find((y) => (y.breakdown?.cache ?? 0) > 0)?.generation ?? out.generation;
   }
+  // Feats done before they were achievements are granted quietly, so no banner pops on the next move.
+  const sets = completedSets(out.artifacts).length;
+  const quiet = defaultContent.achievements.filter(
+    ({ check }) => (check.type === 'cellar' && out.cacheFound) || (check.type === 'sets' && sets >= check.count),
+  );
+  for (const a of quiet) if (!out.achievements.includes(a.id)) out.achievements = [...out.achievements, a.id];
   return out;
 }
 
@@ -109,6 +117,7 @@ export function mergeDiscoveries(j: Journal, s: GameState): { journal: Journal; 
     lookalikes: add(j.lookalikes, s.lookalikesFound, 'lookalike:'),
     achievements: add(j.achievements, achievementsEarned(s), 'achievement:'),
     zonesCleared: Array.from(new Set([...j.zonesCleared, ...s.zonesCleared])),
+    layersCleared: Array.from(new Set([...j.layersCleared, ...(s.layersCleared ?? [])])),
     artifacts: add(j.artifacts, s.artifacts ?? [], 'artifact:'),
     layers: add(j.layers, s.layersReached ?? [], 'layer:'),
     cacheFound: j.cacheFound || !!s.cacheFound,

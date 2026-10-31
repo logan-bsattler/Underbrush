@@ -100,5 +100,29 @@
     "name": "Bedrock",
     "rule": "Descend three layers below a zone on one trip.",
     "check": { "type": "layer", "depth": 3 }
+  },
+  {
+    "id": "cellar",
+    "name": "Down in the Cellar",
+    "rule": "Find the Founder's Cellar.",
+    "check": { "type": "cellar" }
+  },
+  {
+    "id": "wholeAgain",
+    "name": "Whole Again",
+    "rule": "Complete a set of artifacts in the cabinet.",
+    "check": { "type": "sets", "count": 1 }
+  },
+  {
+    "id": "wholeCabinet",
+    "name": "The Whole Cabinet",
+    "rule": "Complete all six sets of artifacts.",
+    "check": { "type": "sets", "count": 6 }
+  },
+  {
+    "id": "clearLayer",
+    "name": "Nothing Left Below",
+    "rule": "Turn every card on an underground layer except its hazards, all in one trip.",
+    "check": { "type": "clearLayer" }
   }
 ]

@@ -259,6 +259,11 @@ export function Almanac({ store, onBack, onHistory }: { store: Store; onBack: ()
                     This year: {Math.min(year.have, year.need)} of {year.need}
                   </small>
                 )}
+                {a.check.type === 'sets' && !got && j.artifacts.length > 0 && (
+                  <small class="muted">
+                    Sets complete: {completedSets(j.artifacts).length} of {content.artifactSets.length}
+                  </small>
+                )}
                 {a.check.type === 'clearZone' && j.zonesCleared.length > 0 && (
                   <small class="muted">Cleared: {content.zones.filter((z) => j.zonesCleared.includes(z.id)).map((z) => z.name).join(', ')}</small>
                 )}

@@ -250,6 +250,11 @@ Progress (2026-10-30):
     limits Truffle Shavings, which could score 9 in a winter. The usual planner (`20 plan 30`) is unchanged at
     every level (medians identical, Golden 2/9/11% at L8–10), so no `tierLift` change. Pantry note for a points dish
     past the cap checked in the browser at 375 × 812, the save restored after.
+  - **Achievements: done (2026-10-30).** Down in the Cellar, Whole Again, The Whole Cabinet and Nothing Left
+    Below, 21 in all. `layersCleared` on the year and the journal; the cellar and sets granted quietly on load.
+    Five tests in `underground.test.ts`. Checked in the browser at 375 × 812 on the 45-year demo journal: both
+    quiet grants show earned with no banner, "Sets complete: 3 of 6", and clearing the Badger Setts shows the
+    heirloom text, then "Nothing left below", plus the banner. Ben's save restored after. No points, so no sim.
 
 ## Bottom line
 

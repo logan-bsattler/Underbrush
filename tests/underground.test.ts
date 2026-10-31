@@ -26,6 +26,7 @@ import {
   perksFor,
   recoveryCost,
   score,
+  setsComplete,
   standardPerks,
   type Action,
   type Card,
@@ -350,7 +351,7 @@ describe('the cabinet of curiosities', () => {
     expect(first.fresh.some((f) => f.startsWith('set:'))).toBe(false);
     s.artifacts.push('guinea');
     const second = mergeDiscoveries(first.journal, s);
-    expect(second.fresh).toEqual(['artifact:guinea', 'set:purse']);
+    expect(second.fresh).toEqual(['achievement:wholeAgain', 'artifact:guinea', 'set:purse']);
     expect(mergeDiscoveries(second.journal, s).fresh).toEqual([]);
   });
 
@@ -364,6 +365,69 @@ describe('the cabinet of curiosities', () => {
   it('only counts a set once every piece is in', () => {
     expect(completedSets(set('purse').slice(0, 2))).toEqual([]);
     expect(completedSets([...set('purse'), ...set('lantern')]).sort()).toEqual(['lantern', 'purse']);
+  });
+});
+
+describe('achievements below ground', () => {
+  /** Turns every card on this layer's patch that isn't a hazard, stopping early if the trip ends. */
+  const turnAll = (s: GameState) =>
+    s.forage!.patch.reduce((g, p, i) => (g.forage!.status === 'open' && !p.flipped && p.card.type !== 'hazard' ? run(g, { type: 'flip', index: i }) : g), s);
+
+  it('records a layer cleared when its last card but the hazards is turned, heirloom and way down included', () => {
+    let s = run(toWay(year(3)), { type: 'descend' });
+    const left = s.forage!.patch.filter((p) => p.card.type !== 'hazard');
+    expect(left.some((p) => p.deep) && left.some(isWay)).toBe(true);
+    const order = s.forage!.patch.flatMap((p, i) => (p.card.type === 'hazard' ? [] : [i]));
+    for (const [n, i] of order.entries()) {
+      const r = dispatch(s, { type: 'flip', index: i });
+      expect(!!(r.result as { cleared?: boolean }).cleared).toBe(n === order.length - 1);
+      s = r.state;
+    }
+    expect(s.forage!.status).toBe('open');
+    expect(s.layersCleared).toEqual(['meadow:1']);
+    expect(s.zonesCleared).toEqual([]);
+    expect(achievementsEarned(s)).toContain('clearLayer');
+    expect(mergeDiscoveries(emptyJournal(), s).journal.layersCleared).toEqual(['meadow:1']);
+  });
+
+  it("doesn't count a layer whose trip busts before it's cleared", () => {
+    let s = run(toWay(year(2)), { type: 'descend' });
+    const at = s.forage!.patch.findIndex((p) => !p.deep && !isWay(p));
+    s.forage!.patch[at].card = hazard;
+    s.forage!.hazards = 10;
+    s = run(s, { type: 'flip', index: at });
+    expect(s.forage!.status).toBe('busted');
+    expect(turnAll(s).layersCleared).toEqual([]);
+    expect(achievementsEarned(s)).not.toContain('clearLayer');
+  });
+
+  it('counts sets complete across the cabinet and this year’s finds', () => {
+    const purse = set('purse');
+    const s = year(2, purse.slice(1));
+    expect(setsComplete(s)).toBe(0);
+    expect(achievementsEarned(s)).not.toContain('wholeAgain');
+    s.artifacts = [purse[0]];
+    expect(setsComplete(s)).toBe(1);
+    expect(achievementsEarned(s)).toContain('wholeAgain');
+    expect(achievementsEarned(s)).not.toContain('wholeCabinet');
+    expect(achievementsEarned(year(4, content.artifacts.map((a) => a.id)))).toEqual(expect.arrayContaining(['wholeAgain', 'wholeCabinet']));
+  });
+
+  it('earns Down in the Cellar the year the cellar is found', () => {
+    const s = year(2);
+    expect(achievementsEarned(s)).not.toContain('cellar');
+    s.cacheFound = true;
+    expect(achievementsEarned(s)).toContain('cellar');
+  });
+
+  it('grants the cellar and set achievements quietly to a family that already did them', () => {
+    const j = normalizeJournal({ ...emptyJournal(), generation: 3, cacheFound: true, artifacts: set('purse') });
+    expect(j.achievements).toEqual(expect.arrayContaining(['cellar', 'wholeAgain']));
+    expect(j.achievements).not.toContain('wholeCabinet');
+    expect(j.layersCleared).toEqual([]);
+    const s = newGame({ seed: 'quiet', perks: perksFor(j, []) });
+    expect(mergeDiscoveries(j, s).fresh).not.toContain('achievement:cellar');
+    expect(mergeDiscoveries(j, s).fresh).not.toContain('achievement:wholeAgain');
   });
 });
 
