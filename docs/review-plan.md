@@ -1,7 +1,7 @@
 # Review follow-up: the plan
 
-Status: Phases 1–5 are done; Phase 6 is under way (ranks 1–4 done). Phase 3 was signed off 2026-10-30, with Golden at 18–22% of planner years
-accepted by Ben. Next: Phase 6. Written 2026-10-30 from three
+Status: Phases 1–6 are done (Phase 6 ranks 1–9, finished 2026-10-31). Phase 3 was signed off 2026-10-30, with Golden at 18–22% of
+planner years accepted by Ben. Loose ends are listed at the end of Progress. Written 2026-10-30 from three
 reviews: balance, speed and features. Section 0's decisions are settled (see Progress).
 
 Progress (2026-10-30):
@@ -297,7 +297,11 @@ Progress (2026-10-30):
   - **Verdict:** no level rises past the 5-point bar on more than one sim, and daily years are flat, so no
     `tierLift` change and the daily tiers stand. Busts fall, as expected. The plan sim's L4–9 dip (−7 pooled) doesn't
     show in the feast sim's usual planner (−2), so it's likely noise, but it's the one number to watch. A per-zone
-    scratch script (bust rate, finds per trip, trips per year) wasn't run.
+    scratch script (bust rate, finds per trip, trips per year) wasn't run. Gen sim generation 4 (finished after
+    the commit): medians flat (44/44/73; full cabinet 39/39/66 → 67), tier rates within 5 points.
+- **Loose ends (2026-10-31).** The plan sim's L4–9 dip after zone rules (per-zone script not run); the bot doesn't
+  plan hybrid parents for the botanist (Phase 2); the Market browser check for 3f step 1; the Crackle Crown journal
+  page in the browser; Ben to judge the hazard cue on his phone.
 
 ## Bottom line
 
