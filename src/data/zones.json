@@ -3,6 +3,7 @@
     "id": "meadow", "name": "Meadow", "unlock": null, "hazard": "Low",
     "blurb": "Sunny grass and old hay bales. Easy walking.",
     "color": "#C9B458",
+    "seasonNames": {"spring": {"Bare Earth": "Spring Mud", "Tall Grass": "New Grass", "Hawthorn": "Hawthorn in Blossom", "Sudden Rain": "Spring Shower"}, "summer": {"Bare Earth": "Baked Earth", "Sudden Rain": "Thunderstorm"}, "fall": {"Tall Grass": "Dry Grass", "Hawthorn": "Hawthorn in Berry", "Sudden Rain": "Cold Rain", "Lost Trail": "Early Dusk"}, "winter": {"Bare Earth": "Frozen Earth", "Tall Grass": "Frosted Grass", "Hawthorn": "Bare Hawthorn", "Sea Holly": "Dry Sea Holly", "Ticks": "Black Ice", "Sudden Rain": "Sleet", "Lost Trail": "Whiteout"}},
     "deck": [
       { "card": { "type": "specimen", "species": "puffball" }, "copies": 4 },
       { "card": { "type": "specimen", "species": "winecap" }, "copies": 4 },
@@ -29,6 +30,7 @@
     "id": "mixedwoods", "name": "Mixed Woods", "unlock": null, "hazard": "Medium",
     "blurb": "Oak, birch and fallen logs. Most of the farm's species live here.",
     "color": "#6E8B4E",
+    "seasonNames": {"spring": {"Leaf Litter": "Last Year's Leaves", "Bramble": "Budding Bramble", "Sudden Rain": "Spring Shower"}, "summer": {"Bramble": "Blackberry Bramble", "Sudden Rain": "Thunderstorm"}, "fall": {"Leaf Litter": "Fresh Leaf Fall", "Oak": "Oak in Acorn", "Sudden Rain": "Cold Rain", "Lost Trail": "Early Dusk"}, "winter": {"Leaf Litter": "Snowy Leaves", "Bramble": "Bare Bramble", "Oak": "Bare Oak", "Ticks": "Black Ice", "Sudden Rain": "Sleet", "Lost Trail": "Whiteout"}},
     "deck": [
       { "card": { "type": "specimen", "species": "oyster" }, "copies": 2 },
       { "card": { "type": "specimen", "species": "chanterelle" }, "copies": 1 },
@@ -56,6 +58,7 @@
     "id": "oldgrowth", "name": "Old-growth", "unlock": "lantern", "hazard": "Medium",
     "blurb": "Dim, mossy and very quiet. Bring a light.",
     "color": "#3F5A44",
+    "seasonNames": {"spring": {"Moss": "Wet Moss", "Ferns": "Fiddleheads"}, "fall": {"Ferns": "Rusty Bracken", "Lost Trail": "Early Dusk"}, "winter": {"Moss": "Frosted Moss", "Ferns": "Dead Bracken", "Old Hemlock": "Snow-laden Hemlock", "Ticks": "Black Ice", "Lost Trail": "Snowed-over Trail"}},
     "deck": [
       { "card": { "type": "specimen", "species": "lionsmane" }, "copies": 2 },
       { "card": { "type": "specimen", "species": "reishi" }, "copies": 2 },
@@ -97,6 +100,7 @@
     "id": "riverbank", "name": "Riverbank", "unlock": "waders", "seasons": ["spring", "summer", "fall"], "hazard": "Medium",
     "blurb": "Willows, cottonwoods and driftwood along the creek. Open spring through fall; in winter the banks ice over.",
     "color": "#4F8590",
+    "seasonNames": {"spring": {"Willow": "Willow in Catkin", "Reeds": "New Reeds", "High Water": "Snowmelt Flood"}, "fall": {"Willow": "Yellowing Willow", "Reeds": "Dry Reeds", "High Water": "Autumn Spate"}},
     "deck": [
       { "card": { "type": "specimen", "species": "oyster" }, "copies": 2 },
       { "card": { "type": "specimen", "species": "enoki" }, "copies": 1 },
@@ -118,6 +122,7 @@
     "id": "hollow", "name": "The Hollow", "unlock": "compass", "seasons": ["fall", "winter"], "hazard": "High",
     "blurb": "A fold of ancient forest past the old-growth. Open in fall and winter, when the deep-woods mushrooms come up.",
     "color": "#4E4A6B",
+    "seasonNames": {"winter": {"Wet Leaves": "Frozen Leaves", "Hazel Scrub": "Bare Hazel Scrub", "Ticks": "Black Ice", "Bog": "Thin Ice", "Lost Trail": "Whiteout"}},
     "deck": [
       { "card": { "type": "specimen", "species": "blewit" }, "copies": 2 },
       { "card": { "type": "specimen", "species": "truffle" }, "copies": 2 },

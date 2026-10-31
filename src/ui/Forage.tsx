@@ -15,19 +15,20 @@ import {
   inSeason,
   layerDef,
   layersOpen,
+  speciesOpen,
   nextClue,
   recoveryCost,
   seasonOf,
-  speciesOpen,
   zoneStatus,
   type Card,
+  type Season,
   type DrawOutcome,
   type GameState,
 } from '../core';
 import { Icon, Mushroom, SubstrateArt, Unknown } from './art';
 import { SheetFrame } from './Game';
 import type { Store } from './store';
-import { artifactText, bare, bustText, cardTitle, digText, fallText, name, outcomeText } from './text';
+import { artifactText, bare, bustText, cardTitle, digText, fallText, name, outcomeText, type FloorPlace } from './text';
 
 function buzz(ms: number | number[]) {
   try {
@@ -38,11 +39,11 @@ function buzz(ms: number | number[]) {
 }
 
 /** The face of a turned forest-floor card. */
-function CardArt({ card, outcome }: { card: Card; outcome: DrawOutcome | null }) {
+function CardArt({ card, outcome, season }: { card: Card; outcome: DrawOutcome | null; season?: Season }) {
   if (card.type === 'specimen')
     return outcome === 'known' ? <Mushroom species={card.species} size={64} /> : <Unknown species={card.species} size={64} />;
   if (card.type === 'substrate') return <SubstrateArt substrate={card.substrate} size={64} />;
-  if (card.type === 'ground') return <Icon name={card.look} size={44} />;
+  if (card.type === 'ground') return <Icon name={card.look} size={44} season={season} />;
   return <Icon name={card.type === 'coins' ? 'coin' : card.type === 'artifact' ? 'relic' : card.type === 'entrance' ? 'way' : 'hazard'} size={44} />;
 }
 
@@ -58,6 +59,8 @@ const hazardKinds: Record<string, string> = {
   Mudslip: 'bog',
   'Slick Rocks': 'slip',
   'Slick Stone': 'slip',
+  'Black Ice': 'slip',
+  'Thin Ice': 'water',
   'Loose Earth': 'slip',
   Deadfall: 'fall',
   Rockfall: 'fall',
@@ -77,7 +80,8 @@ const hazardKinds: Record<string, string> = {
   'Sheer Drop': 'drop',
   'Rotten Planks': 'drop',
 };
-const hazardKind = (name: string) => hazardKinds[name] ?? 'jolt';
+/** A seasonal name plays its own reveal if it has one (Black Ice slips where Ticks bite), else the printed card's. */
+const hazardKind = (shown: string, printed: string) => hazardKinds[shown] ?? hazardKinds[printed] ?? 'jolt';
 
 /** The weather or ground a hazard brings across its card as it's turned: drawn over the face, gone once it has passed. */
 function HazardFx({ kind }: { kind: string }) {
@@ -102,8 +106,8 @@ function HazardFx({ kind }: { kind: string }) {
   );
 }
 
-function cardLabel(card: Card, outcome: DrawOutcome | null) {
-  return outcome === 'known' && card.type === 'specimen' ? name(card.species) : cardTitle(card);
+function cardLabel(card: Card, outcome: DrawOutcome | null, where?: FloorPlace) {
+  return outcome === 'known' && card.type === 'specimen' ? name(card.species) : cardTitle(card, where);
 }
 
 function lockedText(unlock: string | null, st: { reason: string; notStocked?: boolean }) {
@@ -130,7 +134,7 @@ function ZonePicker({ g, store, onClose }: { g: GameState; store: Store; onClose
         From the {ordinal(content.rules.deepAt)} patch in, every patch hides one rare find.
         {below && ' From there a way leads down into the layers below: each is a single patch with one artifact, and more hazards the deeper you go.'}
       </p>
-      <div class="zones">
+      <div class={`zones season-${season}`}>
         {content.zones.map((z) => {
           const st = zoneStatus(g, z);
           const finds = Array.from(new Set(z.deck.filter((e) => e.card.type === 'specimen' && (!e.unlock || speciesOpen(e.unlock, g.perks))).map((e) => (e.card as { species: string }).species)));
@@ -271,6 +275,9 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
   // Underground, each layer is a single patch: the way on is down, never deeper.
   const under = trip.layer > 0;
   const layer = under ? layerDef(trip.zone, trip.layer) : null;
+  // The surface takes the season, in its names and its colors; the layers below don't.
+  const season = under ? undefined : seasonOf(g.round);
+  const where = season && { zone: trip.zone, season };
   const down = descendStatus(g);
   const next = down.open ? layerDef(trip.zone, trip.layer + 1) : null;
   // The stakes of the next layer, named before going down.
@@ -313,7 +320,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
       else if (r.outcome === 'hazard') buzz(40);
       if (card?.type === 'hazard' && !reducedMotion()) {
         const bust = r.outcome === 'bust';
-        setHold({ index, kind: hazardKind(card.name), bust });
+        setHold({ index, kind: hazardKind(cardTitle(card, where), card.name), bust });
         holding.current = setTimeout(() => setHold(null), bust ? 2000 : 1150);
       }
     }
@@ -382,7 +389,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
         ? `Rare find! A forager's cache, tucked under a root: ${last.card.amount} coins.`
         : last.card.type === 'artifact'
           ? artifactText(g, last.card.artifact)
-          : `Rare find! ${outcomeText(last.outcome, last.card, last.dropped)}`
+          : `Rare find! ${outcomeText(last.outcome, last.card, last.dropped, where)}`
       : last && (turnedHere || trip.status === 'busted')
         ? last.outcome === 'hazard' && limit - trip.hazards > 1
           ? `A hazard. ${limit - trip.hazards} more this trip and you bust.`
@@ -390,7 +397,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             ? bustText(bustKeep(g), fall)
             : last.outcome === 'wayDown' && fallNext !== null
               ? `${outcomeText(last.outcome, last.card)} ${fallText(fallNext)}.`
-              : outcomeText(last.outcome, last.card, last.dropped)
+              : outcomeText(last.outcome, last.card, last.dropped, where)
         : !open
           ? 'The faded cards are what you walked past.'
           : layer
@@ -404,7 +411,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
                   : `Tap a card to turn it. Each one you turn shows how many hazards lie beside it.${wayDown}`;
 
   return (
-    <div class={`overlay forage-screen ${under ? 'under' : ''} ${hold?.bust ? 'busting' : ''}`} aria-busy={busy} style={{ '--zone': zone.color } as any}>
+    <div class={`overlay forage-screen ${under ? 'under' : `season-${season}`} ${hold?.bust ? 'busting' : ''}`} aria-busy={busy} style={{ '--zone': zone.color } as any}>
       <div class="forage-wash" aria-hidden="true" />
       <header class="forage-head">
         <div>
@@ -451,13 +458,13 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
             const again = p.card.type === 'artifact' && g.perks.clues.includes(p.card.artifact);
             const label = p.flipped
               ? door
-                ? `${cardLabel(p.card, p.outcome)}: descend into ${the(next!.name)}`
+                ? `${cardLabel(p.card, p.outcome, where)}: descend into ${the(next!.name)}`
                 : spade
-                  ? `${cardLabel(p.card, p.outcome)}${truffly ? ', truffle ground' : ''}, ${near} hazard${near === 1 ? '' : 's'} beside it: dig here`
-                : `${cardLabel(p.card, p.outcome)}${truffly ? ', truffle ground' : ''}${again ? ', already in the cabinet' : ''}${p.card.type === 'hazard' ? '' : `, ${near} hazard${near === 1 ? '' : 's'} beside it`}`
+                  ? `${cardLabel(p.card, p.outcome, where)}${truffly ? ', truffle ground' : ''}, ${near} hazard${near === 1 ? '' : 's'} beside it: dig here`
+                : `${cardLabel(p.card, p.outcome, where)}${truffly ? ', truffle ground' : ''}${again ? ', already in the cabinet' : ''}${p.card.type === 'hazard' ? '' : `, ${near} hazard${near === 1 ? '' : 's'} beside it`}`
               : open
                 ? `Face-down card, row ${Math.floor(i / n) + 1}, column ${(i % n) + 1}`
-                : `Passed by: ${p.deep && p.card.type !== 'artifact' ? 'a rare find, ' : ''}${cardLabel(p.card, null)}`;
+                : `Passed by: ${p.deep && p.card.type !== 'artifact' ? 'a rare find, ' : ''}${cardLabel(p.card, null, where)}`;
             // The rare find looks like any other card until it's turned (or the trip ends), then it shines.
             const rare = p.deep && shown;
             // With the Forager's Lantern, a rare find or an artifact glints through the leaves before it's turned.
@@ -482,9 +489,9 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
                       </span>
                     )}
                     {truffly && <span class="truffle-tag">truffle ground</span>}
-                    <CardArt card={p.card} outcome={p.outcome} />
+                    <CardArt card={p.card} outcome={p.outcome} season={season} />
                     {hold?.index === i && <HazardFx kind={hold.kind} />}
-                    <span class="fc-title">{cardLabel(p.card, p.outcome)}</span>
+                    <span class="fc-title">{cardLabel(p.card, p.outcome, where)}</span>
                     {door && <span class="door-tag">Tap to go down</span>}
                     {spade && (
                       <span class="dig-tag" title="Dig here">
@@ -625,7 +632,7 @@ function Trip({ g, store, onClose }: { g: GameState; store: Store; onClose: () =
         </footer>
       )}
       {digAsk !== null && trip.patch[digAsk] && (
-        <SheetFrame title={`Dig under the ${cardTitle(trip.patch[digAsk].card)}?`} onClose={() => setDigAsk(null)}>
+        <SheetFrame title={`Dig under the ${cardTitle(trip.patch[digAsk].card, where)}?`} onClose={() => setDigAsk(null)}>
           <p>Digging takes the rest of the day: you head home with what you've found, and whatever the spade turns up.</p>
           <div class="foot-actions">
             <button class="btn primary big" onClick={() => dig(digAsk)}>

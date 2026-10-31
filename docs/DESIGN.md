@@ -645,3 +645,17 @@ compares it with the usual planner.
   is dealt only once `Perks.species` holds it. It is `heavy`, so every harvest (by hand, by auto-harvest or on
   festival morning) brings in 2. **Crackle Crown** = King Oyster × Shiitake, a `hybrid` unlock at L7. Spec:
   `late-species-spec.md`.
+
+## Seasons on the forest floor
+
+- **Seasonal names** (`zones.json`, `seasonNames`): hazard and ground cards take a name for the season. Ticks
+  are Black Ice in winter, Sudden Rain is a Spring Shower or Sleet, and Tall Grass is New Grass, Dry Grass or
+  Frosted Grass. Only the name changes. Rules, the dig hosts (Oak and Hazel Scrub keep their names inside the
+  new one), the founder's Yew and the hazard counts all use the printed card. `seasonalName` in `board.ts`;
+  `cardTitle`/`outcomeText` take a `FloorPlace`. A seasonal hazard plays its own reveal if it has one (Black
+  Ice slips, and Thin Ice is water), and otherwise the printed card's.
+- **Seasonal art:** the ground, brush and tree icons take the season (spring buds, fall amber and a leaf, winter
+  snow and bare branches). The trip's page takes the farm's season colors, with a snow drift or blown leaves
+  along the bottom, and the zone wash is tinted in the trip and the picker. The underground ignores the season.
+- Flavor only, so no sim. Spec: `zone-seasons-spec.md`, where Ben dropped the prime-season rules.
+

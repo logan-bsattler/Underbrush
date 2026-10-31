@@ -11,6 +11,11 @@ export function monthOfSeason(round: number, c: Content = defaultContent): numbe
   return (round - 1) % c.rules.roundsPerSeason;
 }
 
+/** What a forest-floor card is called this season: some zones rename their hazards and ground through the year. Only the name changes. */
+export function seasonalName(name: string, zone: string, season: Season, c: Content = defaultContent): string {
+  return c.zones.find((z) => z.id === zone)?.seasonNames?.[season]?.[name] ?? name;
+}
+
 export function inSeason(speciesId: string, season: Season, c: Content = defaultContent): boolean {
   const s = c.species[speciesId];
   return s.seasons === 'any' || s.seasons.includes(season);

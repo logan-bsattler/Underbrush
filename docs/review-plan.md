@@ -272,6 +272,10 @@ Progress (2026-10-30):
   identical. L7–L10 tiers 74/77/74/74% → 77/68/80/73%, which is noise in both directions (pooled L7–9 75% →
   75%), so no `tierLift` change. `tests/late-species.test.ts`. The Crackle Crown journal page was not
   browser-checked.
+- **Zone seasons (asked by Ben, off the ranked list): built (2026-10-30).** Spec in `zone-seasons-spec.md`, approved
+  as flavor only: seasonal names for hazards and ground, and seasonal art and backgrounds on the forest floor. The
+  prime-season rules were dropped. `tests/zone-seasons.test.ts`; 284 tests pass. Winter Meadow browser-checked at
+  375 px, and Ben's save restored. No rules change, so no sim.
 
 ## Bottom line
 

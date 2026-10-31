@@ -338,6 +338,14 @@ const canopy: Record<Season, { leaf: string; shade: string }> = {
   winter: { leaf: '#E9EEF0', shade: '#B9C6CC' },
 };
 
+/** Undergrowth on the forest floor through the year: fresh, full, gone gold, then dry under snow. */
+const floorGreen: Record<Season, { fill: string; stroke: string }> = {
+  spring: { fill: '#8FB866', stroke: '#4E6E30' },
+  summer: { fill: '#7E9A55', stroke: '#3E5228' },
+  fall: { fill: '#C59A48', stroke: '#7A5A2A' },
+  winter: { fill: '#B7BFAE', stroke: '#6E7B6A' },
+};
+
 export function TreeArt({ season = 'summer' }: { season?: Season }) {
   const c = canopy[season];
   return (
@@ -413,7 +421,8 @@ export function BedArt({ species, stage }: { species: string; stage: Stage }) {
 
 // ── Small icons ──────────────────────────────────────────────────────────
 
-export function Icon({ name, size = 20 }: { name: string; size?: number }) {
+/** `season` dresses the forest-floor icons (ground, brush, tree) for the time of year; left out, they show summer. */
+export function Icon({ name, size = 20, season }: { name: string; size?: number; season?: Season }) {
   const p = { width: size, height: size, viewBox: '0 0 24 24', 'aria-hidden': true as const, class: 'icon' };
   const s = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const };
   switch (name) {
@@ -593,25 +602,44 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
     case 'ground':
       return (
         <svg {...p}>
-          <path d="M2 17 Q7 13 12 15 T22 15 V20 H2 Z" fill="#9C7C58" stroke="#5E4632" strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="M2 17 Q7 13 12 15 T22 15 V20 H2 Z" fill={season === 'winter' ? '#A89A88' : '#9C7C58'} stroke="#5E4632" strokeWidth="1.4" strokeLinejoin="round" />
           <circle cx="8" cy="18" r="0.9" fill="#5E4632" />
           <circle cx="15" cy="17.5" r="1.1" fill="#5E4632" />
+          {season === 'spring' && <path d="M12 15 V11 M12 12.5 Q9.5 12 9 9.5 M12 11.5 Q14.5 11 15 8.5" {...s} stroke={floorGreen.spring.stroke} strokeWidth="1.3" />}
+          {season === 'fall' && <ellipse cx="17" cy="14.6" rx="2.6" ry="1.2" fill="#C2662E" transform="rotate(-18 17 14.6)" />}
+          {season === 'winter' && <path d="M2 17 Q7 13 12 15 T22 15 V16.4 Q17 15 12 16.6 T2 18.2 Z" fill="#FBFCFA" stroke="#B9C6CC" strokeWidth="0.8" />}
         </svg>
       );
-    case 'brush':
+    case 'brush': {
+      const b = floorGreen[season ?? 'summer'];
       return (
         <svg {...p}>
-          <path d="M3 20 Q12 14 21 20 Z" fill="#7E9A55" stroke="#3E5228" strokeWidth="1.4" strokeLinejoin="round" />
-          <path d="M6 19 Q5 10 8 5 M10 18 Q11 9 12 3 M14 18 Q14 10 17 5 M18 19 Q19 13 20 9" {...s} stroke="#3E5228" />
+          <path d="M3 20 Q12 14 21 20 Z" fill={b.fill} stroke={b.stroke} strokeWidth="1.4" strokeLinejoin="round" />
+          <path d="M6 19 Q5 10 8 5 M10 18 Q11 9 12 3 M14 18 Q14 10 17 5 M18 19 Q19 13 20 9" {...s} stroke={b.stroke} />
+          {season === 'spring' && <circle cx="12" cy="3.4" r="1.5" fill="#F6D6DE" stroke="#D99AAE" strokeWidth="0.8" />}
+          {season === 'winter' && <path d="M4 19.6 Q12 14.6 20 19.6" fill="none" stroke="#FBFCFA" strokeWidth="1.6" strokeLinecap="round" />}
         </svg>
       );
-    case 'tree':
+    }
+    case 'tree': {
+      const c = canopy[season ?? 'summer'];
       return (
         <svg {...p}>
           <path d="M11 21 V14 M13 21 V14" {...s} stroke="#5E4632" strokeWidth="2.2" />
-          <path d="M12 2 Q20 6 18 12 Q19 16 12 15 Q5 16 6 12 Q4 6 12 2 Z" fill="#6E8B4E" stroke="#3E5228" strokeWidth="1.4" />
+          {season === 'winter' ? (
+            <>
+              {/* Bare branches with snow along them, as on the farm. */}
+              <path d="M12 15 V4 M12 10 L7 6 M12 8 L17 4 M12 12 L17 9" {...s} stroke="#5E4632" strokeWidth="1.5" />
+              <path d="M7 5.6 Q9.4 6.6 11.4 9 M17 3.6 Q15 5.4 12.6 7.6" fill="none" stroke="#FBFCFA" strokeWidth="1.3" strokeLinecap="round" />
+            </>
+          ) : (
+            <path d="M12 2 Q20 6 18 12 Q19 16 12 15 Q5 16 6 12 Q4 6 12 2 Z" fill={c.leaf} stroke={season === 'fall' ? '#8A4422' : '#3E5228'} strokeWidth="1.4" />
+          )}
+          {season === 'spring' && [[9, 7], [14, 5], [15, 10], [9, 11.5]].map(([x, y]) => <circle cx={x} cy={y} r="1.1" fill="#F6D6DE" stroke="#D99AAE" strokeWidth="0.5" />)}
+          {season === 'fall' && <ellipse cx="18.5" cy="20.4" rx="2.2" ry="0.9" fill="#C2662E" />}
         </svg>
       );
+    }
     case 'way':
       return (
         <svg {...p}>

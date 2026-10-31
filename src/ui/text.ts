@@ -2,6 +2,7 @@ import {
   artifactPoints,
   content,
   seasonOf,
+  seasonalName,
   monthOfSeason,
   type Card,
   type DigFind,
@@ -116,7 +117,10 @@ export function squareName(i: number, n: number) {
   return `row ${Math.floor(i / n) + 1}, col ${(i % n) + 1}`;
 }
 
-export function cardTitle(card: Card) {
+/** Where a forest-floor card lies, for its seasonal name. Left out underground, where the season doesn't reach. */
+export type FloorPlace = { zone: string; season: Season };
+
+export function cardTitle(card: Card, where?: FloorPlace) {
   switch (card.type) {
     case 'specimen':
       return content.species[card.species].group ?? name(card.species);
@@ -125,17 +129,17 @@ export function cardTitle(card: Card) {
     case 'coins':
       return `${card.amount} coins`;
     case 'hazard':
-      return card.name;
+      return where ? seasonalName(card.name, where.zone, where.season) : card.name;
     case 'artifact':
       return content.artifacts.find((a) => a.id === card.artifact)?.name ?? 'Artifact';
     case 'ground':
-      return card.name;
+      return where ? seasonalName(card.name, where.zone, where.season) : card.name;
     case 'entrance':
       return 'Way down';
   }
 }
 
-export function outcomeText(o: DrawOutcome, card: Card, dropped?: Specimen) {
+export function outcomeText(o: DrawOutcome, card: Card, dropped?: Specimen, where?: FloorPlace) {
   switch (o) {
     case 'swapped': {
       const left = dropped ? (dropped.identified ? name(dropped.species) : (content.species[dropped.species].group ?? name(dropped.species))) : 'something';
@@ -162,7 +166,7 @@ export function outcomeText(o: DrawOutcome, card: Card, dropped?: Specimen) {
       return `An artifact: ${a?.name ?? 'something old'}. ${a?.blurb ?? ''} It counts as a find, so get it home safe.`;
     }
     case 'nothing':
-      return `Nothing here but ${card.type === 'ground' ? card.name.toLowerCase() : 'the forest floor'}.`;
+      return `Nothing here but ${card.type === 'ground' ? cardTitle(card, where).toLowerCase() : 'the forest floor'}.`;
     case 'wayDown': {
       const layer = card.type === 'entrance' ? content.underground[card.zone]?.[card.depth - 1] : null;
       return `A way down${layer ? ` to the ${layer.name.replace(/^The /, '')}` : ''}! Tap it to go down, or turn more cards first.`;

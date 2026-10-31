@@ -72,6 +72,8 @@ export interface ZoneDef {
   hazard: string;
   blurb: string;
   color: string;
+  /** Hazard and ground cards renamed for a season ("Ticks" → "Black Ice" in winter). Flavor only: rules use the printed name. */
+  seasonNames?: Partial<Record<Season, Record<string, string>>>;
   /** An entry with `unlock` is shuffled in only once a level has unlocked that species. */
   deck: { card: Card; copies: number; unlock?: string }[];
   /** Rare finds dealt into each patch once a trip is rules.deepAt patches deep. Never part of the deck. */
