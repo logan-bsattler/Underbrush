@@ -36,7 +36,7 @@ import {
 } from '../core';
 import { BedArt, Icon, Mushroom, SubstrateArt, TreeArt, Unknown } from './art';
 import { Forage } from './Forage';
-import { Market } from './Market';
+import { Market, type MarketTab } from './Market';
 import { Night } from './Night';
 import { Pantry } from './Pantry';
 import { AudioToggles } from './Screens';
@@ -68,7 +68,7 @@ type Sheet =
   | { kind: 'bed'; i: number }
   | { kind: 'specimen'; uid: number }
   | { kind: 'tend' }
-  | { kind: 'market' }
+  | { kind: 'market'; tab?: MarketTab }
   | { kind: 'forage' }
   | { kind: 'weather' }
   | { kind: 'pantry' }
@@ -1204,7 +1204,7 @@ export function Game({
   const fixTonight = (fix: TonightLine['fix']) => {
     setConfirmEnd(false);
     if (fix === 'harvest') harvest();
-    else if (fix === 'market') setSheet({ kind: 'market' });
+    else if (fix === 'market') setSheet({ kind: 'market', tab: 'sell' });
     else setSheet({ kind: 'tend' });
   };
 
@@ -1230,7 +1230,7 @@ export function Game({
         onScore={() => setSheet({ kind: 'tiers' })}
         onMenu={() => setSheet({ kind: 'menu' })}
       />
-      <Orders g={g} onOpen={() => setSheet({ kind: 'market' })} />
+      <Orders g={g} onOpen={() => setSheet({ kind: 'market', tab: 'orders' })} />
 
       <main class="farm-area">
         {banner ? (
@@ -1342,10 +1342,10 @@ export function Game({
         </SheetFrame>
       )}
       {sheet?.kind === 'menu' && <Menu g={g} onClose={() => setSheet(null)} onHelp={onHelp} onTitle={onTitle} onAlmanac={onAlmanac} />}
-      {sheet?.kind === 'market' && <Market g={g} store={store} onClose={() => setSheet(null)} onPantry={() => setSheet({ kind: 'pantry' })} />}
+      {sheet?.kind === 'market' && <Market g={g} store={store} tab={sheet.tab} onClose={() => setSheet(null)} onPantry={() => setSheet({ kind: 'pantry' })} />}
       {sheet?.kind === 'pantry' && <Pantry g={g} store={store} onClose={() => setSheet(null)} />}
       {sheet?.kind === 'tiers' && <TiersSheet g={g} onClose={() => setSheet(null)} />}
-      {sheet?.kind === 'tools' && <ToolWallSheet g={g} onClose={() => setSheet(null)} onMarket={() => setSheet({ kind: 'market' })} />}
+      {sheet?.kind === 'tools' && <ToolWallSheet g={g} onClose={() => setSheet(null)} onMarket={() => setSheet({ kind: 'market', tab: 'buy' })} />}
       {(sheet?.kind === 'forage' || g.forage) && <Forage g={g} store={store} onClose={() => setSheet(null)} />}
       {reveal && <Reveal r={reveal} g={g} onDone={() => setReveal(null)} onPlant={startPlant} />}
       {busy && <Night g={g} store={store} />}

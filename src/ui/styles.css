@@ -1066,12 +1066,50 @@ button.chip {
   background: var(--rust-wash);
   border: 1.5px dashed var(--rust);
 }
-/* Between visits, the notice stays in view while you scroll, so a greyed-out button never goes unexplained. */
+/* The visit line, the tabs and the coins stay in view while a tab scrolls, so a greyed-out button never goes unexplained. */
+.market-top {
+  position: sticky;
+  top: -4px;
+  z-index: 3;
+  margin: -4px -18px 10px;
+  padding: 4px 18px 0;
+  background: var(--paper);
+}
+.market-tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  border-bottom: 1.5px solid var(--line);
+}
+.market-tab {
+  position: relative;
+  flex: 1;
+  min-height: 40px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line);
+  background: var(--card);
+  font: inherit;
+  font-weight: 700;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.market-tab.on {
+  border-color: var(--moss);
+  background: var(--moss);
+  color: #fff;
+}
+.tab-dot {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--rust);
+}
 .market-visit.off,
 .market-visit.closed {
-  position: sticky;
-  top: 0;
-  z-index: 3;
   border: 1.5px solid var(--gold);
   background: #fbf1d8;
 }

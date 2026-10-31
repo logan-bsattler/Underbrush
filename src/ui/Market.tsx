@@ -17,6 +17,7 @@ import {
   type GameState,
   type Substrate,
 } from '../core';
+import { useState } from 'preact/hooks';
 import { Icon, Mushroom, SubstrateArt } from './art';
 import { SheetFrame } from './Game';
 import type { Store } from './store';
@@ -87,7 +88,16 @@ function Commission({ g, store, canTrade, extra }: { g: GameState; store: Store;
   );
 }
 
-export function Market({ g, store, onClose, onPantry }: { g: GameState; store: Store; onClose: () => void; onPantry: () => void }) {
+export type MarketTab = 'orders' | 'sell' | 'buy';
+const TABS: [MarketTab, string][] = [
+  ['orders', 'Orders'],
+  ['sell', 'Sell'],
+  ['buy', 'Buy'],
+];
+// The tab you last chose, kept until the month ends so closing and reopening the sheet lands where you were.
+let lastTab: { month: string; tab: MarketTab } | null = null;
+
+export function Market({ g, store, tab: asked, onClose, onPantry }: { g: GameState; store: Store; tab?: MarketTab; onClose: () => void; onPantry: () => void }) {
   // Closing the sheet keeps the visit open: it ends when you next spend an action, so coming back to trade is free.
   const close = onClose;
   const stored = content.speciesOrder.filter((id) => (g.storage[id] ?? 0) > 0);
@@ -101,245 +111,280 @@ export function Market({ g, store, onClose, onPantry }: { g: GameState; store: S
   const hire = hireCost(g);
   const hired = g.hiredRound === g.round;
   const stall = Object.entries(content.rules.substrateCost) as [Substrate, number][];
+  // An order you could hand over right now: the Orders tab opens on it, or wears a dot while you're on another tab.
+  const open = [...g.orders.visible, ...(g.perks.commissions && g.commission.open ? [g.commission.open] : [])];
+  const deliverable = canTrade && g.coins >= extra && open.some((id) => !!orderPayment(g.storage, orderById(id)!));
+  const month = `${g.seed}:${g.round}:${g.finale ? 'f' : ''}`;
+  const tabs = g.finale ? TABS.filter(([t]) => t !== 'buy') : TABS;
+  // Opened from somewhere that names a tab (the orders strip, the tool wall, a spoiling warning), that tab wins.
+  const [tab, setTabState] = useState<MarketTab>(() => {
+    const first = asked && tabs.some(([t]) => t === asked) ? asked : lastTab?.month === month ? lastTab.tab : g.finale || deliverable ? 'orders' : 'sell';
+    if (asked) lastTab = { month, tab: first };
+    return first;
+  });
+  const setTab = (t: MarketTab, from: HTMLElement) => {
+    lastTab = { month, tab: t };
+    setTabState(t);
+    from.closest('.sheet-body')?.scrollTo(0, 0);
+  };
 
   return (
     <SheetFrame title="Village market" onClose={close} tall>
-      <p class={`market-visit ${g.market ? 'on' : g.finale ? '' : g.actionsLeft > 0 ? 'off' : 'closed'}`}>
-        {g.market
-          ? `You're at the market. Trade as much as you like${g.market.deliveries ? `; another delivery costs ${extra} coins` : ''}. Your visit lasts until you spend another action.`
-          : g.finale
-            ? g.finale.marketed
-              ? "You've had your last market visit. The festival is next."
-              : `Festival morning: one last market visit, no action needed. Deliver an order free, more for ${content.rules.extraDeliveryCost} coins and doubling after that, and sell what you like.`
-            : g.actionsLeft > 0
-            ? `You're not at the market right now. Your next trade opens a visit for 1 action (${g.actionsLeft} left), and the visit ends when you spend an action on anything else. The first order you deliver on a visit is free; the next costs ${content.rules.extraDeliveryCost} coins, and each one after costs double the last.`
-            : `You're not at the market, and opening a visit takes an action: you have none left this month. Hiring a hand needs no visit${hired ? ", but you've hired one this month" : ''}.`}
-      </p>
+      <div class="market-top">
+        <p class={`market-visit ${g.market ? 'on' : g.finale ? '' : g.actionsLeft > 0 ? 'off' : 'closed'}`}>
+          {g.market
+            ? `You're at the market. Trade as much as you like${g.market.deliveries ? `; another delivery costs ${extra} coins` : ''}. Your visit lasts until you spend another action.`
+            : g.finale
+              ? g.finale.marketed
+                ? "You've had your last market visit. The festival is next."
+                : `Festival morning: one last market visit, no action needed. Deliver an order free, more for ${content.rules.extraDeliveryCost} coins and doubling after that, and sell what you like.`
+              : g.actionsLeft > 0
+              ? `You're not at the market right now. Your next trade opens a visit for 1 action (${g.actionsLeft} left), and the visit ends when you spend an action on anything else. The first order you deliver on a visit is free; the next costs ${content.rules.extraDeliveryCost} coins, and each one after costs double the last.`
+              : `You're not at the market, and opening a visit takes an action: you have none left this month. Hiring a hand needs no visit${hired ? ", but you've hired one this month" : ''}.`}
+        </p>
 
-      <h3>Festival orders</h3>
-      <div class="order-cards">
-        {g.orders.visible.map((id) => {
-          const o = content.orders.find((x) => x.id === id)!;
-          const pay = orderPayment(g.storage, o);
-          const blocked = !pay || !canTrade || g.coins < extra;
-          return (
-            <div class={`order-card ${pay ? 'ready' : ''}`}>
-              <div class="order-card-top">
-                <span>{o.label}</span>
-                <span class="pts">{o.points} pts</span>
-              </div>
-              {pay && <div class="small muted">Uses {Object.entries(pay).map(([id, n]) => `${n} ${name(id)}`).join(', ')}</div>}
-              {!pay && (o.need.kind === 'zone' || o.need.kind === 'below') && (
-                <div class="small muted">Any of: {orderSpecies(o)!.map(name).join(', ')}</div>
-              )}
-              <div class="order-card-actions">
-                <button
-                  class="btn small primary"
-                  disabled={!!blocked}
-                  onClick={() => store.act({ type: 'fillOrder', order: id })}
-                  aria-label={extra ? `Deliver this order, ${extra} coins` : 'Deliver this order'}
-                >
-                  Deliver
-                  {extra > 0 && (
-                    <>
-                      {' · '}
-                      <Icon name="coin" size={13} /> {extra}
-                    </>
-                  )}
-                </button>
-                <button
-                  class="btn small ghost"
-                  disabled={!canTrade || g.coins < swap || g.orders.deck.length === 0}
-                  onClick={() => store.act({ type: 'swapOrder', order: id })}
-                  aria-label={`Swap this order for the next one, ${swap} coins`}
-                >
-                  Swap · <Icon name="coin" size={13} /> {swap}
-                </button>
-              </div>
-            </div>
-          );
-        })}
+        <div class="market-tabs" role="tablist" aria-label="Market">
+          {tabs.map(([t, label]) => (
+            <button
+              class={`market-tab ${tab === t ? 'on' : ''}`}
+              role="tab"
+              aria-selected={tab === t}
+              onClick={(e) => setTab(t, e.currentTarget)}
+            >
+              {label}
+              {t === 'orders' && deliverable && tab !== 'orders' && <span class="tab-dot" aria-label="an order is ready to deliver" />}
+            </button>
+          ))}
+          <span class="chip coins" aria-label={`${g.coins} coins`}>
+            <Icon name="coin" size={16} /> {g.coins}
+          </span>
+        </div>
       </div>
-      <p class="small muted">
-        {g.orders.filled.length} delivered · {g.orderPoints} points · {g.orders.deck.length} more orders waiting. Swapping sends an order to
-        the bottom of the pile and deals the first waiting order your storage can fill, if there is one; each swap this year costs a
-        coin more.
-      </p>
 
-      {g.perks.commissions && <Commission g={g} store={store} canTrade={canTrade} extra={extra} />}
-
-      <h3>
-        Your storage
-        <button class="btn small ghost inline-link" onClick={onPantry}>
-          <Icon name="pantry" size={16} /> Cook or save spawn
-        </button>
-      </h3>
-      {lastMonth && !g.gear.includes('dehydrator') && stored.length > 0 && (
-        <p class="note warn">Last month of the season: anything still in storage spoils tonight.</p>
-      )}
-      {stored.length === 0 ? (
-        <p class="muted">Nothing stored. Harvest fruiting beds, or identify wild finds.</p>
-      ) : (
-        <ul class="storage">
-          {stored.map((id) => {
-            const each = saleValue(g, id);
-            return (
-              <li>
-                <Mushroom species={id} size={40} />
-                <span class="grow">
-                  <b>{name(id)}</b> × {g.storage[id]}
-                  <small class="muted"> · {each} each</small>
-                </span>
-                <button class="btn small" disabled={!canTrade} onClick={() => store.act({ type: 'sell', species: id, count: 1 })}>
-                  Sell 1
-                </button>
-                {g.storage[id] > 1 && (
-                  <button class="btn small" disabled={!canTrade} onClick={() => store.act({ type: 'sell', species: id, count: g.storage[id] })}>
-                    All
-                  </button>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-
-      {compost > 0 && (
-        <>
-          <h3>Your shed</h3>
-          <ul class="storage">
-            <li>
-              <SubstrateArt substrate="compost" size={40} />
-              <span class="grow">
-                <b>Compost tile</b> × {compost}
-                <small class="muted"> · {compostSaleValue(g)} each</small>
-              </span>
-              <button class="btn small" disabled={!canTrade} onClick={() => store.act({ type: 'sellCompost', count: 1 })}>
-                Sell 1
-              </button>
-              {compost > 1 && (
-                <button class="btn small" disabled={!canTrade} onClick={() => store.act({ type: 'sellCompost', count: compost })}>
-                  All
-                </button>
-              )}
-            </li>
-          </ul>
-        </>
-      )}
-
-      {!g.finale && (
-        <>
-          <h3>Spawn</h3>
-          {spawn.length === 0 ? (
-            <p class="small muted">Identify a cultivated mushroom and the seed merchant will stock its spawn here.</p>
-          ) : (
-            <>
-              <ul class="storage">
-                {spawn.map((id) => {
-                  const cost = spawnCost(id);
-                  return (
-                    <li>
-                      <Mushroom species={id} size={40} />
-                      <span class="grow">
-                        <b>{name(id)} spawn</b>
-                        <small class="muted"> · ready to plant</small>
-                      </span>
-                      <button
-                        class="btn small"
-                        disabled={!canTrade || g.coins < cost || !roomInBasket}
-                        onClick={() => store.act({ type: 'buySpawn', species: id })}
-                      >
-                        <Icon name="coin" size={14} /> {cost}
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-              <p class="small muted">{roomInBasket ? 'Spawn goes into your basket, already identified.' : 'Your basket is full.'}</p>
-            </>
-          )}
-        </>
-      )}
-
-      {!g.finale && (
-        <>
-          <h3>Hands and supplies</h3>
-          <ul class="storage">
-            <li>
-              <Icon name="tend" size={40} />
-              <span class="grow">
-                <b>Hire a hand</b>
-                <small class="muted"> · +1 action this month</small>
-              </span>
-              <button class="btn small" disabled={hired || g.coins < hire} onClick={() => store.act({ type: 'hireHand' })}>
-                <Icon name="coin" size={14} /> {hire}
-              </button>
-            </li>
-            {stall.map(([sub, cost]) => (
-              <li>
-                <SubstrateArt substrate={sub} size={40} />
-                <span class="grow">
-                  <b>{substrateName[sub]} tile</b>
-                  <small class="muted"> · to your shed</small>
-                </span>
-                <button class="btn small" disabled={!canTrade || g.coins < cost} onClick={() => store.act({ type: 'buySubstrate', substrate: sub })}>
-                  <Icon name="coin" size={14} /> {cost}
-                </button>
-              </li>
-            ))}
-          </ul>
-          <p class="small muted">
-            {hired
-              ? "You've hired a hand this month."
-              : `A hand needs no market visit: one a month, and each one this year costs ${content.rules.hireStep} coins more.`}{' '}
-            Tiles go to your shed; lay them on empty ground for free.
-          </p>
-        </>
-      )}
-
-      {!g.finale && (
-        <>
-        <h3>
-          Gear <span class="chip coins inline"><Icon name="coin" size={16} /> {g.coins}</span>
-        </h3>
-        <div class="gear">
-          {content.gear.map((gear) => {
-            const owned = g.gear.includes(gear.id);
-            const stocked = g.perks.shop.includes(gear.id);
-            if (!stocked) {
-              const at = gearUnlockLevel(gear.id);
+      {tab === 'orders' && (
+        <div role="tabpanel">
+          <h3>Festival orders</h3>
+          <div class="order-cards">
+            {g.orders.visible.map((id) => {
+              const o = content.orders.find((x) => x.id === id)!;
+              const pay = orderPayment(g.storage, o);
+              const blocked = !pay || !canTrade || g.coins < extra;
               return (
-                <div class="gear-card locked">
-                  <div class="gear-top">
-                    <b>{gear.name}</b>
+                <div class={`order-card ${pay ? 'ready' : ''}`}>
+                  <div class="order-card-top">
+                    <span>{o.label}</span>
+                    <span class="pts">{o.points} pts</span>
                   </div>
-                  <div class="small muted">{at ? `Stocked once your homestead reaches ${at.title} (level ${at.level}).` : 'Not stocked.'}</div>
+                  {pay && <div class="small muted">Uses {Object.entries(pay).map(([id, n]) => `${n} ${name(id)}`).join(', ')}</div>}
+                  {!pay && (o.need.kind === 'zone' || o.need.kind === 'below') && (
+                    <div class="small muted">Any of: {orderSpecies(o)!.map(name).join(', ')}</div>
+                  )}
+                  <div class="order-card-actions">
+                    <button
+                      class="btn small primary"
+                      disabled={!!blocked}
+                      onClick={() => store.act({ type: 'fillOrder', order: id })}
+                      aria-label={extra ? `Deliver this order, ${extra} coins` : 'Deliver this order'}
+                    >
+                      Deliver
+                      {extra > 0 && (
+                        <>
+                          {' · '}
+                          <Icon name="coin" size={13} /> {extra}
+                        </>
+                      )}
+                    </button>
+                    <button
+                      class="btn small ghost"
+                      disabled={!canTrade || g.coins < swap || g.orders.deck.length === 0}
+                      onClick={() => store.act({ type: 'swapOrder', order: id })}
+                      aria-label={`Swap this order for the next one, ${swap} coins`}
+                    >
+                      Swap · <Icon name="coin" size={13} /> {swap}
+                    </button>
+                  </div>
                 </div>
               );
-            }
-            return (
-              <div class={`gear-card ${owned ? 'owned' : ''}`}>
-                <div class="gear-top">
-                  <b>{gear.name}</b>
-                  <span class="cost">
-                    {owned ? (g.perks.heirlooms.includes(gear.id) ? 'Heirloom' : 'Owned') : (
-                      <>
-                        <Icon name="coin" size={14} /> {gear.cost}
-                      </>
-                    )}
-                  </span>
-                </div>
-                <div class="small">{gear.rule}</div>
-                {!owned && (
-                  <button class="btn small" disabled={g.coins < gear.cost || !canTrade} onClick={() => store.act({ type: 'buyGear', gear: gear.id })}>
-                    Buy
-                  </button>
-                )}
-              </div>
-            );
-          })}
+            })}
+          </div>
+          <p class="small muted">
+            {g.orders.filled.length} delivered · {g.orderPoints} points · {g.orders.deck.length} more orders waiting. Swapping sends an order to
+            the bottom of the pile and deals the first waiting order your storage can fill, if there is one; each swap this year costs a
+            coin more.
+          </p>
+
+          {g.perks.commissions && <Commission g={g} store={store} canTrade={canTrade} extra={extra} />}
+
         </div>
-        </>
+      )}
+
+      {tab === 'sell' && (
+        <div role="tabpanel">
+          <h3>
+            Your storage
+            <button class="btn small ghost inline-link" onClick={onPantry}>
+              <Icon name="pantry" size={16} /> Cook or save spawn
+            </button>
+          </h3>
+          {lastMonth && !g.gear.includes('dehydrator') && stored.length > 0 && (
+            <p class="note warn">Last month of the season: anything still in storage spoils tonight.</p>
+          )}
+          {stored.length === 0 ? (
+            <p class="muted">Nothing stored. Harvest fruiting beds, or identify wild finds.</p>
+          ) : (
+            <ul class="storage">
+              {stored.map((id) => {
+                const each = saleValue(g, id);
+                return (
+                  <li>
+                    <Mushroom species={id} size={40} />
+                    <span class="grow">
+                      <b>{name(id)}</b> × {g.storage[id]}
+                      <small class="muted"> · {each} each</small>
+                    </span>
+                    <button class="btn small" disabled={!canTrade} onClick={() => store.act({ type: 'sell', species: id, count: 1 })}>
+                      Sell 1
+                    </button>
+                    {g.storage[id] > 1 && (
+                      <button class="btn small" disabled={!canTrade} onClick={() => store.act({ type: 'sell', species: id, count: g.storage[id] })}>
+                        All
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {compost > 0 && (
+            <>
+              <h3>Your shed</h3>
+              <ul class="storage">
+                <li>
+                  <SubstrateArt substrate="compost" size={40} />
+                  <span class="grow">
+                    <b>Compost tile</b> × {compost}
+                    <small class="muted"> · {compostSaleValue(g)} each</small>
+                  </span>
+                  <button class="btn small" disabled={!canTrade} onClick={() => store.act({ type: 'sellCompost', count: 1 })}>
+                    Sell 1
+                  </button>
+                  {compost > 1 && (
+                    <button class="btn small" disabled={!canTrade} onClick={() => store.act({ type: 'sellCompost', count: compost })}>
+                      All
+                    </button>
+                  )}
+                </li>
+              </ul>
+            </>
+          )}
+
+        </div>
+      )}
+
+      {tab === 'buy' && (
+        <div role="tabpanel">
+              <h3>Spawn</h3>
+              {spawn.length === 0 ? (
+                <p class="small muted">Identify a cultivated mushroom and the seed merchant will stock its spawn here.</p>
+              ) : (
+                <>
+                  <ul class="storage">
+                    {spawn.map((id) => {
+                      const cost = spawnCost(id);
+                      return (
+                        <li>
+                          <Mushroom species={id} size={40} />
+                          <span class="grow">
+                            <b>{name(id)} spawn</b>
+                            <small class="muted"> · ready to plant</small>
+                          </span>
+                          <button
+                            class="btn small"
+                            disabled={!canTrade || g.coins < cost || !roomInBasket}
+                            onClick={() => store.act({ type: 'buySpawn', species: id })}
+                          >
+                            <Icon name="coin" size={14} /> {cost}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <p class="small muted">{roomInBasket ? 'Spawn goes into your basket, already identified.' : 'Your basket is full.'}</p>
+                </>
+              )}
+
+              <h3>Hands and supplies</h3>
+              <ul class="storage">
+                <li>
+                  <Icon name="tend" size={40} />
+                  <span class="grow">
+                    <b>Hire a hand</b>
+                    <small class="muted"> · +1 action this month</small>
+                  </span>
+                  <button class="btn small" disabled={hired || g.coins < hire} onClick={() => store.act({ type: 'hireHand' })}>
+                    <Icon name="coin" size={14} /> {hire}
+                  </button>
+                </li>
+                {stall.map(([sub, cost]) => (
+                  <li>
+                    <SubstrateArt substrate={sub} size={40} />
+                    <span class="grow">
+                      <b>{substrateName[sub]} tile</b>
+                      <small class="muted"> · to your shed</small>
+                    </span>
+                    <button class="btn small" disabled={!canTrade || g.coins < cost} onClick={() => store.act({ type: 'buySubstrate', substrate: sub })}>
+                      <Icon name="coin" size={14} /> {cost}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <p class="small muted">
+                {hired
+                  ? "You've hired a hand this month."
+                  : `A hand needs no market visit: one a month, and each one this year costs ${content.rules.hireStep} coins more.`}{' '}
+                Tiles go to your shed; lay them on empty ground for free.
+              </p>
+
+            <h3>Gear</h3>
+            <div class="gear">
+              {content.gear.map((gear) => {
+                const owned = g.gear.includes(gear.id);
+                const stocked = g.perks.shop.includes(gear.id);
+                if (!stocked) {
+                  const at = gearUnlockLevel(gear.id);
+                  return (
+                    <div class="gear-card locked">
+                      <div class="gear-top">
+                        <b>{gear.name}</b>
+                      </div>
+                      <div class="small muted">{at ? `Stocked once your homestead reaches ${at.title} (level ${at.level}).` : 'Not stocked.'}</div>
+                    </div>
+                  );
+                }
+                return (
+                  <div class={`gear-card ${owned ? 'owned' : ''}`}>
+                    <div class="gear-top">
+                      <b>{gear.name}</b>
+                      <span class="cost">
+                        {owned ? (g.perks.heirlooms.includes(gear.id) ? 'Heirloom' : 'Owned') : (
+                          <>
+                            <Icon name="coin" size={14} /> {gear.cost}
+                          </>
+                        )}
+                      </span>
+                    </div>
+                    <div class="small">{gear.rule}</div>
+                    {!owned && (
+                      <button class="btn small" disabled={g.coins < gear.cost || !canTrade} onClick={() => store.act({ type: 'buyGear', gear: gear.id })}>
+                        Buy
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+        </div>
       )}
       <button class="btn wide" onClick={close}>
         Close
