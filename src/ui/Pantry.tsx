@@ -1,4 +1,4 @@
-import { basketCapacity, canCook, content, type GameState } from '../core';
+import { basketCapacity, canCook, content, type GameState, type RecipeDef } from '../core';
 import { Icon, Mushroom } from './art';
 import { SheetFrame } from './Game';
 import type { Store } from './store';
@@ -14,6 +14,11 @@ export function Pantry({ g, store, onClose }: { g: GameState; store: Store; onCl
   const roomInBasket = g.basket.length < basketCapacity(g);
   const lastMonth = g.round % content.rules.roundsPerSeason === 0 && g.round < content.rules.rounds;
   const busy = !!g.finale;
+  const found = (id: string) => !!g.storage[id] || g.discovered.includes(id) || store.journal.discovered.includes(id);
+  // Dishes you can cook now come first, then those whose makings you've found, then the rest, each in book order.
+  const rank = (r: RecipeDef) => (canCook(g, r) ? 0 : Object.keys(r.needs).every(found) ? 1 : 2);
+  const recipes = [...content.recipes].sort((a, b) => rank(a) - rank(b));
+  const feastLeft = content.rules.maxFeastPoints - g.feastPoints;
 
   return (
     <SheetFrame title="Pantry" onClose={onClose} tall>
@@ -70,13 +75,13 @@ export function Pantry({ g, store, onClose }: { g: GameState; store: Store; onCl
         <p class="small muted">One dish a month. Its effect lasts until you end the month.</p>
       )}
       <div class="recipes">
-        {content.recipes.map((r) => {
+        {recipes.map((r) => {
           const ready = canCook(g, r);
           const needs = Object.entries(r.needs);
           return (
             <div class={`recipe ${ready ? 'ready' : ''} ${g.meal === r.id ? 'eaten' : ''}`}>
               <div class="recipe-art" aria-hidden="true">
-                {needs.map(([id]) => (g.storage[id] || g.discovered.includes(id) || store.journal.discovered.includes(id) ? <Mushroom species={id} size={34} /> : <span class="q">?</span>))}
+                {needs.map(([id]) => (found(id) ? <Mushroom species={id} size={34} /> : <span class="q">?</span>))}
               </div>
               <div class="grow">
                 <b>{r.name}</b>
@@ -84,6 +89,13 @@ export function Pantry({ g, store, onClose }: { g: GameState; store: Store; onCl
                   {needs.map(([id, n]) => `${n} ${content.species[id].name} (${g.storage[id] ?? 0})`).join(' + ')}
                 </div>
                 <div class="small">{r.rule}</div>
+                {r.effect.type === 'points' && feastLeft < r.effect.amount && (
+                  <div class="small muted">
+                    {feastLeft > 0
+                      ? `Worth only ${feastLeft} now: the judges count ${content.rules.maxFeastPoints} points from dishes a year.`
+                      : `The judges have heard enough this year: dishes have scored their ${content.rules.maxFeastPoints} points.`}
+                  </div>
+                )}
               </div>
               <button class="btn small primary" disabled={!ready || !!g.meal || busy} onClick={() => store.act({ type: 'cook', recipe: r.id })}>
                 Cook

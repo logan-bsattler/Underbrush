@@ -5,5 +5,12 @@
   { "id": "oysterfry", "name": "Oyster Fry", "needs": { "oyster": 2 }, "effect": { "type": "basket", "amount": 2 }, "rule": "A packed lunch frees up room: your basket holds 2 more this month." },
   { "id": "risotto", "name": "Wine Cap Risotto", "needs": { "winecap": 2 }, "effect": { "type": "market", "amount": 1 }, "rule": "The village can't stop talking about it: every sale is worth 1 more coin this month." },
   { "id": "supper", "name": "Puffball Supper", "needs": { "puffball": 2 }, "effect": { "type": "water" }, "rule": "The neighbors come to eat and water your beds on the way out: every bed counts as watered tonight." },
-  { "id": "truffle", "name": "Truffle Shavings", "needs": { "truffle": 1 }, "effect": { "type": "points", "amount": 3 }, "rule": "The festival judges hear about it: 3 festival points." }
+  { "id": "truffle", "name": "Truffle Shavings", "needs": { "truffle": 1 }, "effect": { "type": "points", "amount": 3 }, "rule": "The festival judges hear about it: 3 festival points." },
+  { "id": "morelbutter", "name": "Morels in Butter", "needs": { "morel": 1 }, "effect": { "type": "hazards", "amount": 1 }, "rule": "Spring trail food: this month a trip only busts on its third hazard." },
+  { "id": "dryadstew", "name": "Dryad's Saddle Stew", "needs": { "dryad": 2 }, "effect": { "type": "water" }, "rule": "A big pot for the whole lane, and everyone waters on the way home: every bed counts as watered tonight." },
+  { "id": "porcinipie", "name": "Porcini Pie", "needs": { "porcini": 1 }, "effect": { "type": "market", "amount": 1 }, "rule": "The whole village wants a slice: every sale is worth 1 more coin this month." },
+  { "id": "blewitstew", "name": "Blewit Stew", "needs": { "blewit": 1 }, "effect": { "type": "actions", "amount": 1 }, "rule": "Warm enough to work through the dusk: 1 more action this month." },
+  { "id": "winterbroth", "name": "Winter Broth", "needs": { "yellowfoot": 1, "woodear": 1 }, "effect": { "type": "identify" }, "rule": "A clear head on a cold day: this month, lookalikes fool you on one fewer number." },
+  { "id": "springtart", "name": "Spring King Tart", "needs": { "springking": 1, "morel": 1 }, "effect": { "type": "points", "amount": 3 }, "rule": "The first fine bake of the year, and the judges hear about it: 3 festival points." },
+  { "id": "matsutakerice", "name": "Matsutake Rice", "needs": { "matsutake": 1 }, "effect": { "type": "points", "amount": 3 }, "rule": "The judges hear about it: 3 festival points." }
 ]

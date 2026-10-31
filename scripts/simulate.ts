@@ -6,10 +6,11 @@
  *   npm run sim -- 20 plan 30    thirty-year story campaigns with the planner bot, by homestead level
  *   npm run sim -- 300 gen       Legend years in generations 1 to 4, diving underground carelessly and carefully
  *   npm run sim -- 20 truffle 30 thirty-year planner campaigns without the Spade, digging on the way home, and hunting truffles
+ *   npm run sim -- 20 feast 30   thirty-year planner campaigns, as usual and going after the makings of points dishes
  *   npm run sim -- 50 cache 60   sixty-year sagas with a careful planner that passes the homestead on and digs the Founder's Cache on schedule
  */
 import { cacheMarks, content, emptyJournal, isLegend, passItOn, recordYear, heirloomChoices, heirloomSlots, levelFor, newGame, perksFor, score, tiersFor, type GameState, type Journal, type NightReport } from '../src/core';
-import { HEIRLOOM_PREFERENCE, playCampaign, playYear } from './bot';
+import { HEIRLOOM_PREFERENCE, playCampaign, playYear, RARE_GEAR } from './bot';
 
 const n = Number(process.argv[2] ?? 300);
 const pct = (xs: number[], p: number) => xs.slice().sort((a, b) => a - b)[Math.floor((xs.length - 1) * p)];
@@ -91,6 +92,49 @@ if (process.argv[3] === 'cache') {
       const mean = r.score.reduce((a, b) => a + b, 0) / y;
       console.log(
         `${`L${level}`.padEnd(5)}  ${spade.padEnd(5)}  ${String(y).padStart(5)}  ${String(pct(r.score, 0.5)).padStart(6)}  ${mean.toFixed(1).padStart(5)}  ${`${((100 * r.owned) / y).toFixed(0)}%`.padStart(11)}  ${(r.digs / y).toFixed(2).padStart(7)}  ${(r.truffles / y).toFixed(2).padStart(11)}  ${`${r.digs ? ((100 * r.truffles) / r.digs).toFixed(0) : '-'}%`.padStart(8)}  ${((r.truffles * truffle.value) / y).toFixed(1).padStart(16)}`,
+      );
+    }
+  }
+} else if (process.argv[3] === 'feast') {
+  // Story campaigns with the planner, played on the same seeds as usual and going after the makings of points dishes,
+  // with the gear for their zones as heirlooms first; read by the homestead level at the start of each year.
+  const YEARS = Number(process.argv[4] ?? 30);
+  const feasts = content.recipes.filter((r) => r.effect.type === 'points');
+  console.log(`${n} planner campaigns of ${YEARS} years per style; points dishes: ${feasts.map((r) => r.name).join(', ')}`);
+  console.log(`level  style  years  median  tiers now  Golden  feast points/yr  ${feasts.map((r) => `${r.id}/yr`).join('  ')}`);
+  const golden = content.rules.tiers[content.rules.tiers.length - 1].id;
+  const rows: Record<string, { score: number[]; tier: number; top: number; feast: number; cooked: Record<string, number> }> = {};
+  for (const rare of [false, true]) {
+    const preference = rare ? [...RARE_GEAR, ...HEIRLOOM_PREFERENCE.filter((g) => !RARE_GEAR.includes(g))] : HEIRLOOM_PREFERENCE;
+    for (let i = 0; i < n; i++) {
+      let j = emptyJournal();
+      for (let y = 0; y < YEARS; y++) {
+        const level = levelFor(j.renown).level;
+        const heirlooms = preference.filter((g) => heirloomChoices(j).includes(g)).slice(0, heirloomSlots(level));
+        const r = (rows[`${level}:${rare ? 'rare' : 'usual'}`] ??= { score: [], tier: 0, top: 0, feast: 0, cooked: {} });
+        const s = playYear(newGame({ seed: `feast-${i}-y${y}`, perks: perksFor(j, heirlooms) }), {
+          plan: true,
+          rare,
+          onResult: (a) => {
+            if (a.type === 'cook') r.cooked[a.recipe] = (r.cooked[a.recipe] ?? 0) + 1;
+          },
+        });
+        j = recordYear(j, s);
+        const sc = score(s);
+        r.score.push(sc.total);
+        if (sc.tier) r.tier += 1;
+        if (sc.tier?.id === golden) r.top += 1;
+        r.feast += sc.feast;
+      }
+    }
+  }
+  for (let level = 1; level <= content.progression.levels.length; level++) {
+    for (const style of ['usual', 'rare']) {
+      const r = rows[`${level}:${style}`];
+      if (!r) continue;
+      const y = r.score.length;
+      console.log(
+        `${`L${level}`.padEnd(5)}  ${style.padEnd(5)}  ${String(y).padStart(5)}  ${String(pct(r.score, 0.5)).padStart(6)}  ${`${((100 * r.tier) / y).toFixed(0)}%`.padStart(9)}  ${`${((100 * r.top) / y).toFixed(0)}%`.padStart(6)}  ${(r.feast / y).toFixed(2).padStart(15)}  ${feasts.map((d) => ((r.cooked[d.id] ?? 0) / y).toFixed(2).padStart(d.id.length + 3)).join('  ')}`,
       );
     }
   }

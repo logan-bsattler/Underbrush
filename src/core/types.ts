@@ -277,6 +277,8 @@ export interface RulesDef {
   coinsPerPoint: number;
   /** The most festival points leftover coins can score. */
   maxCoinPoints: number;
+  /** The most festival points dishes can score in a year. */
+  maxFeastPoints: number;
   /** The first commission of a year costs this many coins... */
   commissionCost: number;
   /** ...and each one after costs this many times the one before. */

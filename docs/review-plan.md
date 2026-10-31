@@ -240,6 +240,16 @@ Progress (2026-10-30):
   level-gated pairings. Checked in the browser at 375 × 812 on a generation-4 save (no overflow, "new" clears on
   the next visit, the save restored after). Information only, so no sim or tier re-check. **Next:** rank 6,
   the small polish bundle.
+- **Phase 6, rank 6, polish bundle: in progress.** Spec in `polish-bundle-spec.md`, approved by Ben with all three
+  open choices as recommended. Market tabs (7f9ed44) and the mastery grid (0c435d2) done.
+  - **Dishes: done (2026-10-30).** Seven wild dishes in `recipes.json`, two of them points dishes; the Pantry sorts
+    cookable dishes first. The usual planner never finds Morel, Spring King or Matsutake, so a `rare` planner and
+    `npm run sim -- 20 feast 30` were added to see them. Uncapped, that planner's Golden at L8/L9/L10 rose from
+    21/27/39% (new dishes, no new points) to 32/39/53%. Ben chose a cap of 6 dish points a year
+    (`rules.maxFeastPoints`): now 24/28/25%, medians 39/42/46. L10 lands lower than before because the cap also
+    limits Truffle Shavings, which could score 9 in a winter. The usual planner (`20 plan 30`) is unchanged at
+    every level (medians identical, Golden 2/9/11% at L8–10), so no `tierLift` change. Pantry note for a points dish
+    past the cap checked in the browser at 375 × 812, the save restored after.
 
 ## Bottom line
 

@@ -233,7 +233,7 @@ export function HowTo({ onBack }: { onBack: () => void }) {
           {r.scrapsPerCompost} scraps rot into a Compost tile overnight.</p>
         <p class="small muted">
           Also free, in the pantry: cook one dish a month from stored mushrooms (Reishi Tea is an extra action, Oyster Fry a bigger basket,
-          and so on), or save a grown mushroom as spawn to plant again. Hybrids can be replanted this way too.
+          and so on; points dishes score up to {r.maxFeastPoints} a year), or save a grown mushroom as spawn to plant again. Hybrids can be replanted this way too.
         </p>
       </section>
       <section>

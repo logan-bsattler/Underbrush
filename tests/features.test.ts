@@ -301,6 +301,44 @@ describe('cooking', () => {
     expect(score(feast).total).toBe(score(s).total + 3);
   });
 
+  it('cooks the wild dishes from what each one needs', () => {
+    const s = fresh('wild-dishes');
+    s.storage = { morel: 2, dryad: 2, porcini: 1, blewit: 1, yellowfoot: 1, woodear: 1, springking: 1, matsutake: 1 };
+    expect(bustAt(cook(s, 'morelbutter'))).toBe(content.rules.bustAt + 1);
+    expect(saleValue(cook(s, 'porcinipie'), 'oyster')).toBe(saleValue(s, 'oyster') + 1);
+    expect(cook(s, 'blewitstew').actionsLeft).toBe(s.actionsLeft + 1);
+    expect(lookalikeOn(cook(s, 'winterbroth'), 'chanterelle')).toBe(lookalikeOn(s, 'chanterelle') - 1);
+    for (const id of ['springtart', 'matsutakerice']) {
+      const feast = cook(s, id);
+      expect(score(feast).feast).toBe(3);
+      expect(score(feast).total).toBe(score(s).total + 3);
+    }
+    const tart = cook(s, 'springtart');
+    expect(tart.storage.springking ?? 0).toBe(0);
+    expect(tart.storage.morel).toBe(1);
+    const stew = cook(s, 'dryadstew');
+    expect(stew.storage.dryad ?? 0).toBe(0);
+    expect(() => cook({ ...s, storage: { dryad: 1 } }, 'dryadstew')).toThrow(/needs 2 Dryad/);
+    expect(() => cook({ ...s, storage: { yellowfoot: 1 } }, 'winterbroth')).toThrow(/needs 1 Yellowfoot and 1 Wood Ear/);
+  });
+
+  it('dishes score at most the yearly cap of festival points', () => {
+    const s = fresh('feast-cap');
+    s.storage = { matsutake: 1 };
+    s.feastPoints = content.rules.maxFeastPoints - 1;
+    expect(cook(s, 'matsutakerice').feastPoints).toBe(content.rules.maxFeastPoints);
+    s.feastPoints = content.rules.maxFeastPoints;
+    expect(score(cook(s, 'matsutakerice')).feast).toBe(content.rules.maxFeastPoints);
+  });
+
+  it("Dryad's Saddle Stew waters the beds tonight", () => {
+    const s = fresh('dryadstew');
+    s.storage = { dryad: 2 };
+    bed(s, 5, 'oyster', 'C');
+    const a = run(s, { type: 'cook', recipe: 'dryadstew' }, { type: 'endMonth' });
+    expect(a.grid[5].dry).toBe(0);
+  });
+
   it('Puffball Supper waters the beds tonight', () => {
     const s = fresh('supper');
     s.storage = { puffball: 2 };

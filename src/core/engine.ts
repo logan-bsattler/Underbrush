@@ -1363,7 +1363,7 @@ export function dispatch(
       s.meal = recipe.id;
       if (!s.stats.dishes.includes(recipe.id)) s.stats.dishes.push(recipe.id);
       if (recipe.effect.type === 'actions') s.actionsLeft += recipe.effect.amount;
-      if (recipe.effect.type === 'points') s.feastPoints += recipe.effect.amount;
+      if (recipe.effect.type === 'points') s.feastPoints = Math.min(s.feastPoints + recipe.effect.amount, c.rules.maxFeastPoints);
       break;
     }
 

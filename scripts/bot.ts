@@ -1,5 +1,6 @@
 import {
   basketCapacity,
+  canCook,
   cellarReady,
   commissionCost,
   content,
@@ -251,9 +252,11 @@ function commissionShort(s: GameState): Record<string, number> {
  * With `plan`, it chases orders the way a player who plans does: it forages the zone most likely to deal what the board
  * wants, keeps order mushrooms out of the sale, buys spawn and substrate for a cultivated order, delivers every order it
  * can on a visit while it can pay for the extra ones, swaps away orders it can no longer fill, hires a hand once leftover
- * coins have stopped scoring, and cooks Truffle Shavings.
+ * coins have stopped scoring, and cooks a points dish (Truffle Shavings and the like) from finds no order wants.
  * With `cache`, it buys the Spade and, once the family's marks point to the tree, the place and the season, goes to dig
  * out the Founder's Cellar at the first chance.
+ * With `rare` as well, the planner goes after a points dish's makings: it buys the gear that opens their zones first,
+ * forages where they grow, and walks a clean trip down to the deep patches when the deep card could be one.
  */
 export function playYear(
   start: GameState,
@@ -268,6 +271,8 @@ export function playYear(
     spade?: 'exit' | 'hunt';
     /** Solve the Founder's Cache on schedule: dig at the answer as soon as the marks are all in and the season comes. */
     cache?: boolean;
+    /** A planner after the makings of a points dish: the gear that opens their zones first, and deep walks to find them. */
+    rare?: boolean;
     onNight?: (report: NightReport) => void;
     onResult?: (action: Action, result: ActionResult) => void;
   } = {},
@@ -283,7 +288,8 @@ export function playYear(
   const value = (id: string | null) => (id ? content.species[id].value : 0);
   let swappedIn = 0;
   // The Spade comes after the gear that pays every trip.
-  const wantedGear = ['biggerbasket', 'knife', 'lantern', 'dehydrator', 'fieldguide', 'growtent', 'trailmap', 'blightspray', 'dripline', 'waders', ...(opts.spade || opts.cache ? ['spade'] : []), 'compass'];
+  const usualGear = ['biggerbasket', 'knife', 'lantern', 'dehydrator', 'fieldguide', 'growtent', 'trailmap', 'blightspray', 'dripline', 'waders', ...(opts.spade || opts.cache ? ['spade'] : []), 'compass'];
+  const wantedGear = opts.rare ? [...RARE_GEAR, ...usualGear.filter((g) => !RARE_GEAR.includes(g))] : usualGear;
   const gearCost = (g: string) => content.gear.find((x) => x.id === g)!.cost;
   /** Whether delivering this order would set back the open commission while it can still be filled; never on festival morning. */
   const robsCommission = (o: OrderDef) => {
@@ -302,9 +308,29 @@ export function playYear(
   const deliverAll = () => {
     for (let o = fillableOrders()[0]; o && s.coins >= deliveryCost(s); o = fillableOrders()[0]) act({ type: 'fillOrder', order: o.id });
   };
-  /** Sells what the board doesn't want: everything when it would spoil anyway, otherwise only what no order names. */
+  const feasts = content.recipes.filter((r) => r.effect.type === 'points');
+  /** The planner's dish for the month: a points dish from finds no order wants. Cooking costs no action. */
+  const feast = () => {
+    if (!opts.plan || s.meal || s.finale || s.feastPoints >= content.rules.maxFeastPoints) return;
+    const wants = orderWants(s);
+    const dish = feasts.find((r) => canCook(s, r) && Object.keys(r.needs).every((id) => !wants[id]));
+    if (dish) act({ type: 'cook', recipe: dish.id });
+  };
+  /** What the planner forages for: the orders' wants, and a points dish's points spread over the makings it still lacks. */
+  const huntWants = () => {
+    const want = orderWants(s);
+    if (s.feastPoints >= content.rules.maxFeastPoints) return want;
+    for (const r of feasts) {
+      const missing = Object.keys(r.needs).filter((id) => (s.storage[id] ?? 0) < r.needs[id]);
+      const points = r.effect.type === 'points' ? r.effect.amount : 0;
+      for (const id of missing) want[id] = Math.max(want[id] ?? 0, points / missing.length);
+    }
+    return want;
+  };
+  /** Sells what the board doesn't want: everything when it would spoil anyway, otherwise only what no order names or a points dish needs. */
   const sellSurplus = (all: boolean) => {
     const want = orderWants(s);
+    if (s.feastPoints < content.rules.maxFeastPoints) for (const r of feasts) for (const id of Object.keys(r.needs)) want[id] ??= 1;
     const distinct = board(s).some((o) => orderDef(o).need.kind === 'distinct');
     const keep = (id: string) => {
       if (all) return 0;
@@ -381,7 +407,7 @@ export function playYear(
   };
   /** The open zone most likely to deal what the board wants this season, or null if none deals anything it wants. */
   const planZone = (zones: { id: string }[]): string | null => {
-    const want = orderWants(s);
+    const want = opts.rare ? huntWants() : orderWants(s);
     const season = seasonOf(s.round);
     let best: { id: string; v: number } | null = null;
     for (const { id } of zones) {
@@ -483,9 +509,9 @@ export function playYear(
       // Coins past the festival's cap buy time instead.
       const cap = content.rules.coinsPerPoint * content.rules.maxCoinPoints;
       if (s.hiredRound !== s.round && s.coins >= cap + hireCost(s)) act({ type: 'hireHand' });
-      if (!s.meal && (s.storage.truffle ?? 0) > 0 && !orderWants(s).truffle) act({ type: 'cook', recipe: 'truffle' });
     }
     while (s.actionsLeft > 0) {
+      feast();
       const blighted = s.grid.findIndex((sq) => sq.blight);
       if (blighted >= 0) {
         act({ type: 'clearBlight', square: blighted });
@@ -602,6 +628,15 @@ export function playYear(
           leave();
           continue;
         }
+        // After a points dish, a clean trip walks down to the deep patches when the deep card could be one of its makings.
+        if (opts.rare && t.layer === 0 && t.depth < content.rules.deepAt && t.hazards === 0 && s.decks[t.zone].draw.length) {
+          const want = huntWants();
+          const deep = content.zones.find((z) => z.id === t.zone)!.deep;
+          if (deep.some((c) => c.type === 'specimen' && inSeason(c.species, seasonOf(s.round)) && feasts.some((r) => r.needs[c.species] && want[c.species]))) {
+            act({ type: 'deeper' });
+            continue;
+          }
+        }
         const full = s.basket.length >= (s.gear.includes('biggerbasket') ? 6 : 4);
         const pick = safestCard(t);
         // Plain ground is no find: greed counts what the trip has actually brought in.
@@ -615,11 +650,14 @@ export function playYear(
       }
       act({ type: 'closeTrip' });
     }
+    feast();
     act({ type: 'endMonth' });
   }
   return s;
 }
 
+/** The gear that opens the zones where a points dish's makings grow: the Burn Scar, the Old-growth and the Hollow. */
+export const RARE_GEAR = ['trailmap', 'lantern', 'compass'];
 export const HEIRLOOM_PREFERENCE = ['biggerbasket', 'knife', 'lantern', 'dripline', 'fieldguide', 'dehydrator', 'growtent', 'trailmap', 'blightspray', 'compass', 'spade'];
 
 /** Plays a story campaign of several years, carrying the journal (and so the progression) forward. */

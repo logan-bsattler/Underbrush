@@ -189,7 +189,13 @@ the valuable species, and something to aim for after level 7. All of it is data 
 - **The pantry.** Stored mushrooms have uses besides selling. Cook one dish a month, free, from
   `recipes.json` (Reishi Tea: +1 action; Oyster Fry: +2 basket; Lion's Mane Broth: better
   identification; Chanterelle Toast: bust on the third hazard; Wine Cap Risotto: +1 coin a sale;
-  Puffball Supper: the beds are watered; Truffle Shavings: 3 festival points). Or save a stored
+  Puffball Supper: the beds are watered; Truffle Shavings: 3 festival points). Seven more use wild
+  finds, each filling a season that had no dish with its effect: Morels in Butter, Dryad's Saddle
+  Stew, Porcini Pie, Blewit Stew, Winter Broth, and two more points dishes, Spring King Tart and
+  Matsutake Rice. Dishes score at most 6 festival points a year (`rules.maxFeastPoints`); the
+  Pantry says when a points dish would earn less. The cap keeps a rare-finding planner's Golden
+  rate at L8–10 where it was before the new points dishes (see the polish bundle spec). The Pantry
+  lists dishes you can cook first, then the ones whose makings you've found. Or save a stored
   cultivated or hybrid mushroom as spawn to replant, which is also the only way to plant a hybrid
   somewhere new.
 - **Swapping orders.** At the market, swap a festival order for the next one for 2 coins, a coin
@@ -577,7 +583,10 @@ core is plain TypeScript with no DOM, so it can be ported or embedded.
 The baseline bot never plans, so tiers tuned against it were too easy for anyone who does. `playYear(..., { plan: true })`
 chases orders: it forages the zone most likely to deal what the board wants, holds order mushrooms back from sale, buys
 spawn and substrate for a cultivated order, delivers every order it can afford on a visit, swaps orders it can no longer
-fill, hires a hand with coins past the cap, takes a commission when coins sit idle, and cooks Truffle Shavings.
+fill, hires a hand with coins past the cap, takes a commission when coins sit idle, and cooks any points dish no order wants
+until dishes reach their yearly cap. With `rare: true` it also hunts a points dish's makings: it buys the gear for
+their zones first, forages where they grow and walks clean trips down to the deep patches. `npm run sim -- 20 feast 30`
+compares it with the usual planner.
 `npm run sim -- 20 plan 30` plays thirty-year campaigns with it and reads them by level (2026-10-29, before the lift):
 
 | Level | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 |

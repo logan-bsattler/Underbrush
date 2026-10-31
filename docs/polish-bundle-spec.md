@@ -67,6 +67,11 @@ of them are inedible in life, and the disclaimer doesn't make that a good idea.
 - **The bar:** if any level's tier rate rises more than about 5 points, raise `tierLift` there to bring it back.
   Golden at 18–22% of planner years stays the target. Expected: a rise of 1–3 points, mostly at L6 and up where
   coins are capped.
+- **What the sim found (2026-10-30):** the usual planner never finds Morel, Spring King or Matsutake, so its
+  numbers didn't move. A planner that hunts them (`rare`, `npm run sim -- 20 feast 30`) went from Golden in
+  21/27/39% of years at L8/L9/L10 without the new points to 32/39/53% with them, over the bar. **Ben chose a cap:**
+  dishes score at most 6 festival points a year (`rules.maxFeastPoints`), which brings it back to about
+  24/27/38%. The Pantry says when a points dish would earn less, and the bot stops cooking for points at the cap.
 - **Daily years** use the standard kit, so they get the dishes too. The baseline bot shows no change, and the
   planner bot's level-1 numbers show the real effect there.
 
