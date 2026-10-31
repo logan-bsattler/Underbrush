@@ -28,6 +28,8 @@ export interface YearRecord {
   orders?: string[];
   hybrids?: string[];
   artifacts?: string[];
+  /** Underground layers reached, as "zone:depth". */
+  layers?: string[];
 }
 
 export type ScoreBreakdown = Omit<ReturnType<typeof score>, 'total' | 'tier'>;
@@ -175,10 +177,68 @@ export function recordYear(j: Journal, s: GameState, c: Content = defaultContent
         orders: [...s.orders.filled],
         hybrids: [...s.hybridsMade],
         artifacts: [...(s.artifacts ?? [])],
+        layers: [...(s.layersReached ?? [])],
       },
     ],
     best: Math.max(journal.best, sc.total),
   };
+}
+
+/** One generation's story, as Pass it on tells it. */
+export interface Chapter {
+  generation: number;
+  /** Still working the homestead. */
+  current: boolean;
+  /** This generation's own story years. */
+  years: number;
+  /** The renown it reached: when it passed the homestead on, or so far. */
+  renown: number;
+  /** Its best festival, or null before its first. */
+  best: YearRecord | null;
+  /** The layer it opened below every zone (generation n opens layer n−1); 0 for the first. */
+  depth: number;
+  /** Which of those layers it reached, as "zone:depth". */
+  layers: string[];
+  /** Artifacts, sets and hybrids the family had never had before this generation. */
+  artifacts: string[];
+  sets: string[];
+  hybrids: string[];
+  /** It found the Founder's Cellar. */
+  cellar: boolean;
+}
+
+/** Each generation's chapter, newest first, worked out from the story years. Years from before generations were kept count as the first. */
+export function generationChapters(j: Journal, c: Content = defaultContent): Chapter[] {
+  const story = j.years.filter((y) => y.mode === 'story');
+  const artifacts = new Set<string>();
+  const hybrids = new Set<string>();
+  const chapters: Chapter[] = [];
+  for (let generation = 1; generation <= j.generation; generation++) {
+    const years = story.filter((y) => (y.generation ?? 1) === generation);
+    const current = generation === j.generation;
+    const depth = generation - 1;
+    const atDepth = (keys: string[]) => keys.filter((k) => Number(k.split(':')[1]) === depth);
+    // Years from before layers were recorded: the only generation that could first reach a layer is the one that opened it.
+    const recorded = years.some((y) => y.layers);
+    const layers = depth ? atDepth(recorded ? Array.from(new Set(years.flatMap((y) => y.layers ?? []))) : j.layers) : [];
+    const setsBefore = completedSets([...artifacts], c);
+    const firstOf = (seen: Set<string>, ids: string[]) => ids.filter((id) => !seen.has(id) && seen.add(id));
+    const found = firstOf(artifacts, years.flatMap((y) => y.artifacts ?? []));
+    chapters.push({
+      generation,
+      current,
+      years: years.length,
+      renown: current ? j.renown : j.lineage.find((l) => l.generation === generation)?.renown ?? years.reduce((n, y) => n + y.renown, 0),
+      best: years.reduce<YearRecord | null>((b, y) => (!b || y.score > b.score ? y : b), null),
+      depth,
+      layers,
+      artifacts: found,
+      sets: completedSets([...artifacts], c).filter((id) => !setsBefore.includes(id)),
+      hybrids: firstOf(hybrids, years.flatMap((y) => y.hybrids ?? [])),
+      cellar: j.cacheFound && j.cacheGeneration === generation,
+    });
+  }
+  return chapters.reverse();
 }
 
 /** What the daily calendar shows: each finished daily year by the day it was dealt, and the streaks. */

@@ -9,7 +9,9 @@ import {
   challengeBonus,
   completedSets,
   content,
+  generationChapters,
   generationLore,
+  layerDef,
   tierLift,
   heirloomChoices,
   heirloomSlots,
@@ -22,6 +24,7 @@ import {
   pairings,
   perksFor,
   standardPerks,
+  type Chapter,
   type Journal,
   type LevelDef,
   type Unlock,
@@ -484,16 +487,11 @@ function Legacy({ store }: { store: Store }) {
       )}
       {page && <p class="small lore-line">From the founder's journal: {page}</p>}
       {j.lineage.length > 0 && (
-        <ul class="lineage">
-          {j.lineage.map((l) => (
-            <li>
-              Generation {l.generation}: {l.renown} renown over {l.years} story year{l.years === 1 ? '' : 's'}
-            </li>
+        <div class="chapters">
+          {generationChapters(j).map((ch) => (
+            <ChapterView ch={ch} />
           ))}
-          <li>
-            <b>Generation {j.generation}</b>: working the homestead now
-          </li>
-        </ul>
+        </div>
       )}
       {isLegend(j) && (
         <button
@@ -508,6 +506,43 @@ function Legacy({ store }: { store: Store }) {
         </button>
       )}
     </>
+  );
+}
+
+/** "A, B and C". */
+const listed = (items: string[]) => (items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`);
+const tierName = (id: string | null) => (id ? content.rules.tiers.find((t) => t.id === id)?.name ?? id : 'a quiet year');
+
+/** One generation's chapter: the title it passed on with, what it did, and the lore it read. The working one opens unfolded. */
+function ChapterView({ ch }: { ch: Chapter }) {
+  const plural = (n: number, word: string) => `${n.toLocaleString()} ${word}${n === 1 ? '' : 's'}`;
+  const lore = generationLore(ch.generation);
+  const setName = (id: string) => content.artifactSets.find((s) => s.id === id)?.name ?? id;
+  return (
+    <details class={`chapter ${ch.current ? 'current' : ''}`} open={ch.current}>
+      <summary>
+        <b>Generation {ch.generation}</b> · {ch.current ? 'working the homestead now' : levelFor(ch.renown).title}
+      </summary>
+      <p class="small">
+        {plural(ch.years, 'story year')} · {ch.renown.toLocaleString()} renown
+        {ch.best && ` · best festival ${ch.best.score}, ${tierName(ch.best.tier)}`}
+      </p>
+      <ul class="small">
+        {ch.depth > 0 && (
+          <li>
+            Opened the {ordinal(ch.depth)} layer
+            {ch.layers.length > 0 &&
+              `: reached ${listed(ch.layers.map((k) => `the ${bare(layerDef(k.split(':')[0], ch.depth)?.name ?? k)}`))}`}
+            .
+          </li>
+        )}
+        {ch.artifacts.length > 0 && <li>Brought home {listed(ch.artifacts.map((id) => `the ${bare(artifactName(id))}`))}.</li>}
+        {ch.sets.length > 0 && <li>Completed {listed(ch.sets.map((id) => `the ${bare(setName(id))}`))}.</li>}
+        {ch.hybrids.length > 0 && <li>First grew {listed(ch.hybrids.map(name))}.</li>}
+        {ch.cellar && <li>Found the Founder's Cellar.</li>}
+      </ul>
+      {lore && <p class="small lore-line">{lore.layer.clue}</p>}
+    </details>
   );
 }
 

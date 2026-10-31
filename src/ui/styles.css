@@ -3910,9 +3910,25 @@ h3 .inline-link {
   font-weight: 400;
   color: var(--ink-soft);
 }
-.lineage {
+.chapters {
   margin: 0 0 12px;
+}
+.chapter {
+  border-top: 1px solid var(--line);
+  padding: 8px 0;
+}
+.chapter summary {
+  cursor: pointer;
+}
+.chapter p,
+.chapter ul {
+  margin: 4px 0 0;
+}
+.chapter ul {
   padding-left: 18px;
+}
+.chapter ul:empty {
+  display: none;
 }
 
 /* ── The underground ─────────────────────────────────────────────────── */

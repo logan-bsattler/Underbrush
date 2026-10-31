@@ -4,6 +4,7 @@ import {
   dispatch,
   emptyJournal,
   basketCapacity,
+  generationChapters,
   heirloomChoices,
   passItOn,
   levelFor,
@@ -21,6 +22,7 @@ import {
   type Card,
   type GameState,
   type Journal,
+  type YearRecord,
 } from '../src/core';
 import { runGrowth } from '../src/core/growth';
 import { Rng } from '../src/core/rng';
@@ -269,5 +271,73 @@ describe('the end game', () => {
     hard.over = true;
     const after = recordYear(j, hard);
     expect(after.years[0].renown).toBe(Math.round(score(hard).total * 1.55));
+  });
+});
+
+describe('generations as chapters', () => {
+  const year = (seed: string, extra: Partial<YearRecord> = {}): YearRecord => ({
+    finished: '', mode: 'story', seed, score: 10, tier: null, renown: 10, levelFrom: 1, levelTo: 1, masteryUps: [], ...extra,
+  });
+
+  it("counts each generation's own story years, newest first, and leaves the dailies out", () => {
+    const j: Journal = {
+      ...emptyJournal(),
+      generation: 3,
+      renown: 40,
+      // The lineage's own year counts ran on from one generation to the next; chapters don't use them.
+      lineage: [{ generation: 1, renown: 900, years: 2 }, { generation: 2, renown: 950, years: 5 }],
+      years: [
+        year('a'),
+        year('b', { generation: 1, score: 30, tier: 'gold' }),
+        year('d', { mode: 'daily', generation: 1, score: 90 }),
+        year('c', { generation: 2 }),
+        year('e', { generation: 2 }),
+        year('f', { generation: 2 }),
+        year('g', { generation: 3, renown: 40 }),
+      ],
+    };
+    const ch = generationChapters(j);
+    expect(ch.map((c) => [c.generation, c.years, c.renown, c.current])).toEqual([[3, 1, 40, true], [2, 3, 950, false], [1, 2, 900, false]]);
+    expect(ch[2].best?.seed).toBe('b');
+    expect(ch.map((c) => c.depth)).toEqual([2, 1, 0]);
+  });
+
+  it('credits artifacts, sets and hybrids to the generation that first brought them home', () => {
+    const j: Journal = {
+      ...emptyJournal(),
+      generation: 3,
+      cacheFound: true,
+      cacheGeneration: 3,
+      lineage: [{ generation: 1, renown: 900, years: 1 }, { generation: 2, renown: 900, years: 2 }],
+      years: [
+        year('a', { generation: 1, hybrids: ['shaggyoyster'] }),
+        year('b', { generation: 2, artifacts: ['droverspenny', 'sixpence'], hybrids: ['shaggyoyster', 'lacquercap'], layers: ['meadow:1', 'mixedwoods:1'] }),
+        year('c', { generation: 3, artifacts: ['sixpence', 'guinea', 'blueribbon'], layers: ['meadow:1', 'meadow:2'] }),
+      ],
+    };
+    const [three, two, one] = generationChapters(j);
+    expect(one).toMatchObject({ hybrids: ['shaggyoyster'], artifacts: [], layers: [], cellar: false });
+    expect(two).toMatchObject({ hybrids: ['lacquercap'], artifacts: ['droverspenny', 'sixpence'], sets: [], layers: ['meadow:1', 'mixedwoods:1'] });
+    expect(three).toMatchObject({ artifacts: ['guinea', 'blueribbon'], sets: ['purse'], layers: ['meadow:2'], cellar: true });
+  });
+
+  it('reads old years without a generation as the first, and old years without layers from the journal', () => {
+    const j: Journal = {
+      ...emptyJournal(),
+      generation: 2,
+      layers: ['meadow:1', 'oldgrowth:1'],
+      lineage: [{ generation: 1, renown: 900, years: 1 }],
+      years: [year('a'), year('b', { generation: 2 })],
+    };
+    const [two, one] = generationChapters(j);
+    expect(one.years).toBe(1);
+    expect(two.layers).toEqual(['meadow:1', 'oldgrowth:1']);
+  });
+
+  it('records the layers each year reached', () => {
+    const s = newGame({ seed: 'layers', perks: standardPerks() });
+    s.layersReached = ['meadow:1'];
+    s.over = true;
+    expect(recordYear(emptyJournal(), s).years[0].layers).toEqual(['meadow:1']);
   });
 });

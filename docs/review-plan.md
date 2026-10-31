@@ -255,6 +255,11 @@ Progress (2026-10-30):
     Five tests in `underground.test.ts`. Checked in the browser at 375 × 812 on the 45-year demo journal: both
     quiet grants show earned with no banner, "Sets complete: 3 of 6", and clearing the Badger Setts shows the
     heirloom text, then "Nothing left below", plus the banner. Ben's save restored after. No points, so no sim.
+  - **Chapters: done (2026-10-30).** Pass it on shows one chapter per generation, newest first, the working one
+    open. `generationChapters` in `journal.ts`; year records now keep the layers reached (`layers`), and older
+    years fall back to the journal's layers at the depth the generation opened. Fixes the lineage's running
+    year count (generation 2 showed generation 1's years too). Four tests in `progression.test.ts`. Checked at
+    375 × 812 on the 4-generation demo journal; Ben's save restored after. Display only, so no sim.
 
 ## Bottom line
 

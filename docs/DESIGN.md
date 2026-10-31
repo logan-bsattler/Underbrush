@@ -332,7 +332,12 @@ Two loops for a homestead that has earned every level, both in `progression.json
 - **Pass it on** (`legacy`): a Legend of the Valley can hand the homestead down from the Almanac.
   Renown, levels and gear start over at level 1; the field journal, species mastery and
   achievements stay. Each generation raises every festival tier by 5 points (`tierStep`) and
-  starts every year with 2 more coins (`startCoins`). The journal keeps the lineage.
+  starts every year with 2 more coins (`startCoins`). The journal keeps the lineage, and Pass it on
+  tells it as one chapter per generation, newest first (`generationChapters` in `journal.ts`): the
+  title it passed on with, its own story years, renown and best festival, the layer it opened and
+  which of those it reached, the artifacts, sets and hybrids the family first had in its years, the
+  cellar if it found it, and the lore it read. Worked out from the story years only; years from
+  before generations were kept count as the first.
 - **Legend challenges** (`challenges`): at Legend, the pack screen offers handicaps for the year,
   stackable, each worth extra renown on the festival score: Short-handed (one fewer action a
   month, +25%), Lean Year (no starting coins or heirlooms, +15%), Thin Basket (one fewer basket
