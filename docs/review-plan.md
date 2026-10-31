@@ -240,7 +240,7 @@ Progress (2026-10-30):
   level-gated pairings. Checked in the browser at 375 × 812 on a generation-4 save (no overflow, "new" clears on
   the next visit, the save restored after). Information only, so no sim or tier re-check. **Next:** rank 6,
   the small polish bundle.
-- **Phase 6, rank 6, polish bundle: in progress.** Spec in `polish-bundle-spec.md`, approved by Ben with all three
+- **Phase 6, rank 6, polish bundle: done (2026-10-30).** Spec in `polish-bundle-spec.md`, approved by Ben with all three
   open choices as recommended. Market tabs (7f9ed44) and the mastery grid (0c435d2) done.
   - **Dishes: done (2026-10-30).** Seven wild dishes in `recipes.json`, two of them points dishes; the Pantry sorts
     cookable dishes first. The usual planner never finds Morel, Spring King or Matsutake, so a `rare` planner and
@@ -260,6 +260,11 @@ Progress (2026-10-30):
     years fall back to the journal's layers at the depth the generation opened. Fixes the lineage's running
     year count (generation 2 showed generation 1's years too). Four tests in `progression.test.ts`. Checked at
     375 × 812 on the 4-generation demo journal; Ben's save restored after. Display only, so no sim.
+  - **Records: done (2026-10-30).** Past festivals marks each year that beat every earlier one of its kind
+    "record" and the standing one "best", story and daily apart; ties don't count. The festival screen says "A
+    new record" when the year beat an earlier one. `records()` in `journal.ts`; four tests in `records.test.ts`.
+    Marks checked at 375 × 812 on the demo journal plus three dailies; the festival-screen line is covered by
+    tests only. Ben's save restored after. Display only, so no sim. **Next:** rank 7, late cultivated species.
 
 ## Bottom line
 

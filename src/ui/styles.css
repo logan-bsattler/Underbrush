@@ -4392,6 +4392,15 @@ h3 .inline-link {
   color: var(--rust);
   font-weight: 700;
 }
+.fest-record {
+  color: var(--ink-soft);
+  font-weight: 600;
+}
+.fest-new-record {
+  margin: 0;
+  color: var(--rust);
+  font-weight: 700;
+}
 .fest-chev {
   flex: none;
   color: var(--ink-soft);

@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { challengeBonus, content, dailyStats, score, tiersFor, type ScoreBreakdown } from '../core';
+import { challengeBonus, content, dailyStats, records, score, tiersFor, type ScoreBreakdown } from '../core';
 import { Icon, Mushroom } from './art';
 import { RenownPanel } from './Progress';
 import type { Store } from './store';
@@ -109,6 +109,9 @@ export function YearEnd({ store, onTitle, onNewYear, onHistory }: { store: Store
         <Mushroom species="chanterelle" size={120} />
         <span class="medal-score">{sc.total}</span>
       </div>
+      {record && records(store.journal.years).beaten.has(record) && (
+        <p class="center fest-new-record">A new record for a {g.mode === 'daily' ? 'daily' : 'story'} year.</p>
+      )}
       <p class="center">
         {next ? `${next.min - sc.total} more points would have earned ${next.name}.` : 'The village will talk about this festival for years.'}
       </p>

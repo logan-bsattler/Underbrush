@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { content, dailyMonth, dailyStats, orderById, type DailyStats, type YearRecord } from '../core';
+import { content, dailyMonth, dailyStats, orderById, records, type DailyStats, type YearRecord } from '../core';
 import type { Store } from './store';
 import { todayKey } from './store';
 import { name } from './text';
@@ -19,8 +19,7 @@ function yearName(y: YearRecord) {
 /** Every festival the homestead has finished, newest first, each opening in place to its score card. */
 export function PastFestivals({ store, onBack }: { store: Store; onBack: () => void }) {
   const years = store.journal.years;
-  // The first year to reach the top score, matching the field journal's "best".
-  const best = years.reduce<YearRecord | null>((b, y) => (!b || y.score > b.score ? y : b), null);
+  const marks = records(years);
   const [open, setOpen] = useState<string | null>(null);
   const today = todayKey();
   const stats = dailyStats(years, today);
@@ -47,14 +46,15 @@ export function PastFestivals({ store, onBack }: { store: Store; onBack: () => v
           .reverse()
           .map((y) => {
             const on = open === y.seed;
+            const best = marks.best.has(y);
             return (
-              <li id={`fest-${y.seed}`} class={`${on ? 'open' : ''} ${y === best ? 'best' : ''}`}>
+              <li id={`fest-${y.seed}`} class={`${on ? 'open' : ''} ${best ? 'best' : ''}`}>
                 <button class="fest-row" aria-expanded={on} onClick={() => setOpen(on ? null : y.seed)}>
                   <span class="fest-score">{y.score}</span>
                   <span class="fest-body">
                     <b>
                       {tierName(y.tier)}
-                      {y === best && <span class="fest-best"> · best</span>}
+                      {best ? <span class="fest-best"> · best</span> : marks.set.has(y) && <span class="fest-record"> · record</span>}
                     </b>
                     <small class="muted">
                       {new Date(y.finished).toLocaleDateString()} · {yearName(y)}

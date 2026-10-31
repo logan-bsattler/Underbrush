@@ -292,3 +292,27 @@ export function dailyMonth(stats: DailyStats, month: string): { played: number; 
     best: scores.length ? Math.max(...scores) : 0,
   };
 }
+
+export interface Records {
+  /** Years that beat every earlier year of their kind, story or daily. The first year of a kind is one. */
+  set: Set<YearRecord>;
+  /** The record that still stands for each kind. */
+  best: Set<YearRecord>;
+  /** Records that beat an earlier year, so the festival can say "a new record" without crowing over a first year. */
+  beaten: Set<YearRecord>;
+}
+
+/** Personal bests, story and daily kept apart. A tie isn't a record: the first year to reach a score holds it. */
+export function records(years: YearRecord[]): Records {
+  const set = new Set<YearRecord>();
+  const beaten = new Set<YearRecord>();
+  const top: Partial<Record<YearRecord['mode'], YearRecord>> = {};
+  for (const y of years) {
+    const held = top[y.mode];
+    if (held && y.score <= held.score) continue;
+    set.add(y);
+    if (held) beaten.add(y);
+    top[y.mode] = y;
+  }
+  return { set, best: new Set(Object.values(top)), beaten };
+}

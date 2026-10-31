@@ -528,6 +528,15 @@ Everything comes from `dailyStats()` in `journal.ts`, worked out from the journa
 saved. The streak also shows on the title's Daily year button, on a daily's festival screen (with a Calendar
 button into Past festivals), and on the share card's first line from 2 days. It earns no points or renown.
 
+## Personal bests
+
+Past festivals marks every year that beat all the earlier years of its kind "record", and the record still
+standing for each kind "best". Story and daily years are kept apart: a daily is always level 1 with the standard
+kit, while a story record climbs with the homestead. A tie isn't a record; the first year to reach a score holds
+it, as the field journal's best does. The festival screen says "A new record" under the medal when the year just
+finished beat an earlier one (not on the first year of a kind). All of it comes from `records()` in `journal.ts`,
+worked out from the years, so nothing new is saved.
+
 ## The founder's afterword
 
 Once the Founder's Cellar is found, the founder's riddle in the cabinet becomes the founder's journal
