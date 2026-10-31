@@ -63,6 +63,15 @@
     "art": { "shape": "cluster", "cap": "#D9963C", "shade": "#A9661F", "gill": "#F3E1BC", "stem": "#5A3A24" }
   },
   {
+    "id": "kingoyster", "name": "King Oyster", "latin": "Pleurotus eryngii", "kind": "cultivated", "value": 2,
+    "substrates": ["straw"], "seasons": ["spring", "fall"], "growth": "medium",
+    "group": "Stout pale stem", "lookalike": { "name": "Livid Pinkgill", "on": 1 },
+    "traits": { "heavy": true },
+    "rule": "Heavy. Each harvest brings in two. Grows on straw in spring and fall.",
+    "blurb": "A fat white stem under a small tan cap, from the roots of sea holly.",
+    "art": { "shape": "bolete", "cap": "#B8946A", "shade": "#86663F", "gill": "#F1E8D6", "stem": "#F2ECDF" }
+  },
+  {
     "id": "chanterelle", "name": "Chanterelle", "latin": "Cantharellus cibarius", "kind": "wild", "value": 4,
     "substrates": [], "seasons": ["summer"], "growth": "none",
     "group": "Golden funnel", "lookalike": { "name": "Jack-o'-lantern", "on": 2 },

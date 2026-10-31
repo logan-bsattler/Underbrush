@@ -129,7 +129,7 @@
       "title": "Elder of the Wood",
       "renown": 210,
       "tierLift": 7,
-      "blurb": "People bring you mushrooms to identify now, and commissions for the bigger tables in the valley. A fisherman sells you his old waders.",
+      "blurb": "People bring you mushrooms to identify now, and commissions for the bigger tables in the valley. A fisherman sells you his old waders, and tells you where King Oysters come up in the Meadow.",
       "unlocks": [
         {
           "type": "commissions"
@@ -140,6 +140,14 @@
         {
           "type": "gear",
           "id": "waders"
+        },
+        {
+          "type": "species",
+          "id": "kingoyster"
+        },
+        {
+          "type": "hybrid",
+          "id": "cracklecrown"
         }
       ]
     },

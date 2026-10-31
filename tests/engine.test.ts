@@ -59,7 +59,8 @@ describe('setup', () => {
     expect(s.grid.filter((q) => q.substrate === 'straw')).toHaveLength(2);
     expect(s.grid.filter((q) => q.species === 'oyster' && q.stage === 'C')).toHaveLength(1);
     for (const z of content.zones) {
-      const total = z.deck.reduce((n, e) => n + e.copies, 0);
+      // Level-gated cards (King Oyster's) aren't in a level 1 deck.
+      const total = z.deck.filter((e) => !e.unlock).reduce((n, e) => n + e.copies, 0);
       expect(s.decks[z.id].draw).toHaveLength(total);
     }
   });
@@ -663,9 +664,10 @@ describe('growth phase', () => {
 
   it('crosses a level-gated hybrid only from its level', () => {
     const at = (level: number) => perksFor({ ...emptyJournal(), renown: content.progression.levels[level - 1].renown }, []);
-    expect(at(7).hybrids).toEqual([]);
-    expect(at(8).hybrids).toEqual(['snowcomb']);
-    expect(at(9).hybrids).toEqual(['snowcomb', 'claretshelf']);
+    expect(at(6).hybrids).toEqual([]);
+    expect(at(7).hybrids).toEqual(['cracklecrown']);
+    expect(at(8).hybrids).toEqual(['cracklecrown', 'snowcomb']);
+    expect(at(9).hybrids).toEqual(['cracklecrown', 'snowcomb', 'claretshelf']);
     expect(standardPerks().hybrids).toEqual([]);
 
     const pair = (perks = standardPerks()) => {

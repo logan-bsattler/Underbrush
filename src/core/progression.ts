@@ -91,6 +91,7 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
   let autoHarvest = false;
   let commissions = false;
   const hybrids: string[] = [];
+  const species: string[] = [];
   for (const u of unlocks) {
     if (u.type === 'farmSize') size = Math.max(size, u.size);
     if (u.type === 'startCoins') bonusCoins += u.amount;
@@ -98,6 +99,7 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
     if (u.type === 'autoHarvest') autoHarvest = true;
     if (u.type === 'commissions') commissions = true;
     if (u.type === 'hybrid') hybrids.push(u.id);
+    if (u.type === 'species') species.push(u.id);
   }
   return {
     shop,
@@ -116,6 +118,7 @@ export function perksFor(j: Journal, heirlooms: string[], c: Content = defaultCo
     cacheFound: j.cacheFound,
     commissions,
     hybrids,
+    species,
   };
 }
 
@@ -128,6 +131,16 @@ export function boardsFor(j: Journal, c: Content = defaultContent): string[] {
 /** The level from which this hybrid can cross, or null if it crosses from the start. */
 export function hybridUnlockLevel(hybridId: string, c: Content = defaultContent): LevelDef | null {
   return c.progression.levels.find((l) => l.unlocks.some((u) => u.type === 'hybrid' && u.id === hybridId)) ?? null;
+}
+
+/** The level from which this species comes up in the forest, or null if it's there from the start. */
+export function speciesUnlockLevel(speciesId: string, c: Content = defaultContent): LevelDef | null {
+  return c.progression.levels.find((l) => l.unlocks.some((u) => u.type === 'species' && u.id === speciesId)) ?? null;
+}
+
+/** Whether this species is in play this year: there from the start, or unlocked by the homestead's level. */
+export function speciesOpen(speciesId: string, perks: Perks, c: Content = defaultContent): boolean {
+  return !speciesUnlockLevel(speciesId, c) || perks.species.includes(speciesId);
 }
 
 /** The level whose unlock first opens this board, or null if no level does. */

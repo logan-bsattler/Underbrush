@@ -113,13 +113,15 @@ describe('the underground in data', () => {
 });
 
 describe('plain ground', () => {
-  it('makes up 40 to 50% of every zone deck', () => {
-    for (const z of content.zones) {
-      const all = z.deck.reduce((n, e) => n + e.copies, 0);
-      const plain = z.deck.filter((e) => e.card.type === 'ground').reduce((n, e) => n + e.copies, 0);
-      expect(plain / all, z.id).toBeGreaterThanOrEqual(0.4);
-      expect(plain / all, z.id).toBeLessThanOrEqual(0.5);
-    }
+  it('makes up 40 to 50% of every zone deck, with or without its level-gated cards', () => {
+    for (const z of content.zones)
+      for (const gated of [false, true]) {
+        const deck = z.deck.filter((e) => gated || !e.unlock);
+        const all = deck.reduce((n, e) => n + e.copies, 0);
+        const plain = deck.filter((e) => e.card.type === 'ground').reduce((n, e) => n + e.copies, 0);
+        expect(plain / all, z.id).toBeGreaterThanOrEqual(0.4);
+        expect(plain / all, z.id).toBeLessThanOrEqual(0.5);
+      }
   });
 
   it('gives nothing when turned, but still counts its neighbors and goes back in the deck', () => {

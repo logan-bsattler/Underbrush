@@ -62,6 +62,10 @@ export function unlockText(u: Unlock): string {
       return 'Take paid commissions at the market: bigger orders for more points';
     case 'hybrid':
       return 'A new hybrid can cross: see the Field journal';
+    case 'species': {
+      const zone = content.zones.find((z) => z.deck.some((e) => e.unlock === u.id));
+      return zone ? `A new species comes up in the ${bare(zone.name)}` : 'A new species to grow';
+    }
   }
 }
 

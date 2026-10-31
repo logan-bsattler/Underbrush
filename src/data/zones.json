@@ -6,12 +6,14 @@
     "deck": [
       { "card": { "type": "specimen", "species": "puffball" }, "copies": 4 },
       { "card": { "type": "specimen", "species": "winecap" }, "copies": 4 },
+      { "card": { "type": "specimen", "species": "kingoyster" }, "copies": 2, "unlock": "kingoyster" },
       { "card": { "type": "substrate", "substrate": "straw" }, "copies": 1 },
       { "card": { "type": "substrate", "substrate": "woodchip" }, "copies": 1 },
       { "card": { "type": "coins", "amount": 2 }, "copies": 1 },
       { "card": { "type": "ground", "name": "Bare Earth", "look": "ground" }, "copies": 4 },
       { "card": { "type": "ground", "name": "Tall Grass", "look": "brush" }, "copies": 6 },
       { "card": { "type": "ground", "name": "Hawthorn", "look": "tree" }, "copies": 3 },
+      { "card": { "type": "ground", "name": "Sea Holly", "look": "brush" }, "copies": 1, "unlock": "kingoyster" },
       { "card": { "type": "hazard", "name": "Ticks" }, "copies": 3 },
       { "card": { "type": "hazard", "name": "Sudden Rain" }, "copies": 3 },
       { "card": { "type": "hazard", "name": "Lost Trail" }, "copies": 2 }

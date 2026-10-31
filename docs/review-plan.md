@@ -265,6 +265,13 @@ Progress (2026-10-30):
     new record" when the year beat an earlier one. `records()` in `journal.ts`; four tests in `records.test.ts`.
     Marks checked at 375 × 812 on the demo journal plus three dailies; the festival-screen line is covered by
     tests only. Ben's save restored after. Display only, so no sim. **Next:** rank 7, late cultivated species.
+- **Phase 6, rank 7, late cultivated species: done (2026-10-30).** Spec in `late-species-spec.md`, approved as
+  recommended. King Oyster (L7, found in the Meadow, straw, spring and fall, value 2, new `heavy` trait: a
+  harvest brings in 2) and Crackle Crown (King Oyster × Shiitake, L7). Adds a species unlock, `Perks.species`,
+  gated deck entries (King Oyster and Sea Holly in the Meadow) and the order "2 King Oyster". Plan sim: L1–L6
+  identical. L7–L10 tiers 74/77/74/74% → 77/68/80/73%, which is noise in both directions (pooled L7–9 75% →
+  75%), so no `tierLift` change. `tests/late-species.test.ts`. The Crackle Crown journal page was not
+  browser-checked.
 
 ## Bottom line
 

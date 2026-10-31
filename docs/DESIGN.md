@@ -638,3 +638,10 @@ compares it with the usual planner.
 - **Experts know the lookalike**: a species at Expert comes home identified and can't fool you, so the field journal now
   counts its lookalike as known.
 - **The Drip Line shows on the farm**: a hose along each row with a drip at every bed square.
+
+## Late species
+
+- **King Oyster** (L7, a `species` unlock): its cards join the Meadow deck, its spawn is sold and its order
+  is dealt only once `Perks.species` holds it. It is `heavy`, so every harvest (by hand, by auto-harvest or on
+  festival morning) brings in 2. **Crackle Crown** = King Oyster × Shiitake, a `hybrid` unlock at L7. Spec:
+  `late-species-spec.md`.

@@ -9,6 +9,7 @@ import {
   canPlantOn,
   content,
   emptyGround,
+  harvestYield,
   inSeason,
   isDamp,
   isShaded,
@@ -366,7 +367,7 @@ function FarmView({
               {picked?.squares.includes(i) && (
                 <span key={`pick-${picked.key}`} class="pick" style={{ '--i': picked.squares.indexOf(i) } as any} aria-hidden="true">
                   <Mushroom species={picked.species[picked.squares.indexOf(i)]} size={small ? 30 : 46} />
-                  <b>+1</b>
+                  <b>+{harvestYield(picked.species[picked.squares.indexOf(i)])}</b>
                 </span>
               )}
             </button>

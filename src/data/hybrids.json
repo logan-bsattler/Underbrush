@@ -52,5 +52,14 @@
     "blurb": "A wine-dark shelf that shares what it eats.",
     "hint": "A lacquered shelf beside a burgundy cap. A log beside the chips, in the summer.",
     "art": { "shape": "kidney", "cap": "#7A1F2E", "shade": "#4A0F1A", "gill": "#E3B8A0", "stem": "#5A1A22", "gloss": true }
+  },
+  {
+    "id": "cracklecrown", "name": "Crackle Crown", "kind": "hybrid", "value": 3, "parents": ["kingoyster", "shiitake"],
+    "substrates": ["straw", "log"], "seasons": ["spring", "fall"], "growth": "slow",
+    "traits": { "heavy": true },
+    "rule": "Heavy and slow. Each harvest brings in two. Grows on straw or logs in spring and fall.",
+    "blurb": "A fat white stem under a brown crown cracked like bread crust.",
+    "hint": "A stout pale stem under a brown log cap, cracked like a crust. Straw beside a log, in the spring.",
+    "art": { "shape": "bolete", "cap": "#7A4A2B", "shade": "#4F2E1A", "gill": "#EDE2CC", "stem": "#F2ECDF" }
   }
 ]

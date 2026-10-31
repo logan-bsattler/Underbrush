@@ -8,6 +8,7 @@ import {
   descendStatus,
   dispatch,
   emptyGround,
+  harvestYield,
   heirloomChoices,
   heirloomSlots,
   hireCost,
@@ -27,6 +28,7 @@ import {
   seasonOf,
   spawnCost,
   spawnStock,
+  speciesOpen,
   stageLength,
   swapCost,
   zoneStatus,
@@ -103,7 +105,8 @@ export function orderWants(s: GameState): Record<string, number> {
       if (short > 0) for (const id of pool) add(id, o.points / short);
     } else if (need.kind === 'distinct') {
       const short = need.count - Object.keys(s.storage).length;
-      if (short > 0) for (const id of content.speciesOrder) if (!have(id) && content.species[id].kind !== 'hybrid') add(id, o.points / short / 2);
+      if (short > 0)
+        for (const id of content.speciesOrder) if (!have(id) && content.species[id].kind !== 'hybrid' && speciesOpen(id, s.perks)) add(id, o.points / short / 2);
     }
   }
   return want;
@@ -159,8 +162,9 @@ function findableMonths(s: GameState, id: string): number {
 }
 
 /**
- * How many times a bed will fruit before the festival if nothing goes wrong: a step each month it's in season (or under
- * the tent), none at all if it needs shade and has none. A bed already fruiting is picked this month.
+ * What a bed will bring in before the festival if nothing goes wrong: a fruiting each time it steps through a month in
+ * season (or under the tent), none at all if it needs shade and has none, two a harvest if it's heavy. A bed already
+ * fruiting is picked this month.
  */
 function bedYield(s: GameState, id: string, from: 'S' | 'C' | 'P' | 'F', shaded: boolean, tent = false): number {
   const def = content.species[id];
@@ -173,7 +177,7 @@ function bedYield(s: GameState, id: string, from: 'S' | 'C' | 'P' | 'F', shaded:
     if (!tent && !inSeason(id, seasonOf(r))) continue;
     if (--need <= 0) [n, need] = [n + 1, cycle];
   }
-  return n;
+  return n * harvestYield(id);
 }
 
 /** What the beds of a species on the farm will bring in before the festival. */
@@ -412,9 +416,11 @@ export function playYear(
     let best: { id: string; v: number } | null = null;
     for (const { id } of zones) {
       const z = content.zones.find((x) => x.id === id)!;
-      const size = z.deck.reduce((n, e) => n + e.copies, 0);
+      // The deck as dealt this year: no cards for species the level hasn't unlocked.
+      const deck = z.deck.filter((e) => !e.unlock || speciesOpen(e.unlock, s.perks));
+      const size = deck.reduce((n, e) => n + e.copies, 0);
       let v = 0;
-      for (const e of z.deck) {
+      for (const e of deck) {
         if (e.card.type !== 'specimen') continue;
         const sp = e.card.species;
         if (content.species[sp].kind === 'wild' && !inSeason(sp, season)) continue;

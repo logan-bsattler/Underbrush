@@ -407,7 +407,7 @@ describe('going deeper', () => {
     const at = t.forage!.patch.findIndex((p) => p.deep);
     t = run(t, { type: 'flip', index: at }, { type: 'stopForage' });
     // Heading home shuffles every card back in: the printed deck, and nothing more.
-    expect(total(t)).toBe(content.zones[0].deck.reduce((n, e) => n + e.copies, 0));
+    expect(total(t)).toBe(content.zones[0].deck.filter((e) => !e.unlock).reduce((n, e) => n + e.copies, 0));
   });
 
   it('opens the Hollow with a Compass, in fall and winter', () => {

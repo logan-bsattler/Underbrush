@@ -18,6 +18,7 @@ import {
   nextClue,
   recoveryCost,
   seasonOf,
+  speciesOpen,
   zoneStatus,
   type Card,
   type DrawOutcome,
@@ -132,7 +133,7 @@ function ZonePicker({ g, store, onClose }: { g: GameState; store: Store; onClose
       <div class="zones">
         {content.zones.map((z) => {
           const st = zoneStatus(g, z);
-          const finds = Array.from(new Set(z.deck.filter((e) => e.card.type === 'specimen').map((e) => (e.card as { species: string }).species)));
+          const finds = Array.from(new Set(z.deck.filter((e) => e.card.type === 'specimen' && (!e.unlock || speciesOpen(e.unlock, g.perks))).map((e) => (e.card as { species: string }).species)));
           // The rare mushroom deep in this zone right now (each zone has one for every season it's open).
           const deep = z.deep.flatMap((card) => (card.type === 'specimen' && inSeason(card.species, season) ? [card.species] : []));
           const layers = story ? Array.from({ length: layersOpen(g.perks.generation, z.id) }, (_, d) => layerDef(z.id, d + 1)!) : [];

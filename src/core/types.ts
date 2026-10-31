@@ -28,6 +28,8 @@ export interface SpeciesTraits {
   hungry?: boolean;
   /** Each time it fruits, adjacent beds still at Spawn jump to Colonized. */
   feeder?: boolean;
+  /** Each harvest brings in two. */
+  heavy?: boolean;
 }
 
 export interface SpeciesDef {
@@ -70,7 +72,8 @@ export interface ZoneDef {
   hazard: string;
   blurb: string;
   color: string;
-  deck: { card: Card; copies: number }[];
+  /** An entry with `unlock` is shuffled in only once a level has unlocked that species. */
+  deck: { card: Card; copies: number; unlock?: string }[];
   /** Rare finds dealt into each patch once a trip is rules.deepAt patches deep. Never part of the deck. */
   deep: Card[];
 }
@@ -215,7 +218,7 @@ export interface OrderDef {
   label: string;
   points: number;
   need: OrderNeed;
-  /** Gear the shop must stock for this order to be dealt, so orders never ask for a zone you can't reach. */
+  /** Gear the shop must stock, or a level-gated species unlocked, for this order to be dealt, so orders never ask for what you can't get. */
   requires?: string;
 }
 
@@ -340,7 +343,9 @@ export type Unlock =
   | { type: 'autoHarvest' }
   | { type: 'commissions' }
   /** This hybrid can cross from this level on. Hybrids no level names cross from the start. */
-  | { type: 'hybrid'; id: string };
+  | { type: 'hybrid'; id: string }
+  /** This species comes up in the forest, and its spawn is sold, from this level on. Species no level names are there from the start. */
+  | { type: 'species'; id: string };
 
 export interface LevelDef {
   level: number;
@@ -578,6 +583,8 @@ export interface Perks {
   commissions: boolean;
   /** Level-gated hybrids that can cross this year. */
   hybrids: string[];
+  /** Level-gated species that come up in the forest this year. */
+  species: string[];
 }
 
 export interface GameState {

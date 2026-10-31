@@ -2,6 +2,7 @@ import { content as defaultContent } from './content';
 import { Rng, hashSeed } from './rng';
 import { runGrowth } from './growth';
 import { crossKey, farmLayout, hybridFor, inSeason, neighbors, seasonOf } from './board';
+import { speciesOpen } from './progression';
 import { artifactDef, buildLayerDeck, hasSetEffect, layerDef, layerKey, layersOpen, recoveryCost, setBonus } from './underground';
 
 export * from './board';
@@ -162,9 +163,16 @@ export function spawnCost(speciesId: string, c: Content = defaultContent): numbe
   return c.species[speciesId].value + c.rules.spawnMarkup;
 }
 
-/** Cultivated species the market sells spawn of: any in your field journal, or identified this year. */
+/** Cultivated species the market sells spawn of: any in your field journal, or identified this year, once the homestead's level has them. */
 export function spawnStock(s: GameState, c: Content = defaultContent): string[] {
-  return c.speciesOrder.filter((id) => c.species[id].kind === 'cultivated' && (s.perks.spawn.includes(id) || s.discovered.includes(id)));
+  return c.speciesOrder.filter(
+    (id) => c.species[id].kind === 'cultivated' && (s.perks.spawn.includes(id) || s.discovered.includes(id)) && speciesOpen(id, s.perks, c),
+  );
+}
+
+/** Mushrooms one harvest of a bed brings in: two for a heavy species. */
+export function harvestYield(speciesId: string, c: Content = defaultContent): number {
+  return c.species[speciesId].traits.heavy ? 2 : 1;
 }
 
 /** Whether storage holds what a dish needs. */
@@ -314,7 +322,7 @@ export function orderSpecies(order: OrderDef, c: Content = defaultContent): stri
 
 /** Whether an order may be dealt this year: its zone's gear is in the shop, and a below-ground order needs a layer open. */
 export function orderDealable(order: OrderDef, perks: Perks, c: Content = defaultContent): boolean {
-  if (order.requires && !perks.shop.includes(order.requires)) return false;
+  if (order.requires && !perks.shop.includes(order.requires) && !perks.species.includes(order.requires)) return false;
   if (order.need.kind === 'below') return c.zones.some((z) => layersOpen(perks.generation, z.id, c) > 0);
   return true;
 }
@@ -450,6 +458,7 @@ export function standardPerks(c: Content = defaultContent): Perks {
     cacheFound: false,
     commissions: false,
     hybrids: [],
+    species: [],
   };
 }
 
@@ -469,6 +478,8 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   s.perks.cacheFound ??= false;
   // Saves from before level-gated hybrids: the gated ones stay locked this year.
   s.perks.hybrids ??= [];
+  // Saves from before level-gated species: King Oyster stays locked this year.
+  s.perks.species ??= [];
   // Saves from before boards were all on Streamside, with the stream down the left column.
   s.board ??= 'streamside';
   s.grid.forEach((sq, i) => (sq.damp ??= i % s.size === 0));
@@ -479,11 +490,11 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   s.hiredRound ??= 0;
   s.meal ??= null;
   s.feastPoints ??= 0;
-  for (const z of c.zones) s.decks[z.id] ??= { draw: new Rng(hashSeed(`${s.seed}:${z.id}`)).shuffle(buildDeck(z)), discard: [] };
+  for (const z of c.zones) s.decks[z.id] ??= { draw: new Rng(hashSeed(`${s.seed}:${z.id}`)).shuffle(buildDeck(z, s.perks, c)), discard: [] };
   // A deck printed at another size (the 24-card decks before they grew to 32) is dealt afresh, unless a trip there is under way.
   for (const z of c.zones) {
     const deck = s.decks[z.id];
-    const printed = buildDeck(z);
+    const printed = buildDeck(z, s.perks, c);
     const out = s.forage?.status === 'open' && s.forage.zone === z.id;
     if (!out && deck.draw.length + deck.discard.length !== printed.length) {
       s.decks[z.id] = { draw: new Rng(hashSeed(`${s.seed}:${z.id}:${printed.length}`)).shuffle(printed), discard: [] };
@@ -526,9 +537,13 @@ export function migrateState(s: GameState, c: Content = defaultContent): GameSta
   return s;
 }
 
-function buildDeck(zone: ZoneDef): Card[] {
+/** A zone's printed deck, leaving out cards for species the homestead's level hasn't unlocked. */
+function buildDeck(zone: ZoneDef, perks: Perks, c: Content): Card[] {
   const cards: Card[] = [];
-  for (const entry of zone.deck) for (let i = 0; i < entry.copies; i++) cards.push({ ...entry.card });
+  for (const entry of zone.deck) {
+    if (entry.unlock && !speciesOpen(entry.unlock, perks, c)) continue;
+    for (let i = 0; i < entry.copies; i++) cards.push({ ...entry.card });
+  }
   return cards;
 }
 
@@ -578,7 +593,7 @@ export function newGame(opts: NewGameOptions = {}, c: Content = defaultContent):
     }
   }
   const decks: GameState['decks'] = {};
-  for (const z of c.zones) decks[z.id] = { draw: rng.shuffle(buildDeck(z)), discard: [] };
+  for (const z of c.zones) decks[z.id] = { draw: rng.shuffle(buildDeck(z, perks, c)), discard: [] };
   const orderDeck = rng.shuffle(c.orders.filter((o) => orderDealable(o, perks, c)).map((o) => o.id));
 
   const s: GameState = {
@@ -1203,8 +1218,9 @@ export function dispatch(
       const gained: Record<string, number> = {};
       const squares = ready.map((sq) => s.grid.indexOf(sq));
       for (const sq of ready) {
-        addStorage(s, sq.species!);
-        gained[sq.species!] = (gained[sq.species!] ?? 0) + 1;
+        const n = harvestYield(sq.species!, c);
+        addStorage(s, sq.species!, n);
+        gained[sq.species!] = (gained[sq.species!] ?? 0) + n;
         sq.stage = 'C';
         sq.hold = 0;
       }
@@ -1481,8 +1497,9 @@ export function dispatch(
         for (const [i, sq] of s.grid.entries()) {
           if (sq.stage !== 'F' || sq.blight || !sq.species) continue;
           squares.push(i);
-          addStorage(s, sq.species);
-          gained[sq.species] = (gained[sq.species] ?? 0) + 1;
+          const n = harvestYield(sq.species, c);
+          addStorage(s, sq.species, n);
+          gained[sq.species] = (gained[sq.species] ?? 0) + n;
           sq.stage = 'C';
           sq.hold = 0;
         }
